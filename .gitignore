@@ -1,14 +1,13 @@
 # Dependencies
 docs/
-configs/
 data/
 node_modules/
-docker-compose*
 
 # Environment
 .env
 .env.*
 !.env.example
+*.conf
 
 # Build output
 dist/
