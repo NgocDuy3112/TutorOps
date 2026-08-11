@@ -1,0 +1,52 @@
+{
+  "name": "tutorops-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/src/main.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "test": "jest --config jest.config.cjs --runInBand",
+    "test:e2e": "jest --config jest.config.cjs --runInBand"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@aws-sdk/s3-request-presigner": "^3.900.0",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/config": "^4.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/swagger": "^11.4.6",
+    "argon2": "^0.41.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "cookie-parser": "^1.4.7",
+    "drizzle-orm": "^0.36.0",
+    "google-auth-library": "^9.15.0",
+    "pg": "^8.13.0",
+    "redis": "^4.7.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.0.0",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/jest": "^30.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.10",
+    "@types/supertest": "^7.2.1",
+    "@types/web-push": "^3.6.4",
+    "drizzle-kit": "^0.27.0",
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
+  }
+}
