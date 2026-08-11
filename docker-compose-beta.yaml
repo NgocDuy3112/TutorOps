@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: backend-dev
+    container_name: backend
     restart: unless-stopped
     env_file:
       - ./configs/.env
@@ -23,14 +23,14 @@ services:
       context: ./frontend
       args:
         VITE_API_URL: /api
-    container_name: frontend-dev
+    container_name: frontend
     restart: unless-stopped
     depends_on:
       - backend
 
   nginx:
     image: nginx:alpine
-    container_name: nginx-dev
+    container_name: nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -42,7 +42,7 @@ services:
 
   postgres:
     image: postgres:17
-    container_name: postgres-dev
+    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: tutorops
@@ -61,7 +61,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: redis-dev
+    container_name: redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
