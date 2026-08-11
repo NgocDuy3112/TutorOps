@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+source "$(dirname "$0")/.env.scripts"
+
+# Stop and remove all containers, networks for tutorops
+podman-compose -p ${PROJECT} \
+    -f ${COMPOSE_FILE} \
+    --env-file ${ENV_FILE} \
+    down
+
+# Remove any remaining containers with the tutorops label
+podman ps -a --filter "${LABEL}" --format "{{.ID}}" | xargs -r podman rm -f
+
+# Remove images built for tutorops services
+podman image prune --all --external --filter "${LABEL}" -f 2>/dev/null || true
