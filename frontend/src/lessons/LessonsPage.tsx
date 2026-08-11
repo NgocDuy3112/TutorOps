@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MobileShell } from "../layout/MobileShell";
+import { PageHeader } from "../layout/PageHeader";
 
 type Lesson = {
   id: string;
@@ -38,39 +39,30 @@ export function LessonsPage() {
 
   return (
     <MobileShell>
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-              TutorOps
-            </p>
-            <h1 className="text-xl font-bold">Bài học</h1>
-          </div>
-          <Button type="button" size="sm" onClick={() => setOpen(true)}>
+      <PageHeader
+        title="Bài học"
+        action={(
+          <Button type="button" size="sm" className="min-h-11 rounded-2xl" onClick={() => setOpen(true)}>
             <Plus size={16} />
             Tạo bài học
           </Button>
-        </div>
-      </header>
+        )}
+      />
       <main className="mx-auto max-w-6xl px-4 py-6">
-        <h2 className="text-2xl font-bold">Thư viện bài học</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Lưu tài liệu và nội dung có thể tái sử dụng khi giao bài.
-        </p>
         {lessons.length === 0 ? (
           <Card className="mt-5 border-dashed">
             <CardContent className="p-8 text-center">
               <p className="text-sm text-muted-foreground">Chưa có bài học.</p>
               <Button className="mt-3" size="sm" onClick={() => setOpen(true)}>
                 <Plus size={16} />
-                Tạo bài học đầu tiên
+                Tạo bài học
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {lessons.map((lesson) => (
-              <Card key={lesson.id} className="rounded-2xl">
+              <Card key={lesson.id} className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-primary">

@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 
 type AuthLayoutProps = {
   title: string;
@@ -10,17 +9,17 @@ type AuthLayoutProps = {
 
 export function AuthLayout({ title, description, children }: AuthLayoutProps) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-xl rounded-3xl">
-        <CardContent className="p-6 sm:p-10">
+    <main className="min-h-dvh bg-slate-50 px-4 py-6">
+      <div className="mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-xl flex-col">
+        <section className="pt-8 sm:pt-14">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">
             TutorOps
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">{title}</h1>
-          <p className="mt-1 text-base text-muted-foreground">{description}</p>
-          {children}
-        </CardContent>
-      </Card>
+          {description && <p className="mt-1 text-base text-muted-foreground">{description}</p>}
+        </section>
+        {children}
+      </div>
     </main>
   );
 }
@@ -38,7 +37,7 @@ export function GoogleButton() {
       type="button"
       variant="outline"
       onClick={() => void login()}
-      className="mt-4 w-full"
+      className="min-h-12 w-full rounded-2xl"
     >
       <img
         src="/google-icon.png"

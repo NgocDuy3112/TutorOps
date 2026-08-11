@@ -5,12 +5,13 @@ import {
   Get,
   Param,
   Post,
+  Patch,
   Req,
   UseGuards,
 } from "@nestjs/common";
 import { AuthGuard } from "../auth/auth.guard";
 import { AssignmentsService } from "./assignments.service";
-import { CreateAssignmentDto } from "./assignments.dto";
+import { CreateAssignmentDto, UpdateAssignmentDto } from "./assignments.dto";
 import { ParseUUIDPipe } from "@nestjs/common";
 
 @Controller("assignments")
@@ -26,6 +27,11 @@ export class AssignmentsController {
   @Post()
   create(@Req() request: AuthenticatedRequest, @Body() body: CreateAssignmentDto) {
     return this.assignments.create(request.user.id, body);
+  }
+
+  @Patch(":id")
+  update(@Req() request: AuthenticatedRequest, @Param("id", new ParseUUIDPipe()) id: string, @Body() body: UpdateAssignmentDto) {
+    return this.assignments.update(request.user.id, id, body);
   }
 
   @Delete(":id")

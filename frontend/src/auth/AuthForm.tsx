@@ -50,8 +50,8 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
   }
 
   return (
-    <>
-      <form onSubmit={submit} className="mt-6 space-y-4">
+    <form onSubmit={submit} className="mt-8 flex flex-1 flex-col">
+      <div className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -90,8 +90,10 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
             {error}
           </p>
         )}
+      </div>
 
-        <Button disabled={loading} className="w-full">
+      <div className="safe-bottom mt-auto space-y-3 pb-2 pt-8">
+        <Button disabled={loading} className="min-h-12 w-full rounded-2xl">
           {loading
             ? isLogin
               ? "Đang đăng nhập..."
@@ -100,19 +102,19 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
               ? "Đăng nhập"
               : "Tạo tài khoản"}
         </Button>
-      </form>
 
-      <GoogleButton />
+        <GoogleButton />
 
-      <p className="mt-5 text-center text-base text-muted-foreground">
-        {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}{" "}
-        <Link
-          to={isLogin ? "/signup" : "/login"}
-          className="font-medium text-primary"
-        >
-          {isLogin ? "Đăng ký" : "Đăng nhập"}
-        </Link>
-      </p>
-    </>
+        <p className="text-center text-base text-muted-foreground">
+          {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}{" "}
+          <Link
+            to={isLogin ? "/signup" : "/login"}
+            className="font-medium text-primary"
+          >
+            {isLogin ? "Đăng ký" : "Đăng nhập"}
+          </Link>
+        </p>
+      </div>
+    </form>
   );
 }

@@ -125,6 +125,54 @@ export const students = pgTable(
   ],
 );
 
+export const classes = pgTable(
+  "classes",
+  {
+    id: id(),
+    teacherId: uuid("teacher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    subject: text("subject"),
+    defaultPriceVnd: bigint("default_price_vnd", { mode: "number" }),
+    note: text("note"),
+    ...timestamps,
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    unique().on(table.teacherId, table.name),
+    unique().on(table.teacherId, table.id),
+    index("classes_teacher_active_idx")
+      .on(table.teacherId)
+      .where(sql`${table.deletedAt} IS NULL`),
+    check("classes_price_non_negative", sql`${table.defaultPriceVnd} IS NULL OR ${table.defaultPriceVnd} >= 0`),
+  ],
+);
+
+export const classStudents = pgTable(
+  "class_students",
+  {
+    classId: uuid("class_id").notNull(),
+    studentId: uuid("student_id").notNull(),
+    teacherId: uuid("teacher_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.classId, table.studentId] }),
+    foreignKey({
+      columns: [table.teacherId, table.classId],
+      foreignColumns: [classes.teacherId, classes.id],
+    }),
+    foreignKey({
+      columns: [table.teacherId, table.studentId],
+      foreignColumns: [students.teacherId, students.id],
+    }),
+    index("class_students_student_idx").on(table.studentId),
+  ],
+);
+
 export const accessTokens = pgTable(
   "access_tokens",
   {

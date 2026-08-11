@@ -1,6 +1,7 @@
 # Dependencies
 docs/
 configs/
+data/
 node_modules/
 docker-compose*
 

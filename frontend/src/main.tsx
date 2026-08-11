@@ -15,8 +15,11 @@ import { DashboardPage } from "./dashboard/DashboardPage";
 import { AssignmentsPage } from "./assignments/AssignmentsPage";
 import { StudentProfilePage } from "./students/StudentProfilePage";
 import { StudentsPage } from "./students/StudentsPage";
+import { ClassesPage } from "./classes/ClassesPage";
+import { TuitionPage } from "./tuition/TuitionPage";
 import { StudentSubmissionPage } from "./public/StudentSubmissionPage";
 import { ParentReportPage } from "./public/ParentReportPage";
+import { AssignmentDropboxPage } from "./public/AssignmentDropboxPage";
 import { SettingsPage } from "./settings/SettingsPage";
 import { PersonalInfoPage } from "./settings/PersonalInfoPage";
 import { ChangePasswordPage } from "./settings/ChangePasswordPage";
@@ -27,19 +30,21 @@ function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const isPublicSubmission = window.location.pathname.startsWith("/submit/");
   const isPublicParent = window.location.pathname.startsWith("/parent/");
+  const isAssignmentDropbox = window.location.pathname.startsWith("/assignment-submit/");
 
   useEffect(() => {
-    if (isPublicSubmission || isPublicParent) return;
+    if (isPublicSubmission || isPublicParent || isAssignmentDropbox) return;
     fetch(`${API}/auth/me`, { credentials: "include" })
       .then((response) => setAuthenticated(response.ok))
       .catch(() => setAuthenticated(false));
   }, []);
 
-  if (isPublicSubmission || isPublicParent) {
+  if (isPublicSubmission || isPublicParent || isAssignmentDropbox) {
     return (
       <Routes>
         <Route path="/submit/:token" element={<StudentSubmissionPage />} />
         <Route path="/parent/:token" element={<ParentReportPage />} />
+        <Route path="/assignment-submit/:token" element={<AssignmentDropboxRoute />} />
       </Routes>
     );
   }
@@ -84,6 +89,12 @@ function App() {
           }
         />
         <Route
+          path="/classes"
+          element={
+            authenticated ? <ClassesPage /> : <Navigate to="/login" replace />
+          }
+        />
+        <Route
           path="/lessons"
           element={
             authenticated ? <LessonsPage /> : <Navigate to="/login" replace />
@@ -97,6 +108,12 @@ function App() {
             ) : (
               <Navigate to="/login" replace />
             )
+          }
+        />
+        <Route
+          path="/tuition"
+          element={
+            authenticated ? <TuitionPage /> : <Navigate to="/login" replace />
           }
         />
         <Route
@@ -143,6 +160,8 @@ function App() {
     </>
   );
 }
+
+function AssignmentDropboxRoute() { const { token = "" } = useParams(); return <AssignmentDropboxPage token={token} />; }
 
 function StudentProfileRoute() {
   const { studentId = "" } = useParams();

@@ -17,6 +17,21 @@ export class AccessService {
     return token;
   }
 
+  async createAssignmentLink(teacherId: string, assignmentId: string) {
+    const owned = await pool.query(`SELECT id FROM assignments WHERE id = $1 AND teacher_id = $2 AND deleted_at IS NULL`, [assignmentId, teacherId]);
+    if (!owned.rowCount) return null;
+    await pool.query(`UPDATE assignment_submission_links SET revoked_at = now() WHERE assignment_id = $1 AND revoked_at IS NULL`, [assignmentId]);
+    const token = crypto.randomBytes(32).toString("base64url");
+    await pool.query(`INSERT INTO assignment_submission_links (assignment_id, token_hash) VALUES ($1, $2)`, [assignmentId, this.hash(token)]);
+    return token;
+  }
+
+  async authenticateAssignmentLink(token: string) {
+    const result = await pool.query(`SELECT a.id AS "assignmentId", a.title, a.description, a.due_at AS "dueAt" FROM assignment_submission_links l JOIN assignments a ON a.id = l.assignment_id WHERE l.token_hash = $1 AND l.revoked_at IS NULL AND a.deleted_at IS NULL`, [this.hash(token)]);
+    if (!result.rowCount) throw new UnauthorizedException("invalid_access_token");
+    return result.rows[0];
+  }
+
   async authenticate(token: string, tokenType: "student" | "parent") {
     const result = await pool.query(
       `

@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MobileShell } from "../layout/MobileShell";
+import { PageHeader } from "../layout/PageHeader";
 import { PushNotificationSetup } from "../notifications/PushNotificationSetup";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -26,16 +27,12 @@ export function SettingsPage() {
 
   return (
     <MobileShell>
-      <header className="border-b bg-white">
-        <div className="mx-auto max-w-3xl px-4 py-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            TutorOps
-          </p>
-          <h1 className="mt-1 text-xl font-bold">Cá nhân</h1>
-        </div>
-      </header>
+      <PageHeader
+        maxWidth="3xl"
+        title="Cá nhân"
+      />
       <main className="mx-auto max-w-3xl px-4 py-5">
-        <Card className="overflow-hidden rounded-2xl">
+        <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
           <SettingsLink
             to="/settings/profile"
             icon={<UserRound size={19} />}

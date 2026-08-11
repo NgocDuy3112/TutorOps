@@ -11,6 +11,8 @@ import { AccessModule } from "./access/access.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { SubmissionsModule } from "./submissions/submissions.module";
 import { NotificationsModule } from "./notifications/notifications.module";
+import { DashboardModule } from "./dashboard/dashboard.module";
+import { ClassesModule } from "./classes/classes.module";
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { NotificationsModule } from "./notifications/notifications.module";
     PaymentsModule,
     SubmissionsModule,
     NotificationsModule,
+    DashboardModule,
+    ClassesModule,
   ],
 })
 export class AppModule {}

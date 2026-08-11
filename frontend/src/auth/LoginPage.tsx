@@ -5,7 +5,7 @@ export function LoginPage({ onLoggedIn }: { onLoggedIn: () => void }) {
   return (
     <AuthLayout
       title="Đăng nhập giáo viên"
-      description="Quản lý học sinh và buổi dạy."
+      description=""
     >
       <AuthForm mode="login" onSuccess={onLoggedIn} />
     </AuthLayout>

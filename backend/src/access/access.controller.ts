@@ -31,6 +31,19 @@ export class AccessController {
     return { token };
   }
 
+  @Post("assignments/:id/submission-link")
+  @UseGuards(AuthGuard)
+  async createAssignmentLink(@Req() req: AuthenticatedRequest, @Param("id") id: string) {
+    const token = await this.access.createAssignmentLink(req.user.id, id);
+    if (!token) throw new UnauthorizedException("assignment_not_found");
+    return { token };
+  }
+
+  @Get("public/assignment-dropbox")
+  async assignmentDropbox(@Query("token") token: string) {
+    return this.access.authenticateAssignmentLink(token);
+  }
+
   @Get("public/students")
   async student(@Query("token") token: string) {
     const access = await this.access.authenticate(token, "student");

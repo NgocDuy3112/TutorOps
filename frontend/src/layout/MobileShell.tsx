@@ -1,30 +1,21 @@
-import { ReactNode, type ComponentType } from "react";
+import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ClipboardList, Home, Settings, Users } from "lucide-react";
+import { DesktopShell } from "./DesktopShell";
+import { navigationItems } from "./navigation";
 
 type MobileShellProps = {
   children: ReactNode;
 };
 
-type NavigationItem = {
-  href: string;
-  label: string;
-  icon: ComponentType<{ size?: number; strokeWidth?: number }>;
-};
-
-const navigationItems: NavigationItem[] = [
-  { href: "/", label: "Tổng quan", icon: Home },
-  { href: "/students", label: "Học sinh", icon: Users },
-  { href: "/assignments", label: "Bài tập", icon: ClipboardList },
-  { href: "/settings", label: "Cá nhân", icon: Settings },
-];
-
 export function MobileShell({ children }: MobileShellProps) {
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 text-slate-900 sm:pb-0">
-      {children}
-      <TeacherBottomNavigation />
-    </div>
+    <>
+      <div className="min-h-screen bg-slate-50 pb-20 text-slate-900 sm:hidden">
+        {children}
+        <TeacherBottomNavigation />
+      </div>
+      <DesktopShell>{children}</DesktopShell>
+    </>
   );
 }
 
@@ -33,7 +24,7 @@ function TeacherBottomNavigation() {
 
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t bg-white/95 px-1 py-2 backdrop-blur sm:hidden">
-      <div className="mx-auto grid max-w-lg grid-cols-4">
+      <div className="mx-auto grid max-w-lg grid-cols-5">
         {navigationItems.map((item) => {
           const isActive =
             item.href === "/"

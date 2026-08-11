@@ -1,4 +1,4 @@
-import type { CreateAssignmentDto } from "./assignments.dto";
+import type { CreateAssignmentDto, UpdateAssignmentDto } from "./assignments.dto";
 import { Injectable } from "@nestjs/common";
 import { pool } from "../db/client";
 
@@ -66,9 +66,26 @@ export class AssignmentsRepository {
         WHERE id = $2
           AND teacher_id = $3
           AND deleted_at IS NULL
+        ON CONFLICT DO NOTHING
       `;
       for (const studentId of input.studentIds ?? []) {
         await client.query(linkQuery, [assignment.id, studentId, teacherId]);
+      }
+
+      const classLinkQuery = `
+        INSERT INTO student_assignments (assignment_id, student_id, teacher_id)
+        SELECT $1, cs.student_id, cs.teacher_id
+        FROM class_students AS cs
+        INNER JOIN classes AS c ON c.id = cs.class_id
+        INNER JOIN students AS s ON s.id = cs.student_id
+        WHERE cs.class_id = $2
+          AND cs.teacher_id = $3
+          AND c.deleted_at IS NULL
+          AND s.deleted_at IS NULL
+        ON CONFLICT DO NOTHING
+      `;
+      for (const classId of input.classIds ?? []) {
+        await client.query(classLinkQuery, [assignment.id, classId, teacherId]);
       }
 
       const fileQuery = `
@@ -86,6 +103,35 @@ export class AssignmentsRepository {
 
       await client.query("COMMIT");
       return assignment;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async update(teacherId: string, id: string, input: UpdateAssignmentDto) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const assignment = await client.query(
+        `UPDATE assignments SET title = $1, description = $2, lesson_id = $3, due_at = $4, updated_at = now() WHERE id = $5 AND teacher_id = $6 AND deleted_at IS NULL RETURNING id`,
+        [input.title.trim(), input.description ?? null, input.lessonId ?? null, input.dueAt ?? null, id, teacherId],
+      );
+      if (!assignment.rowCount) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+      await client.query(`DELETE FROM student_assignments WHERE assignment_id = $1 AND teacher_id = $2`, [id, teacherId]);
+      for (const studentId of input.studentIds) {
+        await client.query(
+          `INSERT INTO student_assignments (assignment_id, student_id, teacher_id) SELECT $1, id, teacher_id FROM students WHERE id = $2 AND teacher_id = $3 AND deleted_at IS NULL ON CONFLICT DO NOTHING`,
+          [id, studentId, teacherId],
+        );
+      }
+      await client.query("COMMIT");
+      return { id };
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

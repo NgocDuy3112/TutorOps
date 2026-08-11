@@ -14,7 +14,17 @@ export class StudentsRepository {
         default_price_vnd AS "defaultPriceVnd",
         submission_mode AS "submissionMode",
         created_at AS "createdAt",
-        updated_at AS "updatedAt"
+        updated_at AS "updatedAt",
+        COALESCE(
+          (
+            SELECT json_agg(json_build_object('id', c.id, 'name', c.name, 'subject', c.subject) ORDER BY c.name)
+            FROM class_students cs
+            INNER JOIN classes c ON c.id = cs.class_id
+            WHERE cs.student_id = students.id
+              AND c.deleted_at IS NULL
+          ),
+          '[]'::json
+        ) AS classes
       FROM students
       WHERE teacher_id = $1
         AND deleted_at IS NULL
