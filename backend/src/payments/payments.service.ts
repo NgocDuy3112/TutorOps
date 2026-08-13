@@ -15,17 +15,22 @@ export class PaymentsService {
         [studentId],
       ),
       pool.query(
-        `SELECT COALESCE((SELECT SUM(price_vnd) FROM teaching_sessions WHERE student_id = $1 AND deleted_at IS NULL), 0) AS "totalDue", COALESCE((SELECT SUM(amount_vnd) FROM payments WHERE student_id = $1 AND status = 'confirmed'), 0) AS "totalPaid"`,
+        `SELECT
+          COALESCE((SELECT SUM(price_vnd) FROM teaching_sessions WHERE student_id = $1 AND deleted_at IS NULL), 0) AS "totalDue",
+          COALESCE((SELECT SUM(amount_vnd) FROM payments WHERE student_id = $1 AND status = 'confirmed'), 0) AS "totalPaid",
+          (SELECT COUNT(*)::int FROM teaching_sessions WHERE student_id = $1 AND deleted_at IS NULL) AS "sessionCount"`,
         [studentId],
       ),
     ]);
     const totalDue = Number(totals.rows[0].totalDue),
-      totalPaid = Number(totals.rows[0].totalPaid);
+      totalPaid = Number(totals.rows[0].totalPaid),
+      sessionCount = Number(totals.rows[0].sessionCount ?? 0);
     return {
       payments: payments.rows,
       totalDue,
       totalPaid,
       balance: totalDue - totalPaid,
+      sessionCount,
     };
   }
   async create(teacherId: string, studentId: string, input: CreatePaymentDto) {

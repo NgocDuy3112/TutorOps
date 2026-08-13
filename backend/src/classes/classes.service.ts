@@ -28,7 +28,11 @@ export class ClassesService {
   }
 
   async addStudent(teacherId: string, classId: string, studentId: string) {
-    const link = await this.repository.addStudent(teacherId, classId, studentId);
+    const link = await this.repository.addStudent(
+      teacherId,
+      classId,
+      studentId,
+    );
     if (!link) throw new NotFoundException("class_or_student_not_found");
     return link;
   }

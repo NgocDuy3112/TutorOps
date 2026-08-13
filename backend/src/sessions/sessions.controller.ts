@@ -51,7 +51,10 @@ export class SessionsController {
   }
 
   @Delete("sessions/:id")
-  remove(@Req() request: AuthenticatedRequest, @Param("id", new ParseUUIDPipe()) id: string) {
+  remove(
+    @Req() request: AuthenticatedRequest,
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ) {
     return this.sessions.remove(request.user.id, id);
   }
 }

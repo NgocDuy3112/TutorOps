@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatVnd } from "../lib/format";
+import { formatVnd, parseVnd } from "../lib/format";
 
 type Student = { id: string; defaultPriceVnd: number };
 type TeachingSession = {
@@ -42,7 +42,9 @@ export function MarkTaughtSheet({
   onSaved: () => void;
 }) {
   const [taughtAt, setTaughtAt] = useState(() =>
-    toDateTimeLocal(session ? new Date(session.taughtAt) : initialDate ?? new Date()),
+    toDateTimeLocal(
+      session ? new Date(session.taughtAt) : (initialDate ?? new Date()),
+    ),
   );
   const [priceVnd, setPriceVnd] = useState(() =>
     session?.priceVnd == null ? "" : String(session.priceVnd),
@@ -53,7 +55,11 @@ export function MarkTaughtSheet({
   const editing = Boolean(session);
 
   useEffect(() => {
-    setTaughtAt(toDateTimeLocal(session ? new Date(session.taughtAt) : initialDate ?? new Date()));
+    setTaughtAt(
+      toDateTimeLocal(
+        session ? new Date(session.taughtAt) : (initialDate ?? new Date()),
+      ),
+    );
     setPriceVnd(session?.priceVnd == null ? "" : String(session.priceVnd));
     setNote(session?.note ?? "");
   }, [initialDate, session]);
@@ -62,14 +68,16 @@ export function MarkTaughtSheet({
     event.preventDefault();
     setSaving(true);
     const response = await fetch(
-      editing ? `${API}/sessions/${session!.id}` : `${API}/students/${student.id}/sessions`,
+      editing
+        ? `${API}/sessions/${session!.id}`
+        : `${API}/students/${student.id}/sessions`,
       {
         method: editing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           taughtAt: new Date(taughtAt).toISOString(),
-          priceVnd: priceVnd ? Number(priceVnd) : undefined,
+          priceVnd: priceVnd ? parseVnd(priceVnd) : undefined,
           note,
         }),
       },
@@ -93,7 +101,9 @@ export function MarkTaughtSheet({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editing ? "Sửa buổi dạy" : "Ghi nhận buổi dạy"}</DialogTitle>
+          <DialogTitle>
+            {editing ? "Sửa buổi dạy" : "Ghi nhận buổi dạy"}
+          </DialogTitle>
           <DialogDescription>
             Chọn thời gian, giá buổi học và ghi chú nếu có.
           </DialogDescription>
@@ -113,10 +123,14 @@ export function MarkTaughtSheet({
             <Label htmlFor="priceVnd">Tiền buổi học</Label>
             <Input
               id="priceVnd"
-              type="number"
-              min="0"
+              inputMode="numeric"
               value={priceVnd}
-              onChange={(event) => setPriceVnd(event.target.value)}
+              onChange={(event) => {
+                const value = event.target.value;
+                setPriceVnd(
+                  value ? formatVnd(parseVnd(value)).replace(" ₫", "") : "",
+                );
+              }}
               placeholder={formatVnd(student.defaultPriceVnd)}
             />
           </div>
@@ -139,13 +153,21 @@ export function MarkTaughtSheet({
                 onClick={() => void remove()}
                 className="min-h-11 text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto"
               >
-                {deleting ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                {deleting ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <Trash2 size={16} />
+                )}
                 Xóa
               </Button>
             )}
             <Button disabled={saving || deleting} className="min-h-11 flex-1">
               {saving && <Loader2 className="animate-spin" size={16} />}
-              {saving ? "Đang lưu..." : editing ? "Lưu thay đổi" : "Xác nhận đã dạy"}
+              {saving
+                ? "Đang lưu..."
+                : editing
+                  ? "Lưu thay đổi"
+                  : "Xác nhận đã dạy"}
             </Button>
           </div>
         </form>

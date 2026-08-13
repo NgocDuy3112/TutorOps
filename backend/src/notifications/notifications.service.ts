@@ -60,7 +60,11 @@ export class NotificationsService {
             JSON.stringify(payload),
           );
         } catch (error: unknown) {
-          if (error instanceof Error && "statusCode" in error && (error.statusCode === 404 || error.statusCode === 410))
+          if (
+            error instanceof Error &&
+            "statusCode" in error &&
+            (error.statusCode === 404 || error.statusCode === 410)
+          )
             await pool.query(
               `UPDATE push_subscriptions SET revoked_at = now(), updated_at = now() WHERE endpoint = $1`,
               [subscription.endpoint],

@@ -33,5 +33,8 @@ export class UpdateAssignmentDto {
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
   @ApiPropertyOptional() @IsOptional() @IsUUID() lessonId?: string | null;
   @ApiPropertyOptional() @IsOptional() @IsDateString() dueAt?: string | null;
-  @ApiProperty({ type: [String] }) @IsArray() @IsUUID(undefined, { each: true }) studentIds!: string[];
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  studentIds!: string[];
 }

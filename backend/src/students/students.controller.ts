@@ -22,7 +22,10 @@ export class StudentsController {
   @Get() list(@Req() req: AuthenticatedRequest) {
     return this.students.list(req.user.id);
   }
-  @Post() create(@Req() req: AuthenticatedRequest, @Body() body: CreateStudentDto) {
+  @Post() create(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: CreateStudentDto,
+  ) {
     return this.students.create(req.user.id, body);
   }
   @Patch(":id") update(
@@ -32,7 +35,10 @@ export class StudentsController {
   ) {
     return this.students.update(req.user.id, id, body);
   }
-  @Delete(":id") remove(@Req() req: AuthenticatedRequest, @Param("id") id: string) {
+  @Delete(":id") remove(
+    @Req() req: AuthenticatedRequest,
+    @Param("id") id: string,
+  ) {
     return this.students.remove(req.user.id, id);
   }
 }

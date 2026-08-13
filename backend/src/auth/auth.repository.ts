@@ -4,19 +4,41 @@ import { pool } from "../db/client";
 @Injectable()
 export class AuthRepository {
   async findProfile(userId: string) {
-    return (await pool.query("SELECT id, email, role, full_name AS \"fullName\", phone FROM users WHERE id = $1 AND deleted_at IS NULL", [userId])).rows[0];
+    return (
+      await pool.query(
+        'SELECT id, email, role, full_name AS "fullName", phone FROM users WHERE id = $1 AND deleted_at IS NULL',
+        [userId],
+      )
+    ).rows[0];
   }
 
-  async updateProfile(userId: string, fullName: string | undefined, phone: string | undefined) {
-    return (await pool.query("UPDATE users SET full_name = COALESCE($1, full_name), phone = COALESCE($2, phone), updated_at = now() WHERE id = $3 AND deleted_at IS NULL RETURNING id, email, role, full_name AS \"fullName\", phone", [fullName ?? null, phone ?? null, userId])).rows[0];
+  async updateProfile(
+    userId: string,
+    fullName: string | undefined,
+    phone: string | undefined,
+  ) {
+    return (
+      await pool.query(
+        'UPDATE users SET full_name = COALESCE($1, full_name), phone = COALESCE($2, phone), updated_at = now() WHERE id = $3 AND deleted_at IS NULL RETURNING id, email, role, full_name AS "fullName", phone',
+        [fullName ?? null, phone ?? null, userId],
+      )
+    ).rows[0];
   }
 
   async findPasswordHash(userId: string) {
-    return (await pool.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1 AND deleted_at IS NULL", [userId])).rows[0];
+    return (
+      await pool.query(
+        'SELECT password_hash AS "passwordHash" FROM users WHERE id = $1 AND deleted_at IS NULL',
+        [userId],
+      )
+    ).rows[0];
   }
 
   async updatePassword(userId: string, passwordHash: string) {
-    await pool.query("UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2 AND deleted_at IS NULL", [passwordHash, userId]);
+    await pool.query(
+      "UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2 AND deleted_at IS NULL",
+      [passwordHash, userId],
+    );
   }
 
   async createUser(email: string, passwordHash: string) {
@@ -38,7 +60,11 @@ export class AuthRepository {
     return (await pool.query(query, [email])).rows[0];
   }
 
-  async findOrCreateGoogleUser(email: string, providerAccountId: string) {
+  async findOrCreateGoogleUser(
+    email: string,
+    providerAccountId: string,
+    fullName?: string,
+  ) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
@@ -70,6 +96,13 @@ export class AuthRepository {
           existing.rows[0] ??
           (await client.query(createQuery, [email])).rows[0];
 
+        if (fullName?.trim()) {
+          await client.query(
+            `UPDATE users SET full_name = COALESCE(NULLIF(full_name, ''), $1), updated_at = now() WHERE id = $2`,
+            [fullName.trim(), user.id],
+          );
+        }
+
         const linkQuery = `
           INSERT INTO oauth_accounts (user_id, provider, provider_account_id)
           VALUES ($1, 'google', $2)
@@ -78,6 +111,12 @@ export class AuthRepository {
         await client.query(linkQuery, [user.id, providerAccountId]);
       }
 
+      if (fullName?.trim()) {
+        await client.query(
+          `UPDATE users SET full_name = COALESCE(NULLIF(full_name, ''), $1), updated_at = now() WHERE id = $2`,
+          [fullName.trim(), user.id],
+        );
+      }
       await client.query("COMMIT");
       return user;
     } catch (error) {

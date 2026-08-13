@@ -1,12 +1,6 @@
-import {
-  FormEvent,
-  useEffect,
-  useRef,
-  useState,
-  type PointerEvent,
-} from "react";
-import { Link } from "react-router-dom";
-import { Copy, Link2, Loader2, Pencil, Plus, Trash2, UserRound } from "lucide-react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Loader2, Pencil, Plus, Trash2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -16,8 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
@@ -37,27 +29,12 @@ type Student = {
   classes?: StudentClass[];
 };
 
-type StudentFormValues = {
-  name: string;
-  parentName: string;
-  parentPhone: string;
-};
-
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-
-const emptyStudent = (): Student => ({
-  id: "",
-  name: "",
-  parentName: "",
-  parentPhone: "",
-  defaultPriceVnd: 0,
-});
 
 export function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
-  const [editing, setEditing] = useState<Student | null>(null);
+  const navigate = useNavigate();
   const [deleting, setDeleting] = useState<Student | null>(null);
-  const [sharing, setSharing] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -98,7 +75,20 @@ export function StudentsPage() {
     <MobileShell>
       <PageHeader
         title="Học sinh"
-        action={<div className="flex items-center gap-2"><Button type="button" size="sm" className="min-h-11 rounded-2xl" onClick={() => setEditing(emptyStudent())}><Plus size={16} />Thêm</Button><UserAvatar /></div>}
+        action={
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              className="min-h-11 rounded-2xl"
+              onClick={() => navigate("/students/new")}
+            >
+              <Plus size={16} />
+              Thêm
+            </Button>
+            <UserAvatar />
+          </div>
+        }
       />
       <main className="mx-auto max-w-6xl px-4 py-6">
         {error && (
@@ -119,10 +109,9 @@ export function StudentsPage() {
         {!loading && (
           <StudentsGrid
             students={students}
-            onAdd={() => setEditing(emptyStudent())}
-            onEdit={setEditing}
+            onAdd={() => navigate("/students/new")}
+            onEdit={(student) => navigate(`/students/${student.id}/edit`)}
             onDelete={setDeleting}
-            onShare={setSharing}
           />
         )}
       </main>
@@ -131,15 +120,6 @@ export function StudentsPage() {
         student={deleting}
         onOpenChange={(open) => !open && setDeleting(null)}
         onConfirm={() => deleting && void removeStudent(deleting.id)}
-      />
-      <SubmissionLinkDialog student={sharing} onOpenChange={(open) => !open && setSharing(null)} />
-      <StudentForm
-        student={editing}
-        onOpenChange={(open) => !open && setEditing(null)}
-        onSaved={() => {
-          setEditing(null);
-          void loadData();
-        }}
       />
     </MobileShell>
   );
@@ -150,19 +130,17 @@ function StudentsGrid({
   onAdd,
   onEdit,
   onDelete,
-  onShare,
 }: {
   students: Student[];
   onAdd: () => void;
   onEdit: (student: Student) => void;
   onDelete: (student: Student) => void;
-  onShare: (student: Student) => void;
 }) {
   if (students.length === 0) {
     return (
       <Card className="border-dashed">
         <CardContent className="p-10 text-center">
-          <p className="text-sm text-muted-foreground">Chưa có học sinh.</p>
+          <p className="text-sm text-muted-foreground">Không có dữ liệu.</p>
           <Button className="mt-3" size="sm" onClick={onAdd}>
             <Plus size={16} />
             Thêm học sinh
@@ -180,7 +158,6 @@ function StudentsGrid({
           student={student}
           onEdit={() => onEdit(student)}
           onDelete={() => onDelete(student)}
-          onShare={() => onShare(student)}
         />
       ))}
     </div>
@@ -191,12 +168,10 @@ function StudentCard({
   student,
   onEdit,
   onDelete,
-  onShare,
 }: {
   student: Student;
   onEdit: () => void;
   onDelete: () => void;
-  onShare: () => void;
 }) {
   const startX = useRef(0);
   const [revealed, setRevealed] = useState(false);
@@ -257,8 +232,6 @@ function StudentCard({
                 </div>
               )}
             </div>
-            <div className="flex shrink-0 flex-col gap-2">
-            <Button type="button" variant="outline" size="icon" className="rounded-2xl" onClick={onShare} aria-label="Tạo link nộp bài"><Link2 size={16} /></Button>
             <Button
               variant="outline"
               size="sm"
@@ -268,33 +241,11 @@ function StudentCard({
               <Pencil size={15} />
               Sửa
             </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
     </div>
   );
-}
-
-function SubmissionLinkDialog({ student, onOpenChange }: { student: Student | null; onOpenChange: (open: boolean) => void }) {
-  const [link, setLink] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => { setLink(""); setError(""); }, [student]);
-  async function createLink() {
-    if (!student) return;
-    setLoading(true); setError("");
-    try {
-      const response = await fetch(`${API}/students/${student.id}/access-tokens/student`, { method: "POST", credentials: "include" });
-      if (!response.ok) throw new Error("Không thể tạo link nộp bài.");
-      const { token } = await response.json();
-      setLink(`${window.location.origin}/submit/${token}`);
-    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Có lỗi xảy ra."); }
-    finally { setLoading(false); }
-  }
-  async function copyLink() { if (link) await navigator.clipboard.writeText(link); }
-  return <Dialog open={Boolean(student)} onOpenChange={onOpenChange}><DialogContent><DialogHeader><DialogTitle>Link nộp bài</DialogTitle><DialogDescription>Tạo link riêng cho {student?.name}. Link cũ sẽ bị vô hiệu sau khi tạo link mới.</DialogDescription></DialogHeader>{link ? <div className="space-y-3"><Input readOnly value={link} aria-label="Link nộp bài" /><Button type="button" className="min-h-11 w-full" onClick={() => void copyLink()}><Copy size={16} />Sao chép link</Button><Button type="button" variant="outline" className="min-h-11 w-full" onClick={() => void createLink()}>Tạo link mới</Button></div> : <div className="space-y-3">{error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}<Button type="button" disabled={loading} className="min-h-11 w-full" onClick={() => void createLink()}>{loading && <Loader2 className="animate-spin" size={16} />}{loading ? "Đang tạo..." : "Tạo link nộp bài"}</Button></div>}</DialogContent></Dialog>;
 }
 
 function DeleteStudentDialog({
@@ -333,111 +284,6 @@ function DeleteStudentDialog({
             Xóa học sinh
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function StudentForm({
-  student,
-  onOpenChange,
-  onSaved,
-}: {
-  student: Student | null;
-  onOpenChange: (open: boolean) => void;
-  onSaved: () => void;
-}) {
-  const [form, setForm] = useState<StudentFormValues>({
-    name: "",
-    parentName: "",
-    parentPhone: "",
-  });
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!student) return;
-    setForm({
-      name: student.name,
-      parentName: student.parentName ?? "",
-      parentPhone: student.parentPhone ?? "",
-    });
-  }, [student]);
-
-  function updateField<Key extends keyof StudentFormValues>(
-    key: Key,
-    value: StudentFormValues[Key],
-  ) {
-    setForm((current) => ({ ...current, [key]: value }));
-  }
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!student) return;
-    setSaving(true);
-
-    const url = student.id
-      ? `${API}/students/${student.id}`
-      : `${API}/students`;
-    const method = student.id ? "PATCH" : "POST";
-    const response = await fetch(url, {
-      method,
-      headers: { "content-type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        name: form.name,
-        parentName: form.parentName,
-        parentPhone: form.parentPhone,
-      }),
-    });
-
-    setSaving(false);
-    if (response.ok) onSaved();
-  }
-
-  return (
-    <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {student?.id ? "Sửa học sinh" : "Thêm học sinh"}
-          </DialogTitle>
-          <DialogDescription>Nhập thông tin liên hệ.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="student-name">Tên học sinh</Label>
-            <Input
-              id="student-name"
-              required
-              value={form.name}
-              onChange={(event) => updateField("name", event.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="parent-name">Tên phụ huynh</Label>
-            <Input
-              id="parent-name"
-              value={form.parentName}
-              onChange={(event) =>
-                updateField("parentName", event.target.value)
-              }
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="parent-phone">Số điện thoại</Label>
-            <Input
-              id="parent-phone"
-              value={form.parentPhone}
-              onChange={(event) =>
-                updateField("parentPhone", event.target.value)
-              }
-            />
-          </div>
-          <Button disabled={saving} className="w-full">
-            {saving && <Loader2 className="animate-spin" size={16} />}
-            {saving ? "Đang lưu..." : "Lưu học sinh"}
-          </Button>
-        </form>
       </DialogContent>
     </Dialog>
   );
