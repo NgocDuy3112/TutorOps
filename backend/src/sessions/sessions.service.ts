@@ -1,4 +1,7 @@
-import type { TeachingSessionDto, UpdateTeachingSessionDto } from "./sessions.dto";
+import type {
+  TeachingSessionDto,
+  UpdateTeachingSessionDto,
+} from "./sessions.dto";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { SessionsRepository } from "./sessions.repository";
 
@@ -12,7 +15,11 @@ export class SessionsService {
   async listForTeacher(teacherId: string) {
     return this.repository.listForTeacher(teacherId);
   }
-  async create(teacherId: string, studentId: string, input: TeachingSessionDto) {
+  async create(
+    teacherId: string,
+    studentId: string,
+    input: TeachingSessionDto,
+  ) {
     await this.assertOwner(teacherId, studentId);
     if (!input.taughtAt) throw new Error("invalid_teaching_session");
     return this.repository.create(studentId, input);

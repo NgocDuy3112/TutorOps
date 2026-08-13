@@ -9,13 +9,17 @@ import {
 } from "react-router-dom";
 import "./styles.css";
 import { LoginPage } from "./auth/LoginPage";
-import { LessonsPage } from "./lessons/LessonsPage";
 import { SignupPage } from "./auth/SignupPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { AssignmentsPage } from "./assignments/AssignmentsPage";
+import { AssignmentFormPage } from "./assignments/AssignmentFormPage";
+import { AssignmentSubmissionsPage } from "./assignments/AssignmentSubmissionsPage";
 import { StudentProfilePage } from "./students/StudentProfilePage";
 import { StudentsPage } from "./students/StudentsPage";
+import { StudentFormPage } from "./students/StudentFormPage";
 import { ClassesPage } from "./classes/ClassesPage";
+import { ClassFormPage } from "./classes/ClassFormPage";
+import { ClassDetailPage } from "./classes/ClassDetailPage";
 import { TuitionPage } from "./tuition/TuitionPage";
 import { StudentSubmissionPage } from "./public/StudentSubmissionPage";
 import { ParentReportPage } from "./public/ParentReportPage";
@@ -30,7 +34,9 @@ function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const isPublicSubmission = window.location.pathname.startsWith("/submit/");
   const isPublicParent = window.location.pathname.startsWith("/parent/");
-  const isAssignmentDropbox = window.location.pathname.startsWith("/assignment-submit/");
+  const isAssignmentDropbox = window.location.pathname.startsWith(
+    "/assignment-submit/",
+  );
 
   useEffect(() => {
     if (isPublicSubmission || isPublicParent || isAssignmentDropbox) return;
@@ -44,7 +50,10 @@ function App() {
       <Routes>
         <Route path="/submit/:token" element={<StudentSubmissionPage />} />
         <Route path="/parent/:token" element={<ParentReportPage />} />
-        <Route path="/assignment-submit/:token" element={<AssignmentDropboxRoute />} />
+        <Route
+          path="/assignment-submit/:token"
+          element={<AssignmentDropboxRoute />}
+        />
       </Routes>
     );
   }
@@ -95,9 +104,25 @@ function App() {
           }
         />
         <Route
-          path="/lessons"
+          path="/classes/new"
           element={
-            authenticated ? <LessonsPage /> : <Navigate to="/login" replace />
+            authenticated ? <ClassFormPage /> : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/classes/:classId/edit"
+          element={
+            authenticated ? <ClassFormPage /> : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/classes/:classId"
+          element={
+            authenticated ? (
+              <ClassDetailPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
         <Route
@@ -105,6 +130,36 @@ function App() {
           element={
             authenticated ? (
               <AssignmentsPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/assignments/new"
+          element={
+            authenticated ? (
+              <AssignmentFormPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/assignments/:assignmentId/edit"
+          element={
+            authenticated ? (
+              <AssignmentFormPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/assignments/:assignmentId/submissions"
+          element={
+            authenticated ? (
+              <AssignmentSubmissionsPage />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -143,6 +198,26 @@ function App() {
           }
         />
         <Route
+          path="/students/new"
+          element={
+            authenticated ? (
+              <StudentFormPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/students/:studentId/edit"
+          element={
+            authenticated ? (
+              <StudentFormPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
           path="/students/:studentId"
           element={
             authenticated ? (
@@ -161,7 +236,10 @@ function App() {
   );
 }
 
-function AssignmentDropboxRoute() { const { token = "" } = useParams(); return <AssignmentDropboxPage token={token} />; }
+function AssignmentDropboxRoute() {
+  const { token = "" } = useParams();
+  return <AssignmentDropboxPage token={token} />;
+}
 
 function StudentProfileRoute() {
   const { studentId = "" } = useParams();

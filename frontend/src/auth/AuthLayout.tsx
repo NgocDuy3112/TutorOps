@@ -1,5 +1,13 @@
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type AuthLayoutProps = {
   title: string;
@@ -16,7 +24,11 @@ export function AuthLayout({ title, description, children }: AuthLayoutProps) {
             TutorOps
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">{title}</h1>
-          {description && <p className="mt-1 text-base text-muted-foreground">{description}</p>}
+          {description && (
+            <p className="mt-1 text-base text-muted-foreground">
+              {description}
+            </p>
+          )}
         </section>
         {children}
       </div>
@@ -33,19 +45,44 @@ export function GoogleButton() {
   }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => void login()}
-      className="min-h-12 w-full rounded-2xl"
-    >
-      <img
-        src="/google-icon.png"
-        alt=""
-        aria-hidden="true"
-        className="h-5 w-5"
-      />
-      <span>Tiếp tục với Google</span>
-    </Button>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-12 w-full rounded-2xl"
+        >
+          <img
+            src="/google-icon.png"
+            alt=""
+            aria-hidden="true"
+            className="h-5 w-5"
+          />
+          <span>Tiếp tục với Google</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Tiếp tục với Google</DialogTitle>
+          <DialogDescription>
+            Google sẽ tự nhận diện tài khoản: đăng nhập nếu đã có, hoặc tạo tài
+            khoản mới nếu chưa có.
+          </DialogDescription>
+        </DialogHeader>
+        <Button
+          type="button"
+          className="min-h-12 w-full rounded-2xl"
+          onClick={() => void login()}
+        >
+          <img
+            src="/google-icon.png"
+            alt=""
+            aria-hidden="true"
+            className="h-5 w-5"
+          />
+          Tiếp tục
+        </Button>
+      </DialogContent>
+    </Dialog>
   );
 }

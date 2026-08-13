@@ -10,7 +10,7 @@ export function DesktopShell({ children }: DesktopShellProps) {
   return (
     <div className="hidden min-h-screen bg-slate-50 text-slate-900 sm:flex">
       <DesktopSidebar />
-      <div className="min-w-0 flex-1">{children}</div>
+      <div className="motion-page min-w-0 flex-1">{children}</div>
     </div>
   );
 }
@@ -30,7 +30,9 @@ function DesktopSidebar() {
       <nav className="mt-8 space-y-2">
         {navigationItems.map((item) => {
           const isActive =
-            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
 
           return (
             <Link
@@ -44,7 +46,11 @@ function DesktopSidebar() {
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
               ].join(" ")}
             >
-              <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />
+              <item.icon
+                size={20}
+                strokeWidth={isActive ? 2.5 : 2}
+                aria-hidden="true"
+              />
               {item.label}
             </Link>
           );

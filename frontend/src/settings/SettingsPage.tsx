@@ -4,7 +4,7 @@ import {
   Info,
   KeyRound,
   LogOut,
-  Settings,
+  Bell,
   UserRound,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -27,10 +27,7 @@ export function SettingsPage() {
 
   return (
     <MobileShell>
-      <PageHeader
-        maxWidth="3xl"
-        title="Cá nhân"
-      />
+      <PageHeader maxWidth="3xl" title="Cá nhân" />
       <main className="mx-auto max-w-3xl px-4 py-5">
         <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
           <SettingsLink
@@ -47,7 +44,7 @@ export function SettingsPage() {
           />
           <div className="flex items-center gap-3 px-4 py-4">
             <span className="grid size-9 place-items-center rounded-lg bg-indigo-50 text-primary">
-              <Settings size={19} />
+              <Bell size={19} />
             </span>
             <span className="flex-1">
               <strong className="block text-sm">Thông báo</strong>

@@ -1,4 +1,11 @@
-import { BookOpen, ClipboardList, Home, Users, Wallet, type LucideIcon } from "lucide-react";
+import {
+  BookOpen,
+  ClipboardList,
+  Home,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 
 export type NavigationItem = {
   href: string;

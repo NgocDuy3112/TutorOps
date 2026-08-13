@@ -67,16 +67,34 @@ export class AuthService {
     const user = await this.repository.findOrCreateGoogleUser(
       payload.email.toLowerCase(),
       payload.sub,
+      payload.name ?? payload.given_name ?? undefined,
     );
     return this.createSession(user, rememberMe);
   }
 
-  async profile(userId: string) { return this.repository.findProfile(userId); }
-  async updateProfile(userId: string, input: import("./profile.dto").UpdateProfileDto) { return this.repository.updateProfile(userId, input.fullName, input.phone); }
-  async changePassword(userId: string, input: import("./profile.dto").ChangePasswordDto) {
+  async profile(userId: string) {
+    return this.repository.findProfile(userId);
+  }
+  async updateProfile(
+    userId: string,
+    input: import("./profile.dto").UpdateProfileDto,
+  ) {
+    return this.repository.updateProfile(userId, input.fullName, input.phone);
+  }
+  async changePassword(
+    userId: string,
+    input: import("./profile.dto").ChangePasswordDto,
+  ) {
     const record = await this.repository.findPasswordHash(userId);
-    if (!record?.passwordHash || !(await argon2.verify(record.passwordHash, input.currentPassword))) throw new UnauthorizedException("invalid_password");
-    await this.repository.updatePassword(userId, await argon2.hash(input.newPassword));
+    if (
+      !record?.passwordHash ||
+      !(await argon2.verify(record.passwordHash, input.currentPassword))
+    )
+      throw new UnauthorizedException("invalid_password");
+    await this.repository.updatePassword(
+      userId,
+      await argon2.hash(input.newPassword),
+    );
     return { ok: true };
   }
 

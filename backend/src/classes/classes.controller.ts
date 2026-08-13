@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards, ParseUUIDPipe } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+  ParseUUIDPipe,
+} from "@nestjs/common";
 import { AuthGuard } from "../auth/auth.guard";
 import { CreateClassDto, UpdateClassDto } from "./classes.dto";
 import { ClassesService } from "./classes.service";
@@ -28,7 +39,10 @@ export class ClassesController {
   }
 
   @Delete(":id")
-  remove(@Req() request: AuthenticatedRequest, @Param("id", new ParseUUIDPipe()) id: string) {
+  remove(
+    @Req() request: AuthenticatedRequest,
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ) {
     return this.classes.remove(request.user.id, id);
   }
 

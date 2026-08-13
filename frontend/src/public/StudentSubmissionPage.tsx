@@ -1,6 +1,14 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Camera, CheckCircle2, FileUp, ImageIcon, Loader2, RotateCcw, Trash2 } from "lucide-react";
+import {
+  Camera,
+  CheckCircle2,
+  FileUp,
+  ImageIcon,
+  Loader2,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -15,7 +23,14 @@ import { Input } from "@/components/ui/input";
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const maxFiles = 10;
 const maxFileSize = 20 * 1024 * 1024;
-const acceptedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"];
+const acceptedTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "application/pdf",
+];
 
 type Assignment = {
   id: string;
@@ -77,7 +92,9 @@ export function StudentSubmissionPage() {
   }, [files]);
 
   const pendingCount = useMemo(
-    () => assignments.filter((assignment) => assignment.status !== "submitted").length,
+    () =>
+      assignments.filter((assignment) => assignment.status !== "submitted")
+        .length,
     [assignments],
   );
 
@@ -109,7 +126,9 @@ export function StudentSubmissionPage() {
       }
       next.push({
         file,
-        previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+        previewUrl: file.type.startsWith("image/")
+          ? URL.createObjectURL(file)
+          : null,
       });
     }
 
@@ -154,7 +173,11 @@ export function StudentSubmissionPage() {
     setAssignments((current) =>
       current.map((item) =>
         item.id === selected.id
-          ? { ...item, status: "submitted", submittedAt: new Date().toISOString() }
+          ? {
+              ...item,
+              status: "submitted",
+              submittedAt: new Date().toISOString(),
+            }
           : item,
       ),
     );
@@ -183,9 +206,18 @@ export function StudentSubmissionPage() {
         )}
         {error && (
           <Card className="mt-6 border-red-100 bg-red-50">
-            <CardContent role="alert" className="space-y-3 p-4 text-sm text-red-700">
+            <CardContent
+              role="alert"
+              className="space-y-3 p-4 text-sm text-red-700"
+            >
               <p>{error}</p>
-              <Button type="button" variant="outline" size="sm" className="min-h-11 bg-white" onClick={() => void loadAssignments()}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11 bg-white"
+                onClick={() => void loadAssignments()}
+              >
                 <RotateCcw size={15} />
                 Tải lại
               </Button>
@@ -198,21 +230,28 @@ export function StudentSubmissionPage() {
             {assignments.length === 0 && (
               <Card className="border-dashed">
                 <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                  Chưa có bài tập.
+                  Không có dữ liệu.
                 </CardContent>
               </Card>
             )}
             {assignments.map((assignment) => (
-              <Card key={assignment.id} className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
+              <Card
+                key={assignment.id}
+                className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70"
+              >
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <h3 className="font-bold">{assignment.title}</h3>
                       {assignment.description && (
-                        <p className="mt-1 text-sm text-muted-foreground">{assignment.description}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {assignment.description}
+                        </p>
                       )}
                     </div>
-                    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${assignment.status === "submitted" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                    <span
+                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${assignment.status === "submitted" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}
+                    >
                       {assignment.status === "submitted" ? "Đã nộp" : "Chờ nộp"}
                     </span>
                   </div>
@@ -222,7 +261,10 @@ export function StudentSubmissionPage() {
                       : "Không có hạn nộp"}
                   </p>
                   {assignment.status !== "submitted" && (
-                    <Button onClick={() => openSubmission(assignment)} className="mt-4 min-h-11 w-full rounded-2xl">
+                    <Button
+                      onClick={() => openSubmission(assignment)}
+                      className="mt-4 min-h-11 w-full rounded-2xl"
+                    >
                       <FileUp size={16} />
                       Nộp bài
                     </Button>
@@ -234,7 +276,10 @@ export function StudentSubmissionPage() {
         )}
         {message && (
           <Card className="mt-5 border-emerald-100 bg-emerald-50">
-            <CardContent role="status" className="flex items-center gap-2 p-4 text-sm text-emerald-700">
+            <CardContent
+              role="status"
+              className="flex items-center gap-2 p-4 text-sm text-emerald-700"
+            >
               <CheckCircle2 size={17} />
               {message}
             </CardContent>
@@ -242,7 +287,10 @@ export function StudentSubmissionPage() {
         )}
       </div>
 
-      <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
+      <Dialog
+        open={Boolean(selected)}
+        onOpenChange={(open) => !open && setSelected(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Nộp: {selected?.title}</DialogTitle>
@@ -255,38 +303,78 @@ export function StudentSubmissionPage() {
               <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed bg-slate-50 p-4 text-center text-sm font-semibold text-slate-700">
                 <Camera className="mb-2 text-primary" size={24} />
                 Chụp ảnh
-                <Input className="sr-only" type="file" accept="image/*" capture="environment" multiple onChange={selectFiles} />
+                <Input
+                  className="sr-only"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  onChange={selectFiles}
+                />
               </label>
               <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed bg-slate-50 p-4 text-center text-sm font-semibold text-slate-700">
                 <FileUp className="mb-2 text-primary" size={24} />
                 Chọn file
-                <Input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf" multiple onChange={selectFiles} />
+                <Input
+                  className="sr-only"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
+                  multiple
+                  onChange={selectFiles}
+                />
               </label>
             </div>
             <p className="text-xs text-muted-foreground">
               Tối đa 10 file, 20MB mỗi file. Hỗ trợ ảnh và PDF.
             </p>
 
-            {uploadError && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{uploadError}</p>}
+            {uploadError && (
+              <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+                {uploadError}
+              </p>
+            )}
 
             {files.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm font-semibold">Đã chọn {files.length} file</p>
+                <p className="text-sm font-semibold">
+                  Đã chọn {files.length} file
+                </p>
                 <div className="grid gap-2">
                   {files.map((item, index) => (
-                    <div key={`${item.file.name}-${index}`} className="flex items-center gap-3 rounded-2xl border bg-white p-2">
+                    <div
+                      key={`${item.file.name}-${index}`}
+                      className="flex items-center gap-3 rounded-2xl border bg-white p-2"
+                    >
                       <div className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-slate-100">
                         {item.previewUrl ? (
-                          <img src={item.previewUrl} alt="Preview bài làm" className="h-full w-full object-cover" />
+                          <img
+                            src={item.previewUrl}
+                            alt="Preview bài làm"
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
-                          <ImageIcon size={20} className="text-muted-foreground" />
+                          <ImageIcon
+                            size={20}
+                            className="text-muted-foreground"
+                          />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{item.file.name}</p>
-                        <p className="text-xs text-muted-foreground">{formatBytes(item.file.size)}</p>
+                        <p className="truncate text-sm font-medium">
+                          {item.file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatBytes(item.file.size)}
+                        </p>
                       </div>
-                      <Button type="button" variant="ghost" size="icon" className="text-red-600" onClick={() => removeFile(index)} aria-label="Bỏ file">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-600"
+                        onClick={() => removeFile(index)}
+                        aria-label="Bỏ file"
+                      >
                         <Trash2 size={16} />
                       </Button>
                     </div>
@@ -295,7 +383,10 @@ export function StudentSubmissionPage() {
               </div>
             )}
 
-            <Button disabled={sending || files.length === 0} className="min-h-12 w-full rounded-2xl">
+            <Button
+              disabled={sending || files.length === 0}
+              className="min-h-12 w-full rounded-2xl"
+            >
               {sending && <Loader2 className="animate-spin" size={16} />}
               {sending ? "Đang tải lên..." : "Xác nhận nộp bài"}
             </Button>

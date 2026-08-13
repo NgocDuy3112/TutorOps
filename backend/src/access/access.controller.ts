@@ -33,7 +33,10 @@ export class AccessController {
 
   @Post("assignments/:id/submission-link")
   @UseGuards(AuthGuard)
-  async createAssignmentLink(@Req() req: AuthenticatedRequest, @Param("id") id: string) {
+  async createAssignmentLink(
+    @Req() req: AuthenticatedRequest,
+    @Param("id") id: string,
+  ) {
     const token = await this.access.createAssignmentLink(req.user.id, id);
     if (!token) throw new UnauthorizedException("assignment_not_found");
     return { token };

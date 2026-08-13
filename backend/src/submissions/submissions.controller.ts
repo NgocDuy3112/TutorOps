@@ -20,13 +20,33 @@ export class SubmissionsController {
     private readonly access: AccessService,
   ) {}
   @Post("dropbox")
-  @UseInterceptors(FilesInterceptor("files", 10, { limits: { fileSize: 20 * 1024 * 1024 } }))
-  async createDropbox(@Query("token") token: string, @UploadedFiles() uploadedFiles: Express.Multer.File[]) {
-    if (!token || !uploadedFiles?.length) throw new BadRequestException("files_required");
+  @UseInterceptors(
+    FilesInterceptor("files", 10, { limits: { fileSize: 20 * 1024 * 1024 } }),
+  )
+  async createDropbox(
+    @Query("token") token: string,
+    @UploadedFiles() uploadedFiles: Express.Multer.File[],
+  ) {
+    if (!token || !uploadedFiles?.length)
+      throw new BadRequestException("files_required");
     const link = await this.access.authenticateAssignmentLink(token);
-    const files = await Promise.all(uploadedFiles.map((file) => this.files.upload(null, file, "submissions")));
-    const submission = (await pool.query(`INSERT INTO assignment_dropbox_submissions (assignment_id) VALUES ($1) RETURNING id`, [link.assignmentId])).rows[0];
-    await Promise.all(files.map((file) => pool.query(`INSERT INTO assignment_dropbox_submission_files (submission_id, file_id) VALUES ($1, $2)`, [submission.id, file.id])));
+    const files = await Promise.all(
+      uploadedFiles.map((file) => this.files.upload(null, file, "submissions")),
+    );
+    const submission = (
+      await pool.query(
+        `INSERT INTO assignment_dropbox_submissions (assignment_id) VALUES ($1) RETURNING id`,
+        [link.assignmentId],
+      )
+    ).rows[0];
+    await Promise.all(
+      files.map((file) =>
+        pool.query(
+          `INSERT INTO assignment_dropbox_submission_files (submission_id, file_id) VALUES ($1, $2)`,
+          [submission.id, file.id],
+        ),
+      ),
+    );
     return { ok: true };
   }
 

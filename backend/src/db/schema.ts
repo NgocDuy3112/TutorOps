@@ -145,7 +145,10 @@ export const classes = pgTable(
     index("classes_teacher_active_idx")
       .on(table.teacherId)
       .where(sql`${table.deletedAt} IS NULL`),
-    check("classes_price_non_negative", sql`${table.defaultPriceVnd} IS NULL OR ${table.defaultPriceVnd} >= 0`),
+    check(
+      "classes_price_non_negative",
+      sql`${table.defaultPriceVnd} IS NULL OR ${table.defaultPriceVnd} >= 0`,
+    ),
   ],
 );
 

@@ -28,7 +28,10 @@ export class FilesController {
   @UseInterceptors(
     FileInterceptor("file", { limits: { fileSize: 20 * 1024 * 1024 } }),
   )
-  upload(@Req() request: AuthenticatedRequest, @UploadedFile() file: Express.Multer.File) {
+  upload(
+    @Req() request: AuthenticatedRequest,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     return this.files.upload(request.user.id, file);
   }
 }

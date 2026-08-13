@@ -26,7 +26,9 @@ export function PageHeader({
         className={`mx-auto flex ${maxWidthClass[maxWidth]} items-center justify-between gap-4 px-4 py-4`}
       >
         <div className="min-w-0">
-          {eyebrow && <p className="text-sm text-muted-foreground">{eyebrow}</p>}
+          {eyebrow && (
+            <p className="text-sm text-muted-foreground">{eyebrow}</p>
+          )}
           <h1 className="mt-0.5 truncate text-2xl font-bold">{title}</h1>
           {description && (
             <p className="mt-1 text-sm leading-6 text-muted-foreground">

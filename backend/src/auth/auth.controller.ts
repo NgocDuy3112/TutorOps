@@ -42,7 +42,9 @@ export class AuthController {
   ) {
     const result = await this.auth.googleCallback(code, state);
     this.setCookie(response, result.token, true);
-    return response.redirect(process.env.FRONTEND_URL ?? "http://localhost:5173");
+    return response.redirect(
+      process.env.FRONTEND_URL ?? "http://localhost:5173",
+    );
   }
   @Post("login") @ApiOperation({ summary: "Login teacher" }) async login(
     @Body() body: CredentialsDto,
@@ -53,13 +55,21 @@ export class AuthController {
       this.auth.login(body.email, body.password, body.rememberMe),
     );
   }
-  @Get("me") @UseGuards(AuthGuard) async me(@Req() request: AuthenticatedRequest) {
+  @Get("me") @UseGuards(AuthGuard) async me(
+    @Req() request: AuthenticatedRequest,
+  ) {
     return this.auth.profile(request.user.id);
   }
-  @Patch("profile") @UseGuards(AuthGuard) updateProfile(@Req() request: AuthenticatedRequest, @Body() body: UpdateProfileDto) {
+  @Patch("profile") @UseGuards(AuthGuard) updateProfile(
+    @Req() request: AuthenticatedRequest,
+    @Body() body: UpdateProfileDto,
+  ) {
     return this.auth.updateProfile(request.user.id, body);
   }
-  @Patch("password") @UseGuards(AuthGuard) changePassword(@Req() request: AuthenticatedRequest, @Body() body: ChangePasswordDto) {
+  @Patch("password") @UseGuards(AuthGuard) changePassword(
+    @Req() request: AuthenticatedRequest,
+    @Body() body: ChangePasswordDto,
+  ) {
     return this.auth.changePassword(request.user.id, body);
   }
   @Post("logout") async logout(
@@ -70,12 +80,19 @@ export class AuthController {
     response.clearCookie(SESSION_COOKIE, { path: "/" });
     return { ok: true };
   }
-  private async setSession(response: HttpResponse, sessionPromise: Promise<any>) {
+  private async setSession(
+    response: HttpResponse,
+    sessionPromise: Promise<any>,
+  ) {
     const result = await sessionPromise;
     this.setCookie(response, result.token, Boolean(result.user));
     return { user: result.user };
   }
-  private setCookie(response: HttpResponse, token: string, rememberMe: boolean) {
+  private setCookie(
+    response: HttpResponse,
+    token: string,
+    rememberMe: boolean,
+  ) {
     response.cookie("tutorops_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

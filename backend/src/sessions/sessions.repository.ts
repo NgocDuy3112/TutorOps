@@ -1,4 +1,7 @@
-import type { TeachingSessionDto, UpdateTeachingSessionDto } from "./sessions.dto";
+import type {
+  TeachingSessionDto,
+  UpdateTeachingSessionDto,
+} from "./sessions.dto";
 import { Injectable } from "@nestjs/common";
 import { pool } from "../db/client";
 

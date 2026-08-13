@@ -135,9 +135,7 @@ export function ParentReportPage() {
                     <span>
                       {new Date(item.paidAt).toLocaleDateString("vi-VN")}
                     </span>
-                    <strong>
-                      {formatVnd(item.amountVnd)}
-                    </strong>
+                    <strong>{formatVnd(item.amountVnd)}</strong>
                   </div>
                 ))
               )}
