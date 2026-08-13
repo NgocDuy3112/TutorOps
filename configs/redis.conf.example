@@ -1,107 +1,37 @@
 ########################################
-# Valkey Configuration
+# Redis Configuration
 ########################################
 
-# Network
 bind 0.0.0.0
 port 6379
-# rename-command FLUSHALL ""           # optional: disable dangerous commands
-# rename-command FLUSHDB ""
+protected-mode no
 
-########################################
-# GENERAL
-########################################
-
-# Daemonize when running in background (use "no" for Docker)
 daemonize no
-pidfile /var/run/valkey.pid
-# logfile /var/log/valkey/valkey.log
 loglevel notice
 
-# Save configuration on shutdown
-always-show-logo no
-
-########################################
-# MEMORY MANAGEMENT
-########################################
-
-# Max memory usage (e.g., 256MB). Remove or raise for large workloads.
-# maxmemory 256mb
-
-# Eviction policy: remove least recently used keys first when full.
-maxmemory-policy allkeys-lru
-
-# Set memory tracking precision
-activedefrag yes
-
-########################################
-# SNAPSHOTTING (Persistence)
-########################################
-
-# Save every 900s if at least 1 key changed
-save 900 1
-# Save every 300s if at least 10 keys changed
-save 300 10
-# Save every 60s if at least 10000 keys changed
-save 60 10000
-
-dbfilename dump.rdb
 dir /data
+dbfilename dump.rdb
 
-########################################
-# APPEND ONLY FILE (AOF) PERSISTENCE
-########################################
-
+# Persistence
+save 900 1
+save 300 10
+save 60 10000
 appendonly yes
 appendfilename "appendonly.aof"
 appendfsync everysec
 
-########################################
-# SECURITY / ACL
-########################################
+# Memory
+# maxmemory 256mb
+maxmemory-policy allkeys-lru
 
-# IMPORTANT: Passwords here must match VALKEY_PASSWORD in configs/.env.
-# Update both files if the password rotates, then restart the valkey container.
-
-# Default user — used by bgm-bot and sfx-bot (connect without specifying a username)
-user default on >password ~* &* +@all
-
-# App user — used by the FastAPI backend (connects as VALKEY_USER from configs/.env)
-user user on >password ~* &* +@all
-
-# Optional: automatically rewrite the AOF file when it grows too large
-auto-aof-rewrite-percentage 100
-
-########################################
-# CLIENTS & TIMEOUTS
-########################################
-
-# Disconnect idle clients after N seconds (0 = never)
+# Connections
 timeout 0
-
-# TCP keepalive
 tcp-keepalive 300
 
-########################################
-# SECURITY
-########################################
+# Optional security
+# Set REDIS_PASSWORD in configs/.env, then uncomment:
+# requirepass change-me
 
-# Disable protected mode if you're running behind Docker or reverse proxy
-protected-mode no
-
-########################################
-# CLUSTERING / REPLICATION (optional)
-########################################
-
-# For standalone Valkey, leave commented.
-# replicaof <master_ip> <master_port>
-# masterauth <password>
-
-########################################
-# MODULES (optional)
-########################################
-# loadmodule /usr/lib/valkey/modules/somemodule.so
-
-########################################
-# END OF CONFIG
-########################################
+# Optional: disable dangerous commands
+# rename-command FLUSHALL ""
+# rename-command FLUSHDB ""

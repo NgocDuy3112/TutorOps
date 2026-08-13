@@ -1,17 +1,41 @@
 services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_DB_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./configs/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   backend:
     build:
       context: ./backend
-    container_name: tutorops-backend
     restart: unless-stopped
     env_file:
       - ./configs/.env
-    environment:
-      DATABASE_URL: postgresql://tutorops:tutorops@postgres:5432/tutorops
-      REDIS_URL: redis://redis:6379
-      NODE_ENV: development
-      PORT: 3000
-      FRONTEND_URL: http://localhost
     depends_on:
       postgres:
         condition: service_healthy
@@ -22,55 +46,17 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: /api
-    container_name: tutorops-frontend
+        VITE_API_URL: ${VITE_API_URL}
     restart: unless-stopped
-    depends_on:
-      - backend
 
   nginx:
     image: nginx:alpine
-    container_name: tutorops-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${NGINX_HOST_PORT}:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - frontend
       - backend
-
-  postgres:
-    image: postgres:17
-    container_name: tutorops-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_DB_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB_NAME}
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./data/postgres:/var/lib/postgresql
-      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tutorops -d tutorops"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  redis:
-    image: redis:7-alpine
-    container_name: tutorops-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    ports:
-      - "6379:6379"
-    volumes:
-      - ./data/redis:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
+      - frontend
