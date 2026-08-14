@@ -48,14 +48,5 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL}
     restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
     ports:
-      - "${NGINX_HOST_PORT}:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - backend
-      - frontend
+      - "${NGINX_HOST_PORT:-8080}:80"
