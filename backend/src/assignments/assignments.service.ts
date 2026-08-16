@@ -1,5 +1,6 @@
 import type {
   CreateAssignmentDto,
+  ReviewDropboxSubmissionDto,
   UpdateAssignmentDto,
 } from "./assignments.dto";
 import { Injectable, NotFoundException } from "@nestjs/common";
@@ -44,6 +45,21 @@ export class AssignmentsService {
     )
       throw new NotFoundException("submission_not_found");
     return { ok: true };
+  }
+  async reviewDropboxSubmission(
+    teacherId: string,
+    assignmentId: string,
+    submissionId: string,
+    input: ReviewDropboxSubmissionDto,
+  ) {
+    const submission = await this.repository.reviewDropboxSubmission(
+      teacherId,
+      assignmentId,
+      submissionId,
+      input,
+    );
+    if (!submission) throw new NotFoundException("submission_or_student_not_found");
+    return submission;
   }
   async dropboxFileUrl(
     teacherId: string,
