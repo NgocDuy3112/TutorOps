@@ -188,20 +188,31 @@ export class AssignmentsRepository {
     input: ReviewDropboxSubmissionDto,
   ) {
     const result = await pool.query(
-      `UPDATE assignment_dropbox_submissions ds
-       SET student_id = $4, score = $5, review_note = $6, reviewed_at = now()
-       FROM assignments a
-       JOIN student_assignments sa
-         ON sa.assignment_id = a.id AND sa.teacher_id = a.teacher_id
-       JOIN students s ON s.id = sa.student_id AND s.deleted_at IS NULL
-       WHERE ds.id = $1
-         AND ds.assignment_id = $2
-         AND a.id = ds.assignment_id
-         AND a.teacher_id = $3
-         AND a.deleted_at IS NULL
-         AND sa.student_id = $4
-       RETURNING ds.id, ds.student_id AS "studentId", ds.score::float AS score,
-         ds.review_note AS "reviewNote", ds.reviewed_at AS "reviewedAt"`,
+      `WITH reviewed AS (
+         UPDATE assignment_dropbox_submissions ds
+         SET student_id = $4, score = $5, review_note = $6, reviewed_at = now()
+         FROM assignments a
+         JOIN student_assignments sa
+           ON sa.assignment_id = a.id AND sa.teacher_id = a.teacher_id
+         JOIN students s ON s.id = sa.student_id AND s.deleted_at IS NULL
+         WHERE ds.id = $1
+           AND ds.assignment_id = $2
+           AND a.id = ds.assignment_id
+           AND a.teacher_id = $3
+           AND a.deleted_at IS NULL
+           AND sa.student_id = $4
+         RETURNING ds.id, ds.student_id, ds.score, ds.review_note, ds.reviewed_at
+       ), updated_assignment AS (
+         UPDATE student_assignments sa
+         SET status = 'reviewed', reviewed_by = $3, reviewed_at = r.reviewed_at,
+             review_note = r.review_note, updated_at = now()
+         FROM reviewed r
+         WHERE sa.assignment_id = $2 AND sa.student_id = r.student_id
+         RETURNING r.id
+       )
+       SELECT r.id, r.student_id AS "studentId", r.score::float AS score,
+         r.review_note AS "reviewNote", r.reviewed_at AS "reviewedAt"
+       FROM reviewed r`,
       [
         submissionId,
         assignmentId,
