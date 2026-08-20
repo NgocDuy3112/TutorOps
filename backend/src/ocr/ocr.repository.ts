@@ -20,6 +20,8 @@ export class OcrRepository {
     const startedAt = Date.now();
     const input = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
     let result: OcrSpaceResponse;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
     try {
       result = await ocrSpace(input, {
         apiKey,
@@ -27,10 +29,14 @@ export class OcrRepository {
         OCREngine: "3",
         isTable: true,
         detectOrientation: true,
+        signal: controller.signal,
       });
     } catch (error) {
-      this.logger.error("ocr_provider_request_failed", { error: error instanceof Error ? error.message : "unknown_error" }, undefined, "OcrRepository");
-      throw new ServiceUnavailableException("ocr_unavailable");
+      const timedOut = controller.signal.aborted;
+      this.logger.error("ocr_provider_request_failed", { error: timedOut ? "timeout" : error instanceof Error ? error.message : "unknown_error" }, undefined, "OcrRepository");
+      throw new ServiceUnavailableException(timedOut ? "ocr_timeout" : "ocr_unavailable");
+    } finally {
+      clearTimeout(timeout);
     }
 
     this.logger.log("ocr_provider_completed", { exitCode: result.OCRExitCode, processingMs: result.ProcessingTimeInMilliseconds ?? null, parsedResults: result.ParsedResults?.length ?? 0 }, "OcrRepository");
