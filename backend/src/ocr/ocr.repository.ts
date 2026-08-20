@@ -1,5 +1,7 @@
 import { Injectable, ServiceUnavailableException, UnprocessableEntityException } from "@nestjs/common";
+import { AppLogger } from "../common/app-logger";
 import { ocrSpace } from "ocr-space-api-wrapper";
+import type { OcrSpaceResponse } from "ocr-space-api-wrapper";
 
 export type OcrResult = {
   text: string;
@@ -8,21 +10,30 @@ export type OcrResult = {
 
 @Injectable()
 export class OcrRepository {
+  constructor(private readonly logger: AppLogger) {}
+
   async parseImage(file: Express.Multer.File): Promise<OcrResult> {
     const apiKey = process.env.OCR_SPACE_API_KEY;
+    this.logger.log("ocr_request_started", { mime: file.mimetype, size: file.size }, "OcrRepository");
     if (!apiKey) throw new ServiceUnavailableException("ocr_not_configured");
 
     const startedAt = Date.now();
     const input = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
-    const result = await ocrSpace(input, {
-      apiKey,
-      // OCR.space API accepts `vnm`; wrapper typings only list its newer `vie` alias.
-      language: "vnm" as import("ocr-space-api-wrapper").OcrSpaceOptions["language"],
-      OCREngine: "2",
-      isTable: true,
-      detectOrientation: true,
-    });
+    let result: OcrSpaceResponse;
+    try {
+      result = await ocrSpace(input, {
+        apiKey,
+        language: "vnm" as import("ocr-space-api-wrapper").OcrSpaceOptions["language"],
+        OCREngine: "3",
+        isTable: true,
+        detectOrientation: true,
+      });
+    } catch (error) {
+      this.logger.error("ocr_provider_request_failed", { error: error instanceof Error ? error.message : "unknown_error" }, undefined, "OcrRepository");
+      throw new ServiceUnavailableException("ocr_unavailable");
+    }
 
+    this.logger.log("ocr_provider_completed", { exitCode: result.OCRExitCode, processingMs: result.ProcessingTimeInMilliseconds ?? null, parsedResults: result.ParsedResults?.length ?? 0 }, "OcrRepository");
     if (result.IsErroredOnProcessing || result.OCRExitCode === 3 || result.OCRExitCode === 4)
       throw new ServiceUnavailableException("ocr_failed");
 
