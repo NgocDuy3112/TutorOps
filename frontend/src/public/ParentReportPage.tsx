@@ -13,6 +13,9 @@ type Report = {
     dueAt: string | null;
     status: string;
     submittedAt: string | null;
+    score: number | null;
+    reviewNote: string | null;
+    reviewedAt: string | null;
   }[];
   payments: { amountVnd: number; paidAt: string; status: string }[];
 };
@@ -105,15 +108,23 @@ export function ParentReportPage() {
                     className="rounded-xl bg-muted p-4"
                     key={`${item.title}-${item.dueAt}`}
                   >
-                    <div className="flex justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3">
                       <strong>{item.title}</strong>
-                      <span className="text-xs font-semibold text-primary">
-                        {item.status === "submitted" ? "Đã nộp" : "Chờ nộp"}
+                      <span className="shrink-0 text-xs font-semibold text-emerald-700">
+                        Đã chấm
                       </span>
                     </div>
-                    {item.dueAt && (
+                    {item.reviewedAt && (
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Hạn: {new Date(item.dueAt).toLocaleDateString("vi-VN")}
+                        Ngày chấm: {new Date(item.reviewedAt).toLocaleDateString("vi-VN")}
+                      </p>
+                    )}
+                    <p className="mt-3 text-lg font-bold text-primary">
+                      Điểm: {item.score == null ? "—" : `${item.score}/10`}
+                    </p>
+                    {item.reviewNote && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Nhận xét: {item.reviewNote}
                       </p>
                     )}
                   </div>

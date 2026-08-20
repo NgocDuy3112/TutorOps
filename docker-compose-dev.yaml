@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:17
     restart: unless-stopped
+    env_file:
+      - ./configs/.env
     environment:
       POSTGRES_USER: ${POSTGRES_DB_USER}
       POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
@@ -36,6 +38,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./configs/.env
+    ports:
+      - "${BACKEND_HOST_PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,7 +50,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_URL: /api
     restart: unless-stopped
     ports:
       - "${NGINX_HOST_PORT:-8080}:80"

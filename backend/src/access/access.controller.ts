@@ -75,7 +75,24 @@ export class AccessController {
         [access.studentId],
       ),
       pool.query(
-        `SELECT a.title, a.due_at AS "dueAt", sa.status, sa.submitted_at AS "submittedAt" FROM student_assignments sa JOIN assignments a ON a.id = sa.assignment_id WHERE sa.student_id = $1 AND a.deleted_at IS NULL ORDER BY a.due_at NULLS LAST`,
+        `SELECT a.title, a.due_at AS "dueAt", sa.status,
+                sa.submitted_at AS "submittedAt", sa.reviewed_at AS "reviewedAt",
+                sa.review_note AS "reviewNote", review.score
+         FROM student_assignments sa
+         JOIN assignments a ON a.id = sa.assignment_id
+         LEFT JOIN LATERAL (
+           SELECT ds.score::float AS score
+           FROM assignment_dropbox_submissions ds
+           WHERE ds.assignment_id = sa.assignment_id
+             AND ds.student_id = sa.student_id
+             AND ds.reviewed_at IS NOT NULL
+           ORDER BY ds.reviewed_at DESC
+           LIMIT 1
+         ) review ON true
+         WHERE sa.student_id = $1
+           AND sa.status = 'reviewed'
+           AND a.deleted_at IS NULL
+         ORDER BY sa.reviewed_at DESC NULLS LAST`, 
         [access.studentId],
       ),
     ]);
