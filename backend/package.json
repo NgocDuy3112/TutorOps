@@ -25,6 +25,7 @@
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.36.0",
     "google-auth-library": "^9.15.0",
+    "ocr-space-api-wrapper": "^2.4.8",
     "pg": "^8.13.0",
     "redis": "^4.7.0",
     "reflect-metadata": "^0.2.2",

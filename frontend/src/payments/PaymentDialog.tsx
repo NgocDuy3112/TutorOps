@@ -33,6 +33,9 @@ export function PaymentDialog({
     new Date().toISOString().slice(0, 10),
   );
   const [note, setNote] = useState("");
+  const [ocrText, setOcrText] = useState("");
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -41,8 +44,32 @@ export function PaymentDialog({
     setAmountVnd(balance > 0 ? formatVnd(balance).replace(" ₫", "") : "");
     setPaidAt(new Date().toISOString().slice(0, 10));
     setNote("");
+    setOcrText("");
+    setOcrError("");
     setError("");
   }, [student, balance]);
+
+  async function readReceipt(file: File) {
+    setOcrLoading(true);
+    setOcrError("");
+    setOcrText("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch(`${API}/ocr/receipt`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Không thể đọc biên lai.");
+      const result = await response.json() as { text: string };
+      setOcrText(result.text);
+    } catch (requestError) {
+      setOcrError(requestError instanceof Error ? requestError.message : "Không thể đọc biên lai.");
+    } finally {
+      setOcrLoading(false);
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,6 +135,21 @@ export function PaymentDialog({
               value={paidAt}
               onChange={(event) => setPaidAt(event.target.value)}
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="receipt-image">Upload biên lai chuyển khoản</Label>
+            <Input
+              id="receipt-image"
+              type="file"
+              accept="image/jpeg,image/png,image/heic"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void readReceipt(file);
+              }}
+            />
+            {ocrLoading && <p className="text-sm text-muted-foreground">Đang đọc biên lai...</p>}
+            {ocrError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{ocrError}</p>}
+            {ocrText && <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs text-slate-700">{ocrText}</pre>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="payment-note">Ghi chú</Label>
