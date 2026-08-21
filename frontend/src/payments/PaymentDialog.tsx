@@ -12,6 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatVnd, parseVnd } from "../lib/format";
+import { cropReceiptImage, compressReceiptImage } from "../lib/image";
+import { ReceiptCropDialog } from "./ReceiptCropDialog";
+import type { Area } from "react-easy-crop";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -35,6 +38,7 @@ export function PaymentDialog({
   const [note, setNote] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrError, setOcrError] = useState("");
+  const [cropSource, setCropSource] = useState<{ file: File; url: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -44,6 +48,10 @@ export function PaymentDialog({
     setPaidAt(new Date().toISOString().slice(0, 10));
     setNote("");
     setOcrError("");
+    setCropSource((current) => {
+      if (current) URL.revokeObjectURL(current.url);
+      return null;
+    });
     setError("");
   }, [student, balance]);
 
@@ -51,8 +59,9 @@ export function PaymentDialog({
     setOcrLoading(true);
     setOcrError("");
     try {
+      const compressedFile = await compressReceiptImage(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedFile);
       const response = await fetch(`${API}/ocr/receipt`, {
         method: "POST",
         credentials: "include",
@@ -68,10 +77,22 @@ export function PaymentDialog({
       if (parsed.paidAt) setPaidAt(new Date(parsed.paidAt).toISOString().slice(0, 10));
       if (parsed.note) setNote(parsed.note);
     } catch (requestError) {
-      setOcrError(requestError instanceof Error ? requestError.message : "Không thể đọc biên lai.");
+      if (requestError instanceof Error && requestError.message === "image_too_large") {
+        setCropSource({ file, url: URL.createObjectURL(file) });
+      } else {
+        setOcrError(requestError instanceof Error ? requestError.message : "Không thể đọc biên lai.");
+      }
     } finally {
       setOcrLoading(false);
     }
+  }
+
+  async function handleCropped(area: Area) {
+    if (!cropSource) return;
+    const file = cropSource.file;
+    URL.revokeObjectURL(cropSource.url);
+    setCropSource(null);
+    await readReceipt(await cropReceiptImage(file, area));
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -103,7 +124,8 @@ export function PaymentDialog({
   }
 
   return (
-    <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Ghi nhận thanh toán</DialogTitle>
@@ -177,6 +199,17 @@ export function PaymentDialog({
           </Button>
         </form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      <ReceiptCropDialog
+        imageUrl={cropSource?.url ?? null}
+        onOpenChange={(open) => {
+          if (!open && cropSource) {
+            URL.revokeObjectURL(cropSource.url);
+            setCropSource(null);
+          }
+        }}
+        onCropped={(area) => void handleCropped(area)}
+      />
+    </>
   );
 }
