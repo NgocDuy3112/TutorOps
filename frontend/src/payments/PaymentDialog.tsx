@@ -37,6 +37,7 @@ export function PaymentDialog({
   );
   const [note, setNote] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrSuccess, setOcrSuccess] = useState(false);
   const [ocrError, setOcrError] = useState("");
   const [cropSource, setCropSource] = useState<{ file: File; url: string } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -58,6 +59,7 @@ export function PaymentDialog({
   async function readReceipt(file: File) {
     setOcrLoading(true);
     setOcrError("");
+    setOcrSuccess(false);
     try {
       const compressedFile = await compressReceiptImage(file);
       const formData = new FormData();
@@ -76,11 +78,13 @@ export function PaymentDialog({
       if (parsed.amountVnd != null) setAmountVnd(formatVnd(parsed.amountVnd).replace(" ₫", ""));
       if (parsed.paidAt) setPaidAt(new Date(parsed.paidAt).toISOString().slice(0, 10));
       if (parsed.note) setNote(parsed.note);
+      setOcrSuccess(true);
     } catch (requestError) {
       if (requestError instanceof Error && requestError.message === "image_too_large") {
         setCropSource({ file, url: URL.createObjectURL(file) });
       } else {
         setOcrError(requestError instanceof Error ? requestError.message : "Không thể đọc biên lai.");
+        setOcrSuccess(false);
       }
     } finally {
       setOcrLoading(false);
@@ -126,7 +130,7 @@ export function PaymentDialog({
   return (
     <>
       <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ghi nhận thanh toán</DialogTitle>
           <DialogDescription>
@@ -182,7 +186,8 @@ export function PaymentDialog({
                 if (file) void readReceipt(file);
               }}
             />
-            {ocrLoading && <p className="text-sm text-muted-foreground">Đang đọc biên lai...</p>}
+            {ocrLoading && <p className="rounded-xl bg-indigo-50 p-3 text-sm text-indigo-700">Đang tối ưu ảnh và đọc biên lai...</p>}
+            {ocrSuccess && <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">Đã điền dữ liệu từ biên lai. Vui lòng kiểm tra trước khi xác nhận.</p>}
             {ocrError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{ocrError}</p>}
           </div>
           {error && (
@@ -193,7 +198,7 @@ export function PaymentDialog({
               {error}
             </p>
           )}
-          <Button disabled={saving} className="min-h-12 w-full rounded-2xl">
+          <Button disabled={saving || ocrLoading} className="min-h-12 w-full rounded-2xl">
             {saving && <Loader2 className="animate-spin" size={16} />}
             {saving ? "Đang lưu..." : "Xác nhận đã nhận tiền"}
           </Button>
