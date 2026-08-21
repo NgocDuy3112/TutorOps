@@ -14,7 +14,7 @@ export function parseReceiptText(text: string): ParsedReceipt {
 
 function parseAmount(lines: string[]) {
   for (const line of lines) {
-    const match = line.match(/([\d.,]+)\s*(?:VND|VNĐ|đ|₫)\b/i);
+    const match = line.match(/([\d][\d.,]*)\s*(?:VND|VNĐ|đ|₫|d)/i);
     if (!match) continue;
     const digits = match[1].replace(/[.,]/g, "");
     const amount = Number(digits);
