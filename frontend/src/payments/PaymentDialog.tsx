@@ -33,7 +33,6 @@ export function PaymentDialog({
     new Date().toISOString().slice(0, 10),
   );
   const [note, setNote] = useState("");
-  const [ocrText, setOcrText] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrError, setOcrError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -44,7 +43,6 @@ export function PaymentDialog({
     setAmountVnd(balance > 0 ? formatVnd(balance).replace(" ₫", "") : "");
     setPaidAt(new Date().toISOString().slice(0, 10));
     setNote("");
-    setOcrText("");
     setOcrError("");
     setError("");
   }, [student, balance]);
@@ -52,7 +50,6 @@ export function PaymentDialog({
   async function readReceipt(file: File) {
     setOcrLoading(true);
     setOcrError("");
-    setOcrText("");
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -62,8 +59,14 @@ export function PaymentDialog({
         body: formData,
       });
       if (!response.ok) throw new Error("Không thể đọc biên lai.");
-      const result = await response.json() as { text: string };
-      setOcrText(result.text);
+      const parsed = await response.json() as {
+        amountVnd: number | null;
+        paidAt: string | null;
+        note: string | null;
+      };
+      if (parsed.amountVnd != null) setAmountVnd(formatVnd(parsed.amountVnd).replace(" ₫", ""));
+      if (parsed.paidAt) setPaidAt(new Date(parsed.paidAt).toISOString().slice(0, 10));
+      if (parsed.note) setNote(parsed.note);
     } catch (requestError) {
       setOcrError(requestError instanceof Error ? requestError.message : "Không thể đọc biên lai.");
     } finally {
@@ -137,6 +140,16 @@ export function PaymentDialog({
             />
           </div>
           <div className="space-y-1.5">
+            <Label htmlFor="payment-note">Ghi chú</Label>
+            <Textarea
+              id="payment-note"
+              rows={2}
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="Ví dụ: Chuyển khoản tháng 8"
+            />
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="receipt-image">Upload biên lai chuyển khoản</Label>
             <Input
               id="receipt-image"
@@ -149,17 +162,6 @@ export function PaymentDialog({
             />
             {ocrLoading && <p className="text-sm text-muted-foreground">Đang đọc biên lai...</p>}
             {ocrError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{ocrError}</p>}
-            {ocrText && <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs text-slate-700">{ocrText}</pre>}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="payment-note">Ghi chú</Label>
-            <Textarea
-              id="payment-note"
-              rows={2}
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              placeholder="Ví dụ: Chuyển khoản tháng 8"
-            />
           </div>
           {error && (
             <p

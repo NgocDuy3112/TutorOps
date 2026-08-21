@@ -1,5 +1,6 @@
 import { Injectable, ServiceUnavailableException, UnprocessableEntityException } from "@nestjs/common";
 import { AppLogger } from "../common/app-logger";
+import { parseReceiptText } from "./receipt-parser";
 
 type OcrSpaceResponse = {
   IsErroredOnProcessing?: boolean;
@@ -8,7 +9,7 @@ type OcrSpaceResponse = {
   ParsedResults?: { ParsedText?: string }[];
 };
 
-export type OcrResult = {
+export type OcrResult = ReturnType<typeof parseReceiptText> & {
   text: string;
   processingTimeMs: number;
 };
@@ -61,6 +62,10 @@ export class OcrRepository {
     const text = result.ParsedResults?.map((item) => item.ParsedText ?? "").join("\n").trim() ?? "";
     if (!text) throw new UnprocessableEntityException("ocr_empty");
 
-    return { text, processingTimeMs: Date.now() - startedAt };
+    return {
+      ...parseReceiptText(text),
+      text,
+      processingTimeMs: Date.now() - startedAt,
+    };
   }
 }
