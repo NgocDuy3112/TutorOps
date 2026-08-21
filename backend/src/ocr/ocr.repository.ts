@@ -1,7 +1,12 @@
 import { Injectable, ServiceUnavailableException, UnprocessableEntityException } from "@nestjs/common";
 import { AppLogger } from "../common/app-logger";
-import { ocrSpace } from "ocr-space-api-wrapper";
-import type { OcrSpaceResponse } from "ocr-space-api-wrapper";
+
+type OcrSpaceResponse = {
+  IsErroredOnProcessing?: boolean;
+  OCRExitCode?: number;
+  ProcessingTimeInMilliseconds?: string | number;
+  ParsedResults?: { ParsedText?: string }[];
+};
 
 export type OcrResult = {
   text: string;
@@ -14,25 +19,35 @@ export class OcrRepository {
 
   async parseImage(file: Express.Multer.File): Promise<OcrResult> {
     const apiKey = process.env.OCR_SPACE_API_KEY;
-    this.logger.log("ocr_request_started", { mime: file.mimetype, size: file.size }, "OcrRepository");
     if (!apiKey) throw new ServiceUnavailableException("ocr_not_configured");
 
     const startedAt = Date.now();
-    const input = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
-    let result: OcrSpaceResponse;
+    this.logger.log("ocr_request_started", { mime: file.mimetype, size: file.size }, "OcrRepository");
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
+    const form = new FormData();
+    form.append("file", new Blob([new Uint8Array(file.buffer)], { type: file.mimetype }), file.originalname);
+    form.append("language", "vnm");
+    form.append("OCREngine", "2");
+    form.append("isTable", "true");
+    form.append("detectOrientation", "true");
+
+    let result: OcrSpaceResponse;
     try {
-      result = await ocrSpace(input, {
-        apiKey,
-        language: "vnm" as import("ocr-space-api-wrapper").OcrSpaceOptions["language"],
-        OCREngine: "3",
-        isTable: true,
-        detectOrientation: true,
+      const response = await fetch("https://api.ocr.space/parse/image", {
+        method: "POST",
+        headers: { apikey: apiKey },
+        body: form,
         signal: controller.signal,
       });
+      result = await response.json() as OcrSpaceResponse;
+      if (!response.ok) {
+        this.logger.error("ocr_provider_http_error", { statusCode: response.status }, undefined, "OcrRepository");
+        throw new ServiceUnavailableException("ocr_unavailable");
+      }
     } catch (error) {
       const timedOut = controller.signal.aborted;
+      if (error instanceof ServiceUnavailableException) throw error;
       this.logger.error("ocr_provider_request_failed", { error: timedOut ? "timeout" : error instanceof Error ? error.message : "unknown_error" }, undefined, "OcrRepository");
       throw new ServiceUnavailableException(timedOut ? "ocr_timeout" : "ocr_unavailable");
     } finally {
