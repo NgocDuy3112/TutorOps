@@ -12,6 +12,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatVnd, parseVnd } from "../lib/format";
+import { cropReceiptImage, compressReceiptImage } from "../lib/image";
+import { ReceiptCropDialog } from "./ReceiptCropDialog";
+import type { Area } from "react-easy-crop";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -33,6 +36,10 @@ export function PaymentDialog({
     new Date().toISOString().slice(0, 10),
   );
   const [note, setNote] = useState("");
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrSuccess, setOcrSuccess] = useState(false);
+  const [ocrError, setOcrError] = useState("");
+  const [cropSource, setCropSource] = useState<{ file: File; url: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -41,8 +48,56 @@ export function PaymentDialog({
     setAmountVnd(balance > 0 ? formatVnd(balance).replace(" ₫", "") : "");
     setPaidAt(new Date().toISOString().slice(0, 10));
     setNote("");
+    setOcrError("");
+    setCropSource((current) => {
+      if (current) URL.revokeObjectURL(current.url);
+      return null;
+    });
     setError("");
   }, [student, balance]);
+
+  async function readReceipt(file: File) {
+    setOcrLoading(true);
+    setOcrError("");
+    setOcrSuccess(false);
+    try {
+      const compressedFile = await compressReceiptImage(file);
+      const formData = new FormData();
+      formData.append("file", compressedFile);
+      const response = await fetch(`${API}/ocr/receipt`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Không thể đọc biên lai.");
+      const parsed = await response.json() as {
+        amountVnd: number | null;
+        paidAt: string | null;
+        note: string | null;
+      };
+      if (parsed.amountVnd != null) setAmountVnd(formatVnd(parsed.amountVnd).replace(" ₫", ""));
+      if (parsed.paidAt) setPaidAt(new Date(parsed.paidAt).toISOString().slice(0, 10));
+      if (parsed.note) setNote(parsed.note);
+      setOcrSuccess(true);
+    } catch (requestError) {
+      if (requestError instanceof Error && requestError.message === "image_too_large") {
+        setCropSource({ file, url: URL.createObjectURL(file) });
+      } else {
+        setOcrError(requestError instanceof Error ? requestError.message : "Không thể đọc biên lai.");
+        setOcrSuccess(false);
+      }
+    } finally {
+      setOcrLoading(false);
+    }
+  }
+
+  async function handleCropped(area: Area) {
+    if (!cropSource) return;
+    const file = cropSource.file;
+    URL.revokeObjectURL(cropSource.url);
+    setCropSource(null);
+    await readReceipt(await cropReceiptImage(file, area));
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,8 +128,9 @@ export function PaymentDialog({
   }
 
   return (
-    <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <>
+      <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ghi nhận thanh toán</DialogTitle>
           <DialogDescription>
@@ -119,6 +175,21 @@ export function PaymentDialog({
               placeholder="Ví dụ: Chuyển khoản tháng 8"
             />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="receipt-image">Upload biên lai chuyển khoản</Label>
+            <Input
+              id="receipt-image"
+              type="file"
+              accept="image/jpeg,image/png,image/heic"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void readReceipt(file);
+              }}
+            />
+            {ocrLoading && <p className="rounded-xl bg-indigo-50 p-3 text-sm text-indigo-700">Đang tối ưu ảnh và đọc biên lai...</p>}
+            {ocrSuccess && <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">Đã điền dữ liệu từ biên lai. Vui lòng kiểm tra trước khi xác nhận.</p>}
+            {ocrError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{ocrError}</p>}
+          </div>
           {error && (
             <p
               role="alert"
@@ -127,12 +198,23 @@ export function PaymentDialog({
               {error}
             </p>
           )}
-          <Button disabled={saving} className="min-h-12 w-full rounded-2xl">
+          <Button disabled={saving || ocrLoading} className="min-h-12 w-full rounded-2xl">
             {saving && <Loader2 className="animate-spin" size={16} />}
             {saving ? "Đang lưu..." : "Xác nhận đã nhận tiền"}
           </Button>
         </form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+      <ReceiptCropDialog
+        imageUrl={cropSource?.url ?? null}
+        onOpenChange={(open) => {
+          if (!open && cropSource) {
+            URL.revokeObjectURL(cropSource.url);
+            setCropSource(null);
+          }
+        }}
+        onCropped={(area) => void handleCropped(area)}
+      />
+    </>
   );
 }

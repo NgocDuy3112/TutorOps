@@ -1,13 +1,5 @@
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 
 type AuthLayoutProps = {
   title: string;
@@ -45,44 +37,19 @@ export function GoogleButton() {
   }
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-12 w-full rounded-2xl"
-        >
-          <img
-            src="/google-icon.png"
-            alt=""
-            aria-hidden="true"
-            className="h-5 w-5"
-          />
-          <span>Tiếp tục với Google</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Tiếp tục với Google</DialogTitle>
-          <DialogDescription>
-            Google sẽ tự nhận diện tài khoản: đăng nhập nếu đã có, hoặc tạo tài
-            khoản mới nếu chưa có.
-          </DialogDescription>
-        </DialogHeader>
-        <Button
-          type="button"
-          className="min-h-12 w-full rounded-2xl"
-          onClick={() => void login()}
-        >
-          <img
-            src="/google-icon.png"
-            alt=""
-            aria-hidden="true"
-            className="h-5 w-5"
-          />
-          Tiếp tục
-        </Button>
-      </DialogContent>
-    </Dialog>
+    <Button
+      type="button"
+      variant="outline"
+      className="min-h-12 w-full rounded-2xl"
+      onClick={() => void login()}
+    >
+      <img
+        src="/google-icon.png"
+        alt=""
+        aria-hidden="true"
+        className="h-5 w-5"
+      />
+      <span>Tiếp tục với Google</span>
+    </Button>
   );
 }

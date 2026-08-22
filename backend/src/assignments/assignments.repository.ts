@@ -1,5 +1,6 @@
 import type {
   CreateAssignmentDto,
+  ReviewDropboxSubmissionDto,
   UpdateAssignmentDto,
 } from "./assignments.dto";
 import { Injectable } from "@nestjs/common";
@@ -161,7 +162,7 @@ export class AssignmentsRepository {
 
   async dropboxSubmissions(teacherId: string, assignmentId: string) {
     const result = await pool.query(
-      `SELECT ds.id, ds.submitted_at AS "submittedAt", ds.viewed_at AS "viewedAt", ds.downloaded_at AS "downloadedAt", COALESCE(json_agg(json_build_object('id', f.id, 'name', f.original_name, 'mimeType', f.mime_type, 'storageKey', f.storage_key) ORDER BY f.created_at) FILTER (WHERE f.id IS NOT NULL), '[]'::json) AS files FROM assignment_dropbox_submissions ds JOIN assignments a ON a.id = ds.assignment_id LEFT JOIN assignment_dropbox_submission_files dsf ON dsf.submission_id = ds.id LEFT JOIN files f ON f.id = dsf.file_id AND f.deleted_at IS NULL WHERE ds.assignment_id = $1 AND a.teacher_id = $2 AND a.deleted_at IS NULL GROUP BY ds.id ORDER BY ds.submitted_at DESC`,
+      `SELECT ds.id, ds.submitted_at AS "submittedAt", ds.viewed_at AS "viewedAt", ds.downloaded_at AS "downloadedAt", ds.score::float AS score, ds.review_note AS "reviewNote", ds.reviewed_at AS "reviewedAt", CASE WHEN s.id IS NULL THEN NULL ELSE json_build_object('id', s.id, 'name', s.name) END AS student, COALESCE(json_agg(json_build_object('id', f.id, 'name', f.original_name, 'mimeType', f.mime_type, 'storageKey', f.storage_key) ORDER BY f.created_at) FILTER (WHERE f.id IS NOT NULL), '[]'::json) AS files FROM assignment_dropbox_submissions ds JOIN assignments a ON a.id = ds.assignment_id LEFT JOIN students s ON s.id = ds.student_id AND s.deleted_at IS NULL LEFT JOIN assignment_dropbox_submission_files dsf ON dsf.submission_id = ds.id LEFT JOIN files f ON f.id = dsf.file_id AND f.deleted_at IS NULL WHERE ds.assignment_id = $1 AND a.teacher_id = $2 AND a.deleted_at IS NULL GROUP BY ds.id, s.id ORDER BY ds.submitted_at DESC`,
       [assignmentId, teacherId],
     );
     return result.rows;
@@ -178,6 +179,50 @@ export class AssignmentsRepository {
       [submissionId, assignmentId, teacherId],
     );
     return Boolean(result.rowCount);
+  }
+
+  async reviewDropboxSubmission(
+    teacherId: string,
+    assignmentId: string,
+    submissionId: string,
+    input: ReviewDropboxSubmissionDto,
+  ) {
+    const result = await pool.query(
+      `WITH reviewed AS (
+         UPDATE assignment_dropbox_submissions ds
+         SET student_id = $4, score = $5, review_note = $6, reviewed_at = now()
+         FROM assignments a
+         JOIN student_assignments sa
+           ON sa.assignment_id = a.id AND sa.teacher_id = a.teacher_id
+         JOIN students s ON s.id = sa.student_id AND s.deleted_at IS NULL
+         WHERE ds.id = $1
+           AND ds.assignment_id = $2
+           AND a.id = ds.assignment_id
+           AND a.teacher_id = $3
+           AND a.deleted_at IS NULL
+           AND sa.student_id = $4
+         RETURNING ds.id, ds.student_id, ds.score, ds.review_note, ds.reviewed_at
+       ), updated_assignment AS (
+         UPDATE student_assignments sa
+         SET status = 'reviewed', reviewed_by = $3, reviewed_at = r.reviewed_at,
+             review_note = r.review_note, updated_at = now()
+         FROM reviewed r
+         WHERE sa.assignment_id = $2 AND sa.student_id = r.student_id
+         RETURNING r.id
+       )
+       SELECT r.id, r.student_id AS "studentId", r.score::float AS score,
+         r.review_note AS "reviewNote", r.reviewed_at AS "reviewedAt"
+       FROM reviewed r`,
+      [
+        submissionId,
+        assignmentId,
+        teacherId,
+        input.studentId,
+        input.score,
+        input.reviewNote?.trim() || null,
+      ],
+    );
+    return result.rows[0] ?? null;
   }
 
   async fileDownload(teacherId: string, assignmentId: string, fileId: string) {

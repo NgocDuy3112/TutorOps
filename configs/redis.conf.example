@@ -30,7 +30,7 @@ tcp-keepalive 300
 
 # Optional security
 # Set REDIS_PASSWORD in configs/.env, then uncomment:
-# requirepass change-me
+requirepass change-me
 
 # Optional: disable dangerous commands
 # rename-command FLUSHALL ""

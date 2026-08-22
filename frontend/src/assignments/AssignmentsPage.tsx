@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { FileText, Loader2, Pencil, Plus } from "lucide-react";
+import { FileText, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
@@ -24,6 +25,7 @@ export function AssignmentsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState<Assignment | null>(null);
 
   async function load() {
     setLoading(true);
@@ -114,11 +116,30 @@ export function AssignmentsPage() {
                 onInbox={() =>
                   navigate(`/assignments/${assignment.id}/submissions`)
                 }
+                onDelete={() => setDeleting(assignment)}
               />
             ))}
           </div>
         ) : null}
       </main>
+      <Dialog open={Boolean(deleting)} onOpenChange={(open) => !open && setDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xóa bài tập?</DialogTitle>
+            <DialogDescription>Bài “{deleting?.title}” sẽ được ẩn khỏi danh sách.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleting(null)}>Hủy</Button>
+            <Button type="button" variant="destructive" onClick={async () => {
+              if (!deleting) return;
+              const response = await fetch(`${API}/assignments/${deleting.id}`, { method: "DELETE", credentials: "include" });
+              if (!response.ok) { setError("Không thể xóa bài tập. Vui lòng thử lại."); return; }
+              setAssignments((current) => current.filter((item) => item.id !== deleting.id));
+              setDeleting(null);
+            }}>Xóa bài</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileShell>
   );
 }
@@ -127,10 +148,12 @@ function AssignmentCard({
   assignment,
   onEdit,
   onInbox,
+  onDelete,
 }: {
   assignment: Assignment;
   onEdit: () => void;
   onInbox: () => void;
+  onDelete: () => void;
 }) {
   async function createLink() {
     const response = await fetch(
@@ -163,16 +186,28 @@ function AssignmentCard({
                 : "Chưa có lớp"}
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="shrink-0 rounded-2xl"
-            aria-label="Sửa bài tập"
-            onClick={onEdit}
-          >
-            <Pencil size={16} />
-          </Button>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="min-h-11 min-w-11 rounded-2xl"
+              aria-label="Sửa bài tập"
+              onClick={onEdit}
+            >
+              <Pencil size={16} />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="min-size-11 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+              aria-label="Xóa bài tập"
+              onClick={onDelete}
+            >
+              <Trash2 size={16} />
+            </Button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Button
