@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { FileText, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { FileText, Loader2, Pencil, Plus, Trash2, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
@@ -93,19 +94,19 @@ export function AssignmentsPage() {
             Đang tải...
           </p>
         ) : !error && assignments.length === 0 ? (
-          <Card className="mt-5 border-dashed">
-            <CardContent className="p-8 text-center">
-              <p className="text-sm text-muted-foreground">Không có dữ liệu.</p>
-              <Button
-                className="mt-3"
-                size="sm"
-                onClick={() => navigate("/assignments/new")}
-              >
-                <Plus size={16} />
-                Tạo bài
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="mt-5">
+            <EmptyState
+              icon={<ClipboardList size={28} />}
+              title="Chưa có bài tập"
+              description="Giao bài tập cho học sinh với deadline rõ ràng. Học sinh có thể tự nộp bài qua link."
+              action={
+                <Button className="min-h-11 rounded-2xl" onClick={() => navigate("/assignments/new")}>
+                  <Plus size={16} />
+                  Tạo bài tập
+                </Button>
+              }
+            />
+          </div>
         ) : !error ? (
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {assignments.map((assignment) => (

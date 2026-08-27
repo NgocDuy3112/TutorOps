@@ -6,6 +6,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  CalendarOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -563,9 +564,15 @@ function DayAgendaDialog({
 
         <div className="max-h-[65dvh] space-y-3 overflow-y-auto pr-1">
           {groups.length === 0 ? (
-            <div className="rounded-3xl border border-dashed p-6 text-center">
-              <p className="text-sm font-medium text-slate-700">
-                Ngày này còn trống.
+            <div className="flex flex-col items-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-10 text-center">
+              <span className="grid size-14 place-items-center rounded-2xl bg-violet-50 text-primary">
+                <CalendarOff size={24} />
+              </span>
+              <p className="mt-3 text-sm font-medium text-slate-700">
+                Chưa có hoạt động nào
+              </p>
+              <p className="mt-1 max-w-[220px] text-xs text-muted-foreground">
+                Bấm nút bên dưới để ghi nhận buổi dạy trong ngày này.
               </p>
             </div>
           ) : (
