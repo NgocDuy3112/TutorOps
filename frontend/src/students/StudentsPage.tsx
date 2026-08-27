@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Pencil, Plus, Trash2, UserRound } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, UserRound, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
@@ -138,15 +139,17 @@ function StudentsGrid({
 }) {
   if (students.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="p-10 text-center">
-          <p className="text-sm text-muted-foreground">Không có dữ liệu.</p>
-          <Button className="mt-3" size="sm" onClick={onAdd}>
+      <EmptyState
+        icon={<UserPlus size={28} />}
+        title="Chưa có học sinh"
+        description="Thêm học sinh để bắt đầu quản lý lớp học, ghi nhận buổi dạy và theo dõi học phí."
+        action={
+          <Button className="min-h-11 rounded-2xl" onClick={onAdd}>
             <Plus size={16} />
             Thêm học sinh
           </Button>
-        </CardContent>
-      </Card>
+        }
+      />
     );
   }
 

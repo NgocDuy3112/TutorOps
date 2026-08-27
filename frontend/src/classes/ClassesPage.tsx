@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, Loader2, Pencil, Plus, Users } from "lucide-react";
+import { BookOpen, Loader2, Pencil, Plus, Users, BookOpenCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
@@ -75,15 +76,17 @@ export function ClassesPage() {
             Đang tải...
           </p>
         ) : classes.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="p-10 text-center">
-              <p className="text-sm text-muted-foreground">Không có dữ liệu.</p>
-              <Button className="mt-3" onClick={() => navigate("/classes/new")}>
+          <EmptyState
+            icon={<BookOpenCheck size={28} />}
+            title="Chưa có lớp nào"
+            description="Tạo lớp để nhóm học sinh lại, đặt đơn giá mặc định và quản lý dễ dàng hơn."
+            action={
+              <Button className="min-h-11 rounded-2xl" onClick={() => navigate("/classes/new")}>
                 <Plus size={16} />
                 Tạo lớp
               </Button>
-            </CardContent>
-          </Card>
+            }
+          />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {classes.map((item) => (

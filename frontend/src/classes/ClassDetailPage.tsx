@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, UserMinus, Users } from "lucide-react";
+import { ArrowLeft, Loader2, UserMinus, Users, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import type { Student, TutorClass } from "./ClassesPage";
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -120,11 +121,11 @@ export function ClassDetailPage() {
                     </Card>
                   ))
                 ) : (
-                  <Card className="border-dashed">
-                    <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                      Không có dữ liệu.
-                    </CardContent>
-                  </Card>
+                  <EmptyState
+                    icon={<UserPlus size={24} />}
+                    title="Lớp chưa có học sinh"
+                    description="Tìm học sinh bên dưới để thêm vào lớp."
+                  />
                 )}
               </div>
             </section>
