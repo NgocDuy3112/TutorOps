@@ -127,9 +127,14 @@ export function StudentFormPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="parent-phone">Số điện thoại</Label>
+                  <Label htmlFor="parent-phone">Số điện thoại (10 chữ số)</Label>
                   <Input
                     id="parent-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="^0\d{9}$"
+                    maxLength={10}
+                    placeholder="0912345678"
                     value={form.parentPhone}
                     onChange={(e) =>
                       setForm({ ...form, parentPhone: e.target.value })
