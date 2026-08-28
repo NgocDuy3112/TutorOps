@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   Min,
   MinLength,
 } from "class-validator";
@@ -15,6 +16,7 @@ export class CreateClassDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(10_000_000_000)
   defaultPriceVnd?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() note?: string;
 }

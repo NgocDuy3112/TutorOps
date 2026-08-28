@@ -70,6 +70,7 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
             required
             type="password"
             minLength={8}
+            maxLength={64}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />

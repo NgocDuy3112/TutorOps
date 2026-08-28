@@ -153,7 +153,7 @@ export function TuitionPage() {
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  className="min-h-12 rounded-2xl bg-white pl-10"
+                  className="bg-white pl-10"
                   placeholder="Tìm học sinh"
                 />
               </div>

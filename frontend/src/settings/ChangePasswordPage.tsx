@@ -13,21 +13,32 @@ export function ChangePasswordPage() {
   const [values, setValues] = useState({
     currentPassword: "",
     newPassword: "",
+    confirmPassword: "",
   });
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    setError("");
+    setMessage("");
+    if (values.newPassword !== values.confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
     const response = await fetch(`${API}/auth/password`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(values),
+      body: JSON.stringify({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      }),
     });
     setMessage(
       response.ok ? "Đã đổi mật khẩu" : "Mật khẩu hiện tại không đúng",
     );
-    if (response.ok) setValues({ currentPassword: "", newPassword: "" });
+    if (response.ok) setValues({ currentPassword: "", newPassword: "", confirmPassword: "" });
   }
 
   return (
@@ -61,6 +72,7 @@ export function ChangePasswordPage() {
                   id="currentPassword"
                   required
                   type="password"
+                  maxLength={64}
                   value={values.currentPassword}
                   onChange={(event) =>
                     setValues({
@@ -76,6 +88,7 @@ export function ChangePasswordPage() {
                   id="newPassword"
                   required
                   minLength={8}
+                  maxLength={64}
                   type="password"
                   value={values.newPassword}
                   onChange={(event) =>
@@ -83,9 +96,28 @@ export function ChangePasswordPage() {
                   }
                 />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword">Xác nhận mật khẩu mới</Label>
+                <Input
+                  id="confirmPassword"
+                  required
+                  minLength={8}
+                  maxLength={64}
+                  type="password"
+                  value={values.confirmPassword}
+                  onChange={(event) =>
+                    setValues({ ...values, confirmPassword: event.target.value })
+                  }
+                />
+              </div>
               <Button>Cập nhật mật khẩu</Button>
+              {error && (
+                <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+                  {error}
+                </p>
+              )}
               {message && (
-                <p className="text-sm text-muted-foreground">{message}</p>
+                <p className="text-sm text-emerald-600">{message}</p>
               )}
             </form>
           </CardContent>

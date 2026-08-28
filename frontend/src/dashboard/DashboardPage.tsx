@@ -287,7 +287,7 @@ export function DashboardPage() {
               <select
                 value={month.getMonth()}
                 onChange={(event) => updateCalendarMonth(event.target.value)}
-                className="min-h-11 rounded-2xl border border-input bg-white px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                className="min-h-12 rounded-2xl border border-input bg-white px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
                 aria-label="Chọn tháng"
               >
                 {Array.from({ length: 12 }, (_, index) => (
@@ -299,7 +299,7 @@ export function DashboardPage() {
               <select
                 value={month.getFullYear()}
                 onChange={(event) => updateCalendarYear(event.target.value)}
-                className="min-h-11 rounded-2xl border border-input bg-white px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                className="min-h-12 rounded-2xl border border-input bg-white px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
                 aria-label="Chọn năm"
               >
                 {yearOptions.map((year) => (

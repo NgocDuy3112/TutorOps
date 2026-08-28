@@ -4,6 +4,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from "class-validator";
 export class TeachingSessionDto {
@@ -12,6 +13,7 @@ export class TeachingSessionDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(10_000_000_000)
   priceVnd?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() note?: string;
 }
@@ -21,6 +23,7 @@ export class UpdateTeachingSessionDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(10_000_000_000)
   priceVnd?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() note?: string;
 }

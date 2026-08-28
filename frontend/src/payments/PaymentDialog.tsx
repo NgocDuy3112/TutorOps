@@ -145,6 +145,7 @@ export function PaymentDialog({
               id="payment-amount"
               required
               min="1"
+              max={10_000_000_000}
               inputMode="numeric"
               value={amountVnd}
               onChange={(event) => {

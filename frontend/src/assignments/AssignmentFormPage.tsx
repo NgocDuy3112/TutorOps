@@ -200,6 +200,7 @@ export function AssignmentFormPage() {
                     <Input
                       id="assignment-due-at"
                       type="datetime-local"
+                      min={new Date().toISOString().slice(0, 16)}
                       value={dueAt}
                       onChange={(e) => setDueAt(e.target.value)}
                     />
