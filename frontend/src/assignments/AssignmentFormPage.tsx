@@ -175,7 +175,7 @@ export function AssignmentFormPage() {
             <Card className="rounded-3xl border-slate-200 shadow-sm">
               <CardHeader className="p-5 pb-0">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <FileText size={20} /> Nội dung bài
+                  <FileText size={20} /> Thông tin bài tập
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 p-5">
@@ -193,6 +193,7 @@ export function AssignmentFormPage() {
                   <Input
                     id="assignment-due-at"
                     type="datetime-local"
+                    className="w-full max-w-full"
                     min={new Date().toISOString().slice(0, 16)}
                     value={dueAt}
                     onChange={(e) => setDueAt(e.target.value)}
@@ -231,42 +232,68 @@ export function AssignmentFormPage() {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-            <Card className="rounded-3xl border-slate-200 shadow-sm">
-              <CardHeader className="p-5 pb-0">
-                <CardTitle className="flex items-center justify-between gap-3 text-lg">
-                  <span className="flex items-center gap-2">
-                    <Users size={20} /> Chọn lớp
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {classIds.length} chọn
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 p-5">
-                <div className="relative">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    size={17}
-                  />
-                  <Input
-                    value={classSearch}
-                    onChange={(e) => setClassSearch(e.target.value)}
-                    className="pl-10"
-                    placeholder="Tìm lớp"
-                  />
+                <div className="border-t pt-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="flex items-center gap-2 font-bold">
+                      <Users size={18} className="text-primary" /> Chọn lớp
+                    </h3>
+                    <span className="text-sm text-muted-foreground">
+                      {classIds.length} chọn
+                    </span>
+                  </div>
+                  <div className="relative mb-3">
+                    <Search
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      size={17}
+                    />
+                    <Input
+                      value={classSearch}
+                      onChange={(e) => setClassSearch(e.target.value)}
+                      className="pl-10"
+                      placeholder="Tìm lớp"
+                    />
+                  </div>
+                  <div className="max-h-[50dvh] space-y-2 overflow-y-auto rounded-2xl border p-2">
+                    {visibleClasses.map((item) => {
+                      const selected = classIds.includes(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => toggleClass(item.id)}
+                          aria-pressed={selected}
+                          className={`flex min-h-14 w-full items-center gap-3 rounded-xl px-3 text-left transition-colors ${selected ? "bg-primary text-primary-foreground" : "hover:bg-slate-50"}`}
+                        >
+                          <span
+                            className={`grid size-9 shrink-0 place-items-center rounded-lg text-sm font-bold ${selected ? "bg-white/15" : "bg-violet-50 text-primary"}`}
+                          >
+                            {item.name.slice(0, 2).toLocaleUpperCase("vi")}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <strong className="block truncate text-sm">
+                              {item.name}
+                            </strong>
+                            <small
+                              className={
+                                selected
+                                  ? "text-primary-foreground/75"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              {item.studentCount} học sinh
+                            </small>
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {visibleClasses.length === 0 && (
+                      <p className="p-4 text-center text-sm text-muted-foreground">
+                        Không tìm thấy lớp.
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <RecipientList
-                  items={visibleClasses.map((item) => ({
-                    id: item.id,
-                    name: item.name,
-                    meta: `${item.studentCount} học sinh`,
-                  }))}
-                  selectedIds={classIds}
-                  onToggle={toggleClass}
-                />
               </CardContent>
             </Card>
 
@@ -295,58 +322,5 @@ export function AssignmentFormPage() {
         )}
       </main>
     </MobileShell>
-  );
-}
-
-function RecipientList({
-  items,
-  selectedIds,
-  onToggle,
-}: {
-  items: { id: string; name: string; meta: string }[];
-  selectedIds: string[];
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <section>
-      <h3 className="mb-2 text-sm font-semibold">Lớp</h3>
-      <div className="max-h-[55dvh] space-y-2 overflow-y-auto rounded-2xl border p-2">
-        {items.map((item) => {
-          const selected = selectedIds.includes(item.id);
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onToggle(item.id)}
-              aria-pressed={selected}
-              className={`flex min-h-14 w-full items-center gap-3 rounded-xl px-3 text-left transition-colors ${selected ? "bg-primary text-primary-foreground" : "hover:bg-slate-50"}`}
-            >
-              <span
-                className={`grid size-9 shrink-0 place-items-center rounded-lg text-sm font-bold ${selected ? "bg-white/15" : "bg-violet-50 text-primary"}`}
-              >
-                {item.name.slice(0, 2).toLocaleUpperCase("vi")}
-              </span>
-              <span className="min-w-0 flex-1">
-                <strong className="block truncate text-sm">{item.name}</strong>
-                <small
-                  className={
-                    selected
-                      ? "text-primary-foreground/75"
-                      : "text-muted-foreground"
-                  }
-                >
-                  {item.meta}
-                </small>
-              </span>
-            </button>
-          );
-        })}
-        {items.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground">
-            Không tìm thấy lớp.
-          </p>
-        )}
-      </div>
-    </section>
   );
 }

@@ -167,3 +167,9 @@ select {
     overflow-y: auto;
   }
 }
+
+/* Fix datetime-local overflow on iOS */
+input[type="datetime-local"] {
+  max-width: 100%;
+  min-width: 0;
+}
