@@ -22,6 +22,7 @@ type Assignment = {
   title: string;
   description: string | null;
   dueAt: string | null;
+  classNames: string[];
   students: { id: string; name: string; status: string }[];
 };
 type TutorClass = { id: string; name: string; studentCount: number };
@@ -32,7 +33,6 @@ export function AssignmentFormPage() {
   const { assignmentId } = useParams();
   const editing = Boolean(assignmentId);
   const navigate = useNavigate();
-  const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -42,7 +42,7 @@ export function AssignmentFormPage() {
   const [dueAt, setDueAt] = useState("");
   const [classIds, setClassIds] = useState<string[]>([]);
   const [files, setFiles] = useState<File[]>([]);
-  const [recipientSearch, setRecipientSearch] = useState("");
+  const [classSearch, setClassSearch] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -56,7 +56,8 @@ export function AssignmentFormPage() {
             : Promise.resolve(null),
         ]);
         if (!classesResponse.ok) throw new Error("Không thể tải lớp.");
-        setClasses(await classesResponse.json());
+        const allClasses: TutorClass[] = await classesResponse.json();
+        setClasses(allClasses);
         if (assignmentsResponse) {
           if (!assignmentsResponse.ok)
             throw new Error("Không thể tải bài tập.");
@@ -72,6 +73,10 @@ export function AssignmentFormPage() {
               ? new Date(assignment.dueAt).toISOString().slice(0, 16)
               : "",
           );
+          const matchedClassIds = allClasses
+            .filter((c) => (assignment.classNames ?? []).includes(c.name))
+            .map((c) => c.id);
+          setClassIds(matchedClassIds);
         }
       } catch (requestError) {
         setError(
@@ -86,7 +91,7 @@ export function AssignmentFormPage() {
     void load();
   }, [assignmentId, editing]);
 
-  const searchTerm = recipientSearch.trim().toLocaleLowerCase("vi");
+  const searchTerm = classSearch.trim().toLocaleLowerCase("vi");
   const visibleClasses = classes.filter((item) =>
     item.name.toLocaleLowerCase("vi").includes(searchTerm),
   );
@@ -103,17 +108,10 @@ export function AssignmentFormPage() {
     setFiles(Array.from(event.target.files ?? []));
   }
 
-  function goNext() {
-    if (!title.trim()) return setError("Nhập tên bài tập.");
-    setError("");
-    setStep(2);
-  }
-
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!title.trim()) return setError("Nhập tên bài tập.");
-    if (!editing && classIds.length === 0)
-      return setError("Chọn ít nhất một lớp.");
+    if (classIds.length === 0) return setError("Chọn ít nhất một lớp.");
     setSaving(true);
     setError("");
     const fileIds: string[] = [];
@@ -142,7 +140,8 @@ export function AssignmentFormPage() {
           description,
           dueAt: dueAt || null,
           studentIds: [],
-          ...(editing ? {} : { classIds, fileIds }),
+          classIds,
+          ...(editing ? {} : { fileIds }),
         }),
       },
     );
@@ -167,116 +166,110 @@ export function AssignmentFormPage() {
             <ArrowLeft size={16} /> Quay lại bài tập
           </Link>
         </Button>
-        <div className="mb-4 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <span className={step === 1 ? "text-primary" : ""}>1. Nội dung</span>
-          <span>/</span>
-          <span className={step === 2 ? "text-primary" : ""}>2. Chọn lớp</span>
-        </div>
         {loading ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="animate-spin" size={17} /> Đang tải...
           </p>
         ) : (
           <form onSubmit={submit} className="space-y-4">
-            {step === 1 ? (
-              <Card className="min-w-0 rounded-3xl border-slate-200 shadow-sm">
-                <CardHeader className="p-5 pb-0">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText size={20} /> Nội dung bài
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 p-5">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="assignment-title">Tên bài</Label>
-                    <Input
-                      id="assignment-title"
-                      required
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="assignment-due-at">Deadline</Label>
-                    <Input
-                      id="assignment-due-at"
-                      type="datetime-local"
-                      min={new Date().toISOString().slice(0, 16)}
-                      value={dueAt}
-                      onChange={(e) => setDueAt(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="assignment-description">Mô tả</Label>
-                    <Textarea
-                      id="assignment-description"
-                      rows={5}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                    />
-                  </div>
-                  {!editing && (
-                    <div className="space-y-2">
-                      <Label>File đề bài</Label>
-                      <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed bg-slate-50 p-4 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                        <Upload className="mb-2 text-primary" size={20} />
-                        Chọn file
-                        <Input
-                          className="sr-only"
-                          type="file"
-                          accept="application/pdf,image/jpeg,image/png,image/heic"
-                          multiple
-                          onChange={selectFiles}
-                        />
-                      </label>
-                      {files.map((file) => (
-                        <p
-                          key={`${file.name}-${file.lastModified}`}
-                          className="min-w-0 max-w-full truncate rounded-xl bg-muted px-3 py-2 text-sm"
-                        >
-                          {file.name}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="min-w-0 rounded-3xl border-slate-200 shadow-sm">
-                <CardHeader className="p-5 pb-0">
-                  <CardTitle className="flex items-center justify-between gap-3 text-lg">
-                    <span className="flex items-center gap-2">
-                      <Users size={20} /> Chọn lớp
-                    </span>
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {classIds.length} chọn
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 p-5">
-                  <div className="relative">
-                    <Search
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      size={17}
-                    />
-                    <Input
-                      value={recipientSearch}
-                      onChange={(e) => setRecipientSearch(e.target.value)}
-                      className="pl-10"
-                      placeholder="Tìm lớp"
-                    />
-                  </div>
-                  <RecipientList
-                    items={visibleClasses.map((item) => ({
-                      id: item.id,
-                      name: item.name,
-                      meta: `${item.studentCount} học sinh`,
-                    }))}
-                    selectedIds={classIds}
-                    onToggle={toggleClass}
+            <Card className="rounded-3xl border-slate-200 shadow-sm">
+              <CardHeader className="p-5 pb-0">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText size={20} /> Nội dung bài
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-5">
+                <div className="space-y-1.5">
+                  <Label htmlFor="assignment-title">Tên bài</Label>
+                  <Input
+                    id="assignment-title"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                   />
-                </CardContent>
-              </Card>
-            )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="assignment-due-at">Deadline</Label>
+                  <Input
+                    id="assignment-due-at"
+                    type="datetime-local"
+                    min={new Date().toISOString().slice(0, 16)}
+                    value={dueAt}
+                    onChange={(e) => setDueAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="assignment-description">Mô tả</Label>
+                  <Textarea
+                    id="assignment-description"
+                    rows={5}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+                {!editing && (
+                  <div className="space-y-2">
+                    <Label>File đề bài</Label>
+                    <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed bg-slate-50 p-4 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                      <Upload className="mb-2 text-primary" size={20} />
+                      Chọn file
+                      <Input
+                        className="sr-only"
+                        type="file"
+                        accept="application/pdf,image/jpeg,image/png,image/heic"
+                        multiple
+                        onChange={selectFiles}
+                      />
+                    </label>
+                    {files.map((file) => (
+                      <p
+                        key={`${file.name}-${file.lastModified}`}
+                        className="min-w-0 max-w-full truncate rounded-xl bg-muted px-3 py-2 text-sm"
+                      >
+                        {file.name}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-slate-200 shadow-sm">
+              <CardHeader className="p-5 pb-0">
+                <CardTitle className="flex items-center justify-between gap-3 text-lg">
+                  <span className="flex items-center gap-2">
+                    <Users size={20} /> Chọn lớp
+                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {classIds.length} chọn
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-5">
+                <div className="relative">
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    size={17}
+                  />
+                  <Input
+                    value={classSearch}
+                    onChange={(e) => setClassSearch(e.target.value)}
+                    className="pl-10"
+                    placeholder="Tìm lớp"
+                  />
+                </div>
+                <RecipientList
+                  items={visibleClasses.map((item) => ({
+                    id: item.id,
+                    name: item.name,
+                    meta: `${item.studentCount} học sinh`,
+                  }))}
+                  selectedIds={classIds}
+                  onToggle={toggleClass}
+                />
+              </CardContent>
+            </Card>
+
             <div className="safe-bottom sticky bottom-0 -mx-4 border-t bg-white/95 p-4 backdrop-blur sm:mx-0 sm:rounded-3xl sm:border">
               {error && (
                 <p
@@ -286,39 +279,17 @@ export function AssignmentFormPage() {
                   {error}
                 </p>
               )}
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                {step === 2 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-12 rounded-2xl sm:px-8"
-                    onClick={() => setStep(1)}
-                  >
-                    Quay lại
-                  </Button>
-                )}
-                {step === 1 && !editing ? (
-                  <Button
-                    type="button"
-                    className="min-h-12 rounded-2xl sm:px-8"
-                    onClick={goNext}
-                  >
-                    Tiếp tục
-                  </Button>
-                ) : (
-                  <Button
-                    disabled={saving}
-                    className="min-h-12 rounded-2xl sm:px-8"
-                  >
-                    {saving && <Loader2 className="animate-spin" size={16} />}
-                    {saving
-                      ? "Đang lưu..."
-                      : editing
-                        ? "Lưu thay đổi"
-                        : "Tạo bài tập"}
-                  </Button>
-                )}
-              </div>
+              <Button
+                disabled={saving}
+                className="min-h-12 w-full rounded-2xl sm:w-auto sm:px-8"
+              >
+                {saving && <Loader2 className="animate-spin" size={16} />}
+                {saving
+                  ? "Đang lưu..."
+                  : editing
+                    ? "Lưu thay đổi"
+                    : "Tạo bài tập"}
+              </Button>
             </div>
           </form>
         )}
