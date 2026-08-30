@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Check, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
@@ -121,12 +121,12 @@ export function EditAssignmentSheet({
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent>
-        <SheetHeader className="border-b pb-4">
+        <SheetHeader>
           <SheetTitle>Sửa bài tập</SheetTitle>
         </SheetHeader>
 
         <form onSubmit={submit} className="flex h-full flex-col">
-          <div className="flex-1 space-y-4 overflow-y-auto py-5">
+          <div className="flex-1 space-y-5 overflow-y-auto pb-4">
             <div className="space-y-2">
               <Label htmlFor="sheet-title">Tên bài</Label>
               <Input
@@ -134,6 +134,7 @@ export function EditAssignmentSheet({
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                autoFocus={false}
               />
             </div>
             <div className="space-y-2">
@@ -154,11 +155,13 @@ export function EditAssignmentSheet({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Tùy chọn"
+                autoFocus={false}
               />
             </div>
 
-            <div className="border-t pt-4">
-              <div className="mb-3 flex items-center justify-between">
+            {/* Chọn lớp — compact style */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
                 <Label>Chọn lớp</Label>
                 {classIds.length > 0 && (
                   <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
@@ -166,7 +169,7 @@ export function EditAssignmentSheet({
                   </span>
                 )}
               </div>
-              <div className="relative mb-3">
+              <div className="relative">
                 <Search
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   size={16}
@@ -176,9 +179,10 @@ export function EditAssignmentSheet({
                   onChange={(e) => setClassSearch(e.target.value)}
                   className="pl-9"
                   placeholder="Tìm lớp..."
+                  autoFocus={false}
                 />
               </div>
-              <div className="max-h-[35dvh] space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/50 p-2">
+              <div className="max-h-[35dvh] space-y-1.5 overflow-y-auto">
                 {visibleClasses.length === 0 ? (
                   <p className="py-4 text-center text-sm text-muted-foreground">
                     {classes.length === 0
@@ -193,38 +197,28 @@ export function EditAssignmentSheet({
                         key={item.id}
                         type="button"
                         onClick={() => toggleClass(item.id)}
-                        className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition-all ${
+                        className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition-colors ${
                           selected
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "bg-white hover:bg-slate-100"
+                            ? "bg-primary/10 text-primary"
+                            : "hover:bg-slate-50"
                         }`}
                       >
                         <span
-                          className={`grid size-8 shrink-0 place-items-center rounded-lg text-xs font-bold ${
-                            selected
-                              ? "bg-white/20 text-primary-foreground"
-                              : "bg-violet-50 text-primary"
+                          className={`grid size-7 shrink-0 place-items-center rounded-lg text-[10px] font-bold ${
+                            selected ? "bg-primary text-white" : "bg-slate-100 text-slate-500"
                           }`}
                         >
                           {item.name.slice(0, 2).toLocaleUpperCase("vi")}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <strong className="block truncate">
+                          <span className="block truncate font-medium">
                             {item.name}
-                          </strong>
-                          <small
-                            className={
-                              selected
-                                ? "text-primary-foreground/70"
-                                : "text-muted-foreground"
-                            }
-                          >
+                          </span>
+                          <span className="text-xs text-muted-foreground">
                             {item.studentCount} học sinh
-                          </small>
+                          </span>
                         </span>
-                        {selected && (
-                          <span className="text-sm font-bold">✓</span>
-                        )}
+                        {selected && <Check size={16} className="text-primary" />}
                       </button>
                     );
                   })
@@ -233,33 +227,27 @@ export function EditAssignmentSheet({
             </div>
           </div>
 
-          {/* Error + Buttons */}
-          <div className="border-t border-slate-200 pt-4">
-            {error && (
-              <p
-                role="alert"
-                className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-700"
-              >
-                {error}
-              </p>
-            )}
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-12 flex-1 rounded-2xl border-slate-200"
-                onClick={onClose}
-              >
-                Hủy
-              </Button>
-              <Button
-                disabled={saving}
-                className="min-h-12 flex-1 rounded-2xl"
-              >
-                {saving && <Loader2 className="animate-spin" size={16} />}
-                {saving ? "Đang lưu..." : "Lưu thay đổi"}
-              </Button>
-            </div>
+          {error && (
+            <p
+              role="alert"
+              className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-700"
+            >
+              {error}
+            </p>
+          )}
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-12 flex-1 rounded-2xl"
+              onClick={onClose}
+            >
+              Hủy
+            </Button>
+            <Button disabled={saving} className="min-h-12 flex-1 rounded-2xl">
+              {saving && <Loader2 className="animate-spin" size={16} />}
+              {saving ? "Đang lưu..." : "Lưu thay đổi"}
+            </Button>
           </div>
         </form>
       </SheetContent>
