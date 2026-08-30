@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -87,18 +88,22 @@ export function MarkTaughtSheet({
     if (response.ok) onSaved();
   }
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   async function remove() {
-    if (!session || !confirm("Xóa buổi dạy này?")) return;
+    if (!session) return;
     setDeleting(true);
     const response = await fetch(`${API}/sessions/${session.id}`, {
       method: "DELETE",
       credentials: "include",
     });
     setDeleting(false);
+    setConfirmDelete(false);
     if (response.ok) onSaved();
   }
 
   return (
+    <>
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
@@ -149,7 +154,7 @@ export function MarkTaughtSheet({
                 type="button"
                 variant="outline"
                 disabled={saving || deleting}
-                onClick={() => void remove()}
+                onClick={() => setConfirmDelete(true)}
                 className="min-h-11 text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto"
               >
                 {deleting ? (
@@ -172,5 +177,23 @@ export function MarkTaughtSheet({
         </form>
       </DialogContent>
     </Dialog>
+    <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Xóa buổi dạy?</DialogTitle>
+          <DialogDescription>
+            Buổi dạy này sẽ bị xóa khỏi danh sách. Hành động này không thể hoàn tác.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setConfirmDelete(false)}>Hủy</Button>
+          <Button type="button" variant="destructive" disabled={deleting} onClick={() => void remove()}>
+            {deleting && <Loader2 className="animate-spin" size={16} />}
+            Xóa
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
