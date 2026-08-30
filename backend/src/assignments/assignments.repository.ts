@@ -21,10 +21,7 @@ export class AssignmentsRepository {
           json_agg(DISTINCT c.name) FILTER (WHERE c.id IS NOT NULL AND c.deleted_at IS NULL),
           '[]'::json
         ) AS "classNames",
-        COALESCE(
-          json_agg(DISTINCT c.id) FILTER (WHERE c.id IS NOT NULL AND c.deleted_at IS NULL),
-          '[]'::json
-        ) AS "classIds",
+        COALESCE(a.class_ids, '[]'::jsonb) AS "classIds",
         COALESCE(
           json_agg(
             json_build_object(
@@ -54,13 +51,14 @@ export class AssignmentsRepository {
     try {
       await client.query("BEGIN");
       const assignmentQuery = `
-        INSERT INTO assignments (teacher_id, title, description, lesson_id, due_at)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO assignments (teacher_id, title, description, lesson_id, due_at, class_ids)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING
           id,
           title,
           description,
           due_at AS "dueAt",
+          class_ids AS "classIds",
           created_at AS "createdAt"
       `;
       const assignment = (
@@ -70,6 +68,7 @@ export class AssignmentsRepository {
           input.description ?? null,
           input.lessonId ?? null,
           input.dueAt ?? null,
+          JSON.stringify(input.classIds ?? []),
         ])
       ).rows[0];
 
@@ -130,12 +129,13 @@ export class AssignmentsRepository {
     try {
       await client.query("BEGIN");
       const assignment = await client.query(
-        `UPDATE assignments SET title = $1, description = $2, lesson_id = $3, due_at = $4, updated_at = now() WHERE id = $5 AND teacher_id = $6 AND deleted_at IS NULL RETURNING id`,
+        `UPDATE assignments SET title = $1, description = $2, lesson_id = $3, due_at = $4, class_ids = $5, updated_at = now() WHERE id = $6 AND teacher_id = $7 AND deleted_at IS NULL RETURNING id`,
         [
           input.title.trim(),
           input.description ?? null,
           input.lessonId ?? null,
           input.dueAt ?? null,
+          JSON.stringify(input.classIds ?? []),
           id,
           teacherId,
         ],
