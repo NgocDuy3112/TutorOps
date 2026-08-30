@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { CalendarClock, FileText, Loader2, Search, Users } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
@@ -77,9 +77,15 @@ export function EditAssignmentSheet({
   }, [assignment]);
 
   const searchTerm = classSearch.trim().toLocaleLowerCase("vi");
-  const visibleClasses = classes.filter((item) =>
-    item.name.toLocaleLowerCase("vi").includes(searchTerm),
-  );
+  const visibleClasses = classes
+    .filter((item) => item.name.toLocaleLowerCase("vi").includes(searchTerm))
+    .sort((a, b) => {
+      const aSelected = classIds.includes(a.id);
+      const bSelected = classIds.includes(b.id);
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return a.name.localeCompare(b.name, "vi");
+    });
 
   function toggleClass(id: string) {
     setClassIds((current) =>
@@ -115,63 +121,52 @@ export function EditAssignmentSheet({
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent>
-        <SheetHeader>
+        <SheetHeader className="border-b pb-4">
           <SheetTitle>Sửa bài tập</SheetTitle>
         </SheetHeader>
 
         <form onSubmit={submit} className="flex h-full flex-col">
-          <div className="flex-1 space-y-5 overflow-y-auto pb-4">
-            {/* Nội dung bài */}
-            <section className="space-y-3">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <FileText size={16} className="text-primary" />
-                Nội dung
-              </h3>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="sheet-title">Tên bài</Label>
-                  <Input
-                    id="sheet-title"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Deadline</Label>
-                  <DatePicker
-                    value={dueAt ? new Date(dueAt) : null}
-                    onChange={(date) => setDueAt(date ? date.toISOString().slice(0, 16) : "")}
-                    min={new Date()}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="sheet-desc">Mô tả</Label>
-                  <Textarea
-                    id="sheet-desc"
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Tùy chọn"
-                  />
-                </div>
-              </div>
-            </section>
+          <div className="flex-1 space-y-4 overflow-y-auto py-5">
+            <div className="space-y-2">
+              <Label htmlFor="sheet-title">Tên bài</Label>
+              <Input
+                id="sheet-title"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Deadline</Label>
+              <DatePicker
+                value={dueAt ? new Date(dueAt) : null}
+                onChange={(date) =>
+                  setDueAt(date ? date.toISOString().slice(0, 16) : "")
+                }
+                min={new Date()}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sheet-desc">Mô tả</Label>
+              <Textarea
+                id="sheet-desc"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Tùy chọn"
+              />
+            </div>
 
-            {/* Chọn lớp */}
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <Users size={16} className="text-primary" />
-                  Chọn lớp
-                </h3>
+            <div className="border-t pt-4">
+              <div className="mb-3 flex items-center justify-between">
+                <Label>Chọn lớp</Label>
                 {classIds.length > 0 && (
-                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
                     {classIds.length} chọn
                   </span>
                 )}
               </div>
-              <div className="relative">
+              <div className="relative mb-3">
                 <Search
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   size={16}
@@ -183,7 +178,7 @@ export function EditAssignmentSheet({
                   placeholder="Tìm lớp..."
                 />
               </div>
-              <div className="max-h-[35dvh] space-y-1.5 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/50 p-2">
+              <div className="max-h-[35dvh] space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/50 p-2">
                 {visibleClasses.length === 0 ? (
                   <p className="py-4 text-center text-sm text-muted-foreground">
                     {classes.length === 0
@@ -214,7 +209,9 @@ export function EditAssignmentSheet({
                           {item.name.slice(0, 2).toLocaleUpperCase("vi")}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <strong className="block truncate">{item.name}</strong>
+                          <strong className="block truncate">
+                            {item.name}
+                          </strong>
                           <small
                             className={
                               selected
@@ -226,18 +223,18 @@ export function EditAssignmentSheet({
                           </small>
                         </span>
                         {selected && (
-                          <span className="text-xs font-medium">✓</span>
+                          <span className="text-sm font-bold">✓</span>
                         )}
                       </button>
                     );
                   })
                 )}
               </div>
-            </section>
+            </div>
           </div>
 
           {/* Error + Buttons */}
-          <div className="border-t pt-4">
+          <div className="border-t border-slate-200 pt-4">
             {error && (
               <p
                 role="alert"
@@ -250,7 +247,7 @@ export function EditAssignmentSheet({
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-12 flex-1 rounded-2xl"
+                className="min-h-12 flex-1 rounded-2xl border-slate-200"
                 onClick={onClose}
               >
                 Hủy

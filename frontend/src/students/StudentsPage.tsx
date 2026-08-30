@@ -188,78 +188,59 @@ function StudentCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const startX = useRef(0);
-  const [revealed, setRevealed] = useState(false);
-
-  function onPointerDown(event: PointerEvent) {
-    startX.current = event.clientX;
-  }
-
-  function onPointerUp(event: PointerEvent) {
-    const deltaX = event.clientX - startX.current;
-    if (deltaX < -48) setRevealed(true);
-    if (deltaX > 32) setRevealed(false);
-  }
-
   return (
-    <div className="relative overflow-hidden rounded-3xl">
-      <button
-        type="button"
-        className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-600 text-white"
-        onClick={onDelete}
-        aria-label="Xóa học sinh"
-      >
-        <Trash2 size={18} />
-        <span className="ml-1 text-sm font-semibold">Xóa</span>
-      </button>
-      <Card
-        className={`relative rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70 transition-transform duration-200 ${
-          revealed ? "-translate-x-24" : "translate-x-0"
-        }`}
-        onPointerDown={onPointerDown}
-        onPointerUp={onPointerUp}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-primary">
-              <UserRound size={20} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <Link
-                to={`/students/${student.id}`}
-                className="block truncate font-bold hover:text-primary"
-              >
-                {student.name}
-              </Link>
-              <p className="mt-1 truncate text-sm text-muted-foreground">
-                {student.parentPhone || "Chưa có số điện thoại phụ huynh"}
-              </p>
-              {(student.classes ?? []).length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {student.classes!.map((item) => (
-                    <span
-                      key={item.id}
-                      className="rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-primary"
-                    >
-                      {item.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+    <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-primary">
+            <UserRound size={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <Link
+              to={`/students/${student.id}`}
+              className="block truncate font-bold hover:text-primary"
+            >
+              {student.name}
+            </Link>
+            <p className="mt-1 truncate text-sm text-muted-foreground">
+              {student.parentPhone || "Chưa có số điện thoại phụ huynh"}
+            </p>
+            {(student.classes ?? []).length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1">
+                {student.classes!.map((item) => (
+                  <span
+                    key={item.id}
+                    className="rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-primary"
+                  >
+                    {item.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex shrink-0 gap-2">
             <Button
               variant="outline"
-              size="sm"
-              className="shrink-0 rounded-2xl"
+              size="icon"
+              className="min-h-10 min-w-10 rounded-2xl"
               onClick={onEdit}
+              aria-label="Sửa học sinh"
             >
               <Pencil size={15} />
-              Sửa
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="min-h-10 min-w-10 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={onDelete}
+              aria-label="Xóa học sinh"
+            >
+              <Trash2 size={15} />
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
