@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { EditStudentSheet } from "./EditStudentSheet";
 
 type StudentClass = {
   id: string;
@@ -35,6 +36,7 @@ const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 export function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const navigate = useNavigate();
+  const [editing, setEditing] = useState<Student | null>(null);
   const [deleting, setDeleting] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -111,7 +113,7 @@ export function StudentsPage() {
           <StudentsGrid
             students={students}
             onAdd={() => navigate("/students/new")}
-            onEdit={(student) => navigate(`/students/${student.id}/edit`)}
+            onEdit={setEditing}
             onDelete={setDeleting}
           />
         )}
@@ -122,6 +124,16 @@ export function StudentsPage() {
         onOpenChange={(open) => !open && setDeleting(null)}
         onConfirm={() => deleting && void removeStudent(deleting.id)}
       />
+      {editing && (
+        <EditStudentSheet
+          student={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            void loadData();
+          }}
+        />
+      )}
     </MobileShell>
   );
 }

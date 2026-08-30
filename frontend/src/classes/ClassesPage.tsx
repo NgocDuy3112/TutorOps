@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { EditClassSheet } from "./EditClassSheet";
 
 export type Student = { id: string; name: string; parentPhone: string | null };
 export type TutorClass = {
@@ -23,6 +24,7 @@ const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 export function ClassesPage() {
   const [classes, setClasses] = useState<TutorClass[]>([]);
   const navigate = useNavigate();
+  const [editing, setEditing] = useState<TutorClass | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   async function load() {
@@ -93,12 +95,22 @@ export function ClassesPage() {
               <ClassCard
                 key={item.id}
                 item={item}
-                onEdit={() => navigate(`/classes/${item.id}/edit`)}
+                onEdit={() => setEditing(item)}
               />
             ))}
           </div>
         )}
       </main>
+      {editing && (
+        <EditClassSheet
+          classItem={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            void load();
+          }}
+        />
+      )}
     </MobileShell>
   );
 }

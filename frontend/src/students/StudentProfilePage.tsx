@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/EmptyState";
 import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
+import { EditStudentSheet } from "./EditStudentSheet";
 import { MarkTaughtSheet } from "./MarkTaughtSheet";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -41,6 +42,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
   const [student, setStudent] = useState<Student | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -134,22 +136,20 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
               Thông tin
             </CardTitle>
             <Button
-              asChild
+              type="button"
               variant="outline"
               size="sm"
               className="rounded-2xl"
+              onClick={() => setShowEditForm(true)}
             >
-              <Link to={`/students/${student.id}/edit`}>
-                <Pencil size={15} />
-                Sửa
-              </Link>
+              <Pencil size={15} />
+              Sửa
             </Button>
           </CardHeader>
           <CardContent className="p-5">
             <dl className="space-y-3 text-sm">
               <Row label="Phụ huynh" value={student.parentName || "Chưa cập nhật"} />
               <Row label="Điện thoại" value={student.parentPhone || "Chưa cập nhật"} />
-              <Row label="Đơn giá" value={formatVnd(student.defaultPriceVnd)} />
               <Row
                 label="Nộp bài"
                 value={student.submissionMode === "self_submit" ? "Tự nộp" : "Giáo viên nhập"}
@@ -158,9 +158,12 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           </CardContent>
         </Card>
 
-        {/* Hành động nhanh */}
+        {/* Buổi dạy */}
         <Card className="rounded-3xl border-slate-200 shadow-sm">
-          <CardContent className="p-5">
+          <CardHeader className="flex-row items-center justify-between p-5 pb-0">
+            <CardTitle className="text-lg">Buổi dạy ({sessions.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 p-5">
             <Button
               type="button"
               onClick={() => setShowSessionForm(true)}
@@ -169,15 +172,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
               <CalendarCheck size={18} />
               Đã dạy hôm nay
             </Button>
-          </CardContent>
-        </Card>
-
-        {/* Buổi dạy gần đây */}
-        <Card className="rounded-3xl border-slate-200 shadow-sm">
-          <CardHeader className="flex-row items-center justify-between p-5 pb-0">
-            <CardTitle className="text-lg">Buổi dạy ({sessions.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="p-5">
             {recentSessions.length === 0 ? (
               <p className="text-sm text-muted-foreground">Chưa có buổi dạy nào.</p>
             ) : (
@@ -265,6 +259,16 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
         </Card>
       </main>
 
+      {showEditForm && (
+        <EditStudentSheet
+          student={student}
+          onClose={() => setShowEditForm(false)}
+          onSaved={() => {
+            setShowEditForm(false);
+            void load();
+          }}
+        />
+      )}
       {showSessionForm && (
         <MarkTaughtSheet
           student={student}

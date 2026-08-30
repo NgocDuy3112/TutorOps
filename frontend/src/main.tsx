@@ -110,12 +110,6 @@ function App() {
           }
         />
         <Route
-          path="/classes/:classId/edit"
-          element={
-            authenticated ? <ClassFormPage /> : <Navigate to="/login" replace />
-          }
-        />
-        <Route
           path="/classes/:classId"
           element={
             authenticated ? (
@@ -137,16 +131,6 @@ function App() {
         />
         <Route
           path="/assignments/new"
-          element={
-            authenticated ? (
-              <AssignmentFormPage />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/assignments/:assignmentId/edit"
           element={
             authenticated ? (
               <AssignmentFormPage />
@@ -199,16 +183,6 @@ function App() {
         />
         <Route
           path="/students/new"
-          element={
-            authenticated ? (
-              <StudentFormPage />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/students/:studentId/edit"
           element={
             authenticated ? (
               <StudentFormPage />
