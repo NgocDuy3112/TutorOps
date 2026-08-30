@@ -44,7 +44,9 @@ export function EditAssignmentSheet({
   );
   const [classIds, setClassIds] = useState<string[]>([]);
   const [classSearch, setClassSearch] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
+  // Reset form when assignment changes
   useEffect(() => {
     setTitle(assignment.title);
     setDescription(assignment.description ?? "");
@@ -53,8 +55,11 @@ export function EditAssignmentSheet({
         ? new Date(assignment.dueAt).toISOString().slice(0, 16)
         : "",
     );
+    setClassIds([]);
+    setLoaded(false);
   }, [assignment]);
 
+  // Load classes and match with assignment's classNames
   useEffect(() => {
     async function loadClasses() {
       try {
@@ -64,17 +69,22 @@ export function EditAssignmentSheet({
         if (response.ok) {
           const allClasses: TutorClass[] = await response.json();
           setClasses(allClasses);
+
+          // Match classNames from assignment with loaded classes
+          const assignmentClassNames = assignment.classNames ?? [];
           const matchedClassIds = allClasses
-            .filter((c) => (assignment.classNames ?? []).includes(c.name))
+            .filter((c) => assignmentClassNames.includes(c.name))
             .map((c) => c.id);
+
           setClassIds(matchedClassIds);
+          setLoaded(true);
         }
       } catch {
-        // ignore
+        setLoaded(true);
       }
     }
     void loadClasses();
-  }, [assignment]);
+  }, [assignment.classNames]);
 
   const searchTerm = classSearch.trim().toLocaleLowerCase("vi");
   const visibleClasses = classes
@@ -159,7 +169,7 @@ export function EditAssignmentSheet({
               />
             </div>
 
-            {/* Chọn lớp — compact style */}
+            {/* Chọn lớp */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Chọn lớp</Label>
@@ -183,7 +193,11 @@ export function EditAssignmentSheet({
                 />
               </div>
               <div className="max-h-[35dvh] space-y-1.5 overflow-y-auto">
-                {visibleClasses.length === 0 ? (
+                {!loaded ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    Đang tải...
+                  </p>
+                ) : visibleClasses.length === 0 ? (
                   <p className="py-4 text-center text-sm text-muted-foreground">
                     {classes.length === 0
                       ? "Chưa có lớp nào."
@@ -205,7 +219,9 @@ export function EditAssignmentSheet({
                       >
                         <span
                           className={`grid size-7 shrink-0 place-items-center rounded-lg text-[10px] font-bold ${
-                            selected ? "bg-primary text-white" : "bg-slate-100 text-slate-500"
+                            selected
+                              ? "bg-primary text-white"
+                              : "bg-slate-100 text-slate-500"
                           }`}
                         >
                           {item.name.slice(0, 2).toLocaleUpperCase("vi")}
@@ -218,7 +234,9 @@ export function EditAssignmentSheet({
                             {item.studentCount} học sinh
                           </span>
                         </span>
-                        {selected && <Check size={16} className="text-primary" />}
+                        {selected && (
+                          <Check size={16} className="text-primary" />
+                        )}
                       </button>
                     );
                   })
