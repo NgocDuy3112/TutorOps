@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -110,13 +111,11 @@ export function MarkTaughtSheet({
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="taughtAt">Thời gian</Label>
-            <Input
-              id="taughtAt"
-              required
-              type="datetime-local"
-              value={taughtAt}
-              onChange={(event) => setTaughtAt(event.target.value)}
+            <Label>Thời gian</Label>
+            <DatePicker
+              value={taughtAt ? new Date(taughtAt) : null}
+              onChange={(date) => setTaughtAt(date ? date.toISOString().slice(0, 16) : "")}
+              min={new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}
             />
           </div>
           <div className="space-y-1.5">

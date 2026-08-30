@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -189,14 +190,11 @@ export function AssignmentFormPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="assignment-due-at">Deadline</Label>
-                  <Input
-                    id="assignment-due-at"
-                    type="datetime-local"
-                    className="w-full max-w-full"
-                    min={new Date().toISOString().slice(0, 16)}
-                    value={dueAt}
-                    onChange={(e) => setDueAt(e.target.value)}
+                  <Label>Deadline</Label>
+                  <DatePicker
+                    value={dueAt ? new Date(dueAt) : null}
+                    onChange={(date) => setDueAt(date ? date.toISOString().slice(0, 16) : "")}
+                    min={new Date()}
                   />
                 </div>
                 <div className="space-y-1.5">
