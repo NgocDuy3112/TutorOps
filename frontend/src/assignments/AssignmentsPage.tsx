@@ -17,6 +17,7 @@ type Assignment = {
   dueAt: string | null;
   studentCount: number;
   classNames?: string[];
+  classIds?: string[];
   students: { id: string; name: string; status: string }[];
 };
 

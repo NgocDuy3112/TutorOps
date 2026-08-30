@@ -18,6 +18,7 @@ type Assignment = {
   description: string | null;
   dueAt: string | null;
   classNames?: string[];
+  classIds?: string[];
 };
 type TutorClass = { id: string; name: string; studentCount: number };
 
@@ -42,7 +43,7 @@ export function EditAssignmentSheet({
       ? new Date(assignment.dueAt).toISOString().slice(0, 16)
       : "",
   );
-  const [classIds, setClassIds] = useState<string[]>([]);
+  const [classIds, setClassIds] = useState<string[]>(assignment.classIds ?? []);
   const [classSearch, setClassSearch] = useState("");
   const [loaded, setLoaded] = useState(false);
 
@@ -55,11 +56,11 @@ export function EditAssignmentSheet({
         ? new Date(assignment.dueAt).toISOString().slice(0, 16)
         : "",
     );
-    setClassIds([]);
+    setClassIds(assignment.classIds ?? []);
     setLoaded(false);
   }, [assignment]);
 
-  // Load classes and match with assignment's classNames
+  // Load classes
   useEffect(() => {
     async function loadClasses() {
       try {
@@ -69,14 +70,6 @@ export function EditAssignmentSheet({
         if (response.ok) {
           const allClasses: TutorClass[] = await response.json();
           setClasses(allClasses);
-
-          // Match classNames from assignment with loaded classes
-          const assignmentClassNames = assignment.classNames ?? [];
-          const matchedClassIds = allClasses
-            .filter((c) => assignmentClassNames.includes(c.name))
-            .map((c) => c.id);
-
-          setClassIds(matchedClassIds);
           setLoaded(true);
         }
       } catch {
@@ -84,7 +77,7 @@ export function EditAssignmentSheet({
       }
     }
     void loadClasses();
-  }, [assignment.classNames]);
+  }, []);
 
   const searchTerm = classSearch.trim().toLocaleLowerCase("vi");
   const visibleClasses = classes

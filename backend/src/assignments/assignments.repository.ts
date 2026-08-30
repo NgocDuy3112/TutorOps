@@ -22,6 +22,10 @@ export class AssignmentsRepository {
           '[]'::json
         ) AS "classNames",
         COALESCE(
+          json_agg(DISTINCT c.id) FILTER (WHERE c.id IS NOT NULL AND c.deleted_at IS NULL),
+          '[]'::json
+        ) AS "classIds",
+        COALESCE(
           json_agg(
             json_build_object(
               'id', s.id,
