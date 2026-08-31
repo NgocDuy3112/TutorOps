@@ -171,15 +171,8 @@ export function TuitionPage() {
         {!loading && !error && data && (
           <div className="mt-4 space-y-4">
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70">
-              <p className="text-sm text-muted-foreground">
-                Còn cần thu · {formatMonthLabel(month).toLowerCase()}
-              </p>
               <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">
                 {formatVnd(totals?.balance ?? 0)}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Đã thu {formatVnd(totals?.totalPaid ?? 0)} / Cần thu{" "}
-                {formatVnd(totals?.totalDue ?? 0)}
               </p>
             </section>
 
@@ -317,7 +310,7 @@ function TuitionRowCard({
           <p className="mt-0.5 text-xs text-muted-foreground">
             {noActivity
               ? "Chưa có buổi dạy trong tháng"
-              : `${row.sessionCount} buổi · đã thu ${formatVnd(row.paid)}`}
+              : `Đã dạy ${row.sessionCount} buổi`}
           </p>
         </div>
         <div className="shrink-0 text-right">
