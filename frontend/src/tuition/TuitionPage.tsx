@@ -73,11 +73,6 @@ export function TuitionPage() {
     void load(month);
   }, [month]);
 
-  const isCurrentMonth = useMemo(
-    () => monthKey(month) === monthKey(new Date()),
-    [month],
-  );
-
   function shiftMonth(deltaMonths: number) {
     setMonth(
       (current) =>
@@ -131,17 +126,15 @@ export function TuitionPage() {
               <ChevronRight size={18} />
             </Button>
           </div>
-          {!isCurrentMonth && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="mx-auto mt-1 block rounded-2xl text-sm font-semibold text-muted-foreground"
-              onClick={() => setMonth(new Date())}
-            >
-              Về tháng này
-            </Button>
-          )}
+        </section>
+
+        <section className="mt-4 flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70">
+          <p className="text-sm font-semibold text-muted-foreground">
+            Tổng tiền
+          </p>
+          <p className="text-xl font-black tracking-tight text-slate-950">
+            {formatVnd(totals?.totalDue ?? 0)}
+          </p>
         </section>
 
         {loading && (
@@ -170,12 +163,6 @@ export function TuitionPage() {
         )}
         {!loading && !error && data && (
           <div className="mt-4 space-y-4">
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70">
-              <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">
-                {formatVnd(totals?.balance ?? 0)}
-              </p>
-            </section>
-
             {rows.length > 0 && (
               <section className="space-y-3">
                 <div className="relative">
