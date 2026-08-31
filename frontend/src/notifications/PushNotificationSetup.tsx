@@ -8,8 +8,9 @@ type State =
   | "enabled"
   | "disabled"
   | "unsupported"
-  | "ios-browser"  | "blocked"  | "error"
-  | "blocked";
+  | "ios-browser"
+  | "blocked"
+  | "error";
 
 function decodeKey(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
@@ -62,7 +63,8 @@ export function PushNotificationSetup() {
         body: JSON.stringify({ ...subscription.toJSON(), userAgent: navigator.userAgent }),
       });
       setState(saved.ok ? "enabled" : "disabled");
-    } catch {
+    } catch (error) {
+      console.error("[push] loadState failed:", error);
       setState("error");
     }
   }
@@ -70,14 +72,18 @@ export function PushNotificationSetup() {
   async function enable() {
     setState("loading");
     try {
-      const keyResponse = await fetch(`${API}/notifications/public-key`, { credentials: "include" });
-      const { publicKey } = await keyResponse.json();
+      // WebKit (iOS) requires requestPermission() to run synchronously
+      // inside the user gesture — any await before it loses the gesture
+      // and the permission dialog never appears. Ask first, fetch after.
       const permission = await Notification.requestPermission();
       if (permission === "denied") {
         setState("blocked");
         return;
       }
-      if (!publicKey || permission !== "granted") throw new Error();
+      if (permission !== "granted") throw new Error("permission_default");
+      const keyResponse = await fetch(`${API}/notifications/public-key`, { credentials: "include" });
+      const { publicKey } = await keyResponse.json();
+      if (!publicKey) throw new Error("missing_vapid_public_key");
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -89,9 +95,10 @@ export function PushNotificationSetup() {
         credentials: "include",
         body: JSON.stringify({ ...subscription.toJSON(), userAgent: navigator.userAgent }),
       });
-      if (!response.ok) throw new Error();
+      if (!response.ok) throw new Error(`save_failed_${response.status}`);
       setState("enabled");
-    } catch {
+    } catch (error) {
+      console.error("[push] enable failed:", error);
       setState("error");
     }
   }
@@ -112,7 +119,8 @@ export function PushNotificationSetup() {
         await subscription.unsubscribe();
       }
       setState("disabled");
-    } catch {
+    } catch (error) {
+      console.error("[push] disable failed:", error);
       setState("error");
     }
   }
