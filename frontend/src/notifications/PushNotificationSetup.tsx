@@ -24,7 +24,18 @@ function supported() {
 
 export function PushNotificationSetup() {
   const [state, setState] = useState<State>("loading");
+  const [errorDetail, setErrorDetail] = useState("");
+  // Preloaded at page load so enable() can call requestPermission() and
+  // subscribe() back-to-back inside the user gesture — WebKit (iOS)
+  // requires both to run with fresh user activation.
   const publicKeyRef = useRef<string | null>(null);
+
+  function fail(scope: string, error: unknown) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(`[push] ${scope} failed:`, error);
+    setErrorDetail(`${scope}: ${detail}`);
+    setState("error");
+  }
 
   useEffect(() => {
     void loadState();
@@ -75,13 +86,13 @@ export function PushNotificationSetup() {
       });
       setState(saved.ok ? "enabled" : "disabled");
     } catch (error) {
-      console.error("[push] loadState failed:", error);
-      setState("error");
+      fail("load", error);
     }
   }
 
   async function enable() {
     setState("loading");
+    setErrorDetail("");
     try {
       // WebKit (iOS) requires requestPermission() to run synchronously
       // inside the user gesture — any await before it loses the gesture
@@ -109,8 +120,7 @@ export function PushNotificationSetup() {
       if (!response.ok) throw new Error(`save_failed_${response.status}`);
       setState("enabled");
     } catch (error) {
-      console.error("[push] enable failed:", error);
-      setState("error");
+      fail("enable", error);
     }
   }
 
@@ -131,8 +141,7 @@ export function PushNotificationSetup() {
       }
       setState("disabled");
     } catch (error) {
-      console.error("[push] disable failed:", error);
-      setState("error");
+      fail("disable", error);
     }
   }
 
@@ -158,8 +167,9 @@ export function PushNotificationSetup() {
         </small>
       )}
       {state === "error" && (
-        <small className="max-w-48 text-right text-xs text-red-600">
+        <small className="max-w-56 text-right text-xs text-red-600">
           Có lỗi, thử bật lại
+          {errorDetail ? ` (${errorDetail})` : null}
         </small>
       )}
     </div>

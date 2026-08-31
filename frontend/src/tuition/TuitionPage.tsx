@@ -1,10 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, Plus, Search, Wallet, Receipt, SearchX } from "lucide-react";
+import {
+  CalendarX2,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Search,
+  SearchX,
+  Wallet,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
-import { formatVnd } from "../lib/format";
+import { formatMonthLabel, formatVnd, monthKey } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
@@ -12,51 +21,47 @@ import { PaymentDialog } from "../payments/PaymentDialog";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
-type Student = { id: string; name: string };
-type PaymentSummary = {
-  totalDue: number;
-  totalPaid: number;
+type TuitionStudent = {
+  id: string;
+  name: string;
+  due: number;
+  paid: number;
   balance: number;
   sessionCount: number;
 };
-type TuitionRow = { student: Student; summary: PaymentSummary };
+type TuitionTotals = {
+  totalDue: number;
+  totalPaid: number;
+  balance: number;
+  debtCount: number;
+  sessionCount: number;
+};
+type TuitionResponse = {
+  month: string;
+  totals: TuitionTotals;
+  students: TuitionStudent[];
+};
 type Filter = "all" | "debt" | "paid";
 
 export function TuitionPage() {
-  const [rows, setRows] = useState<TuitionRow[]>([]);
+  const [month, setMonth] = useState(() => new Date());
+  const [data, setData] = useState<TuitionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [paying, setPaying] = useState<TuitionRow | null>(null);
+  const [paying, setPaying] = useState<TuitionStudent | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
-  async function load() {
+  async function load(target: Date) {
     setLoading(true);
     setError("");
     try {
-      const studentsResponse = await fetch(`${API}/students`, {
-        credentials: "include",
-      });
-      if (!studentsResponse.ok) throw new Error("Không thể tải học phí.");
-      const students: Student[] = await studentsResponse.json();
-      const summaries = await Promise.all(
-        students.map(async (student) => {
-          const response = await fetch(
-            `${API}/students/${student.id}/payments`,
-            { credentials: "include" },
-          );
-          if (!response.ok) throw new Error("Không thể tải công nợ.");
-          return {
-            student,
-            summary: (await response.json()) as PaymentSummary,
-          };
-        }),
+      const response = await fetch(
+        `${API}/tuition?month=${monthKey(target)}`,
+        { credentials: "include" },
       );
-      setRows(
-        summaries.sort(
-          (left, right) => right.summary.balance - left.summary.balance,
-        ),
-      );
+      if (\!response.ok) throw new Error("Không thể tải học phí.");
+      setData((await response.json()) as TuitionResponse);
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
@@ -67,31 +72,46 @@ export function TuitionPage() {
   }
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(month);
+  }, [month]);
 
-  const totalDue = rows.reduce(
-    (sum, row) => sum + Number(row.summary.totalDue),
-    0,
+  const isCurrentMonth = useMemo(
+    () => monthKey(month) === monthKey(new Date()),
+    [month],
   );
-  const totalPaid = rows.reduce(
-    (sum, row) => sum + Number(row.summary.totalPaid),
-    0,
+
+  function shiftMonth(deltaMonths: number) {
+    setMonth(
+      (current) =>
+        new Date(current.getFullYear(), current.getMonth() + deltaMonths, 1),
+    );
+  }
+
+  function updateMonth(value: string) {
+    setMonth((current) => new Date(current.getFullYear(), Number(value), 1));
+  }
+
+  function updateYear(value: string) {
+    setMonth((current) => new Date(Number(value), current.getMonth(), 1));
+  }
+
+  const yearOptions = Array.from(
+    { length: 7 },
+    (_, index) => new Date().getFullYear() - 3 + index,
   );
-  const balance = totalDue - totalPaid;
-  const debtCount = rows.filter((row) => row.summary.balance > 0).length;
-  const paidCount = rows.filter((row) => row.summary.balance <= 0).length;
+
+  const rows = data?.students ?? [];
+  const totals = data?.totals;
+  const paidCount = rows.length - (totals?.debtCount ?? 0);
 
   const filteredRows = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("vi");
     return rows.filter((row) => {
       const matchesSearch =
-        !term || row.student.name.toLocaleLowerCase("vi").includes(term);
+        \!term || row.name.toLocaleLowerCase("vi").includes(term);
       const matchesFilter =
         filter === "all" ||
-        (filter === "debt"
-          ? row.summary.balance > 0
-          : row.summary.balance <= 0);
+        (filter === "debt" ? row.balance > 0 : row.balance <= 0);
       return matchesSearch && matchesFilter;
     });
   }, [rows, search, filter]);
@@ -99,15 +119,79 @@ export function TuitionPage() {
   return (
     <MobileShell>
       <PageHeader title="Học phí" action={<UserAvatar />} />
-      <main className="mx-auto max-w-6xl px-4 py-5 sm:py-6">
+      <main className="mx-auto max-w-4xl px-4 py-5 sm:py-6">
+        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70">
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              aria-label="Tháng trước"
+              className="size-11 shrink-0 rounded-2xl"
+              onClick={() => shiftMonth(-1)}
+            >
+              <ChevronLeft size={18} />
+            </Button>
+            <p className="text-lg font-black tracking-tight text-slate-950">
+              {formatMonthLabel(month)}
+            </p>
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              aria-label="Tháng sau"
+              className="size-11 shrink-0 rounded-2xl"
+              onClick={() => shiftMonth(1)}
+            >
+              <ChevronRight size={18} />
+            </Button>
+          </div>
+          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
+            <select
+              value={month.getMonth()}
+              onChange={(event) => updateMonth(event.target.value)}
+              className="min-h-11 rounded-2xl border border-input bg-white px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-label="Chọn tháng"
+            >
+              {Array.from({ length: 12 }, (_, index) => (
+                <option key={index} value={index}>
+                  Tháng {index + 1}
+                </option>
+              ))}
+            </select>
+            <select
+              value={month.getFullYear()}
+              onChange={(event) => updateYear(event.target.value)}
+              className="min-h-11 rounded-2xl border border-input bg-white px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-label="Chọn năm"
+            >
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+            {\!isCurrentMonth && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11 rounded-2xl text-sm font-semibold"
+                onClick={() => setMonth(new Date())}
+              >
+                Hôm nay
+              </Button>
+            )}
+          </div>
+        </section>
+
         {loading && (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="animate-spin" size={17} />
             Đang tải học phí...
           </p>
         )}
-        {error && (
-          <Card className="border-red-100 bg-red-50">
+        {\!loading && error && (
+          <Card className="mt-4 border-red-100 bg-red-50">
             <CardContent
               role="alert"
               className="flex flex-col gap-3 p-4 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between"
@@ -117,73 +201,79 @@ export function TuitionPage() {
                 type="button"
                 variant="outline"
                 className="min-h-11 bg-white"
-                onClick={() => void load()}
+                onClick={() => void load(month)}
               >
                 Tải lại
               </Button>
             </CardContent>
           </Card>
         )}
-        {!loading && !error && (
-          <div className="space-y-4">
+        {\!loading && \!error && data && (
+          <div className="mt-4 space-y-4">
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Còn cần thu</p>
+                  <p className="text-sm text-muted-foreground">
+                    Còn cần thu · {formatMonthLabel(month).toLowerCase()}
+                  </p>
                   <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">
-                    {formatVnd(balance)}
+                    {formatVnd(totals?.balance ?? 0)}
                   </p>
                 </div>
                 <span className="grid size-11 place-items-center rounded-2xl bg-violet-50 text-primary">
                   <Wallet size={21} />
                 </span>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Metric label="Tổng cần thu" value={formatVnd(totalDue)} />
-                <Metric label="Tổng đã thu" value={formatVnd(totalPaid)} />
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <Metric label="Cần thu" value={formatVnd(totals?.totalDue ?? 0)} />
+                <Metric label="Đã thu" value={formatVnd(totals?.totalPaid ?? 0)} />
+                <Metric label="HS còn nợ" value={String(totals?.debtCount ?? 0)} />
+                <Metric label="Buổi dạy" value={String(totals?.sessionCount ?? 0)} />
               </div>
             </section>
 
-            <section className="space-y-3">
-              <div className="relative">
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  size={17}
-                />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  className="bg-white pl-10"
-                  placeholder="Tìm học sinh"
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <FilterButton
-                  active={filter === "all"}
-                  onClick={() => setFilter("all")}
-                  label="Tất cả"
-                  count={rows.length}
-                />
-                <FilterButton
-                  active={filter === "debt"}
-                  onClick={() => setFilter("debt")}
-                  label="Còn nợ"
-                  count={debtCount}
-                />
-                <FilterButton
-                  active={filter === "paid"}
-                  onClick={() => setFilter("paid")}
-                  label="Đã đủ"
-                  count={paidCount}
-                />
-              </div>
-            </section>
+            {rows.length > 0 && (
+              <section className="space-y-3">
+                <div className="relative">
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    size={17}
+                  />
+                  <Input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    className="bg-white pl-10"
+                    placeholder="Tìm học sinh"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <FilterButton
+                    active={filter === "all"}
+                    onClick={() => setFilter("all")}
+                    label="Tất cả"
+                    count={rows.length}
+                  />
+                  <FilterButton
+                    active={filter === "debt"}
+                    onClick={() => setFilter("debt")}
+                    label="Còn nợ"
+                    count={totals?.debtCount ?? 0}
+                  />
+                  <FilterButton
+                    active={filter === "paid"}
+                    onClick={() => setFilter("paid")}
+                    label="Đã đủ"
+                    count={paidCount}
+                  />
+                </div>
+              </section>
+            )}
 
             {rows.length === 0 ? (
               <EmptyState
-                icon={<Receipt size={28} />}
-                title="Chưa có học phí"
-                description="Thêm học sinh và ghi nhận buổi dạy để hệ thống tự tính học phí. Bạn có thể ghi nhận thanh toán khi nhận tiền từ phụ huynh."
+                icon={<CalendarX2 size={28} />}
+                title="Tháng này chưa có buổi dạy nào"
+                description="Ghi nhận buổi dạy trong tháng để hệ thống tự tính học phí. Bạn có thể ghi nhận thanh toán khi nhận tiền từ phụ huynh."
               />
             ) : filteredRows.length === 0 ? (
               <EmptyState
@@ -192,10 +282,10 @@ export function TuitionPage() {
                 description="Thử thay đổi từ khóa tìm hoặc bộ lọc để xem kết quả khác."
               />
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
                 {filteredRows.map((row) => (
-                  <TuitionCard
-                    key={row.student.id}
+                  <TuitionRowCard
+                    key={row.id}
                     row={row}
                     onPay={() => setPaying(row)}
                   />
@@ -206,12 +296,12 @@ export function TuitionPage() {
         )}
       </main>
       <PaymentDialog
-        student={paying?.student ?? null}
-        balance={paying?.summary.balance ?? 0}
-        onOpenChange={(open) => !open && setPaying(null)}
+        student={paying ? { id: paying.id, name: paying.name } : null}
+        balance={paying?.balance ?? 0}
+        onOpenChange={(open) => \!open && setPaying(null)}
         onSaved={() => {
           setPaying(null);
-          void load();
+          void load(month);
         }}
       />
     </MobileShell>
@@ -256,43 +346,62 @@ function FilterButton({
   );
 }
 
-function TuitionCard({ row, onPay }: { row: TuitionRow; onPay: () => void }) {
-  const paidEnough = row.summary.balance <= 0;
+function TuitionRowCard({
+  row,
+  onPay,
+}: {
+  row: TuitionStudent;
+  onPay: () => void;
+}) {
+  const noActivity = row.sessionCount === 0 && row.paid <= 0;
+  const settled = \!noActivity && row.balance <= 0;
   return (
     <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <span
-            className={`grid size-11 shrink-0 place-items-center rounded-2xl ${paidEnough ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}
-          >
-            {paidEnough ? <CheckCircle2 size={21} /> : <Wallet size={21} />}
-          </span>
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate font-bold">{row.student.name}</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {row.summary.sessionCount} buổi dạy
-            </p>
-            <p
-              className={`mt-3 text-xl font-black ${paidEnough ? "text-emerald-700" : "text-amber-700"}`}
-            >
-              {formatVnd(
-                paidEnough ? row.summary.totalPaid : row.summary.balance,
-              )}
-            </p>
-            <p
-              className={`text-xs font-semibold ${paidEnough ? "text-emerald-700" : "text-muted-foreground"}`}
-            >
-              {paidEnough ? "Đã thu" : "Còn cần thu"}
-            </p>
-          </div>
+      <CardContent className="flex items-center gap-3 p-4">
+        <span
+          className={`grid size-11 shrink-0 place-items-center rounded-2xl ${
+            noActivity
+              ? "bg-slate-100 text-slate-500"
+              : settled
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-amber-50 text-amber-700"
+          }`}
+        >
+          {settled ? <CheckCircle2 size={20} /> : <Wallet size={20} />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-bold">{row.name}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {noActivity
+              ? "Chưa có buổi dạy trong tháng"
+              : `${row.sessionCount} buổi · đã thu ${formatVnd(row.paid)}`}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          {noActivity ? (
+            <p className="text-sm font-semibold text-muted-foreground">—</p>
+          ) : (
+            <>
+              <p
+                className={`text-base font-black ${settled ? "text-emerald-700" : "text-amber-700"}`}
+              >
+                {formatVnd(settled ? row.paid : row.balance)}
+              </p>
+              <p
+                className={`text-xs font-semibold ${settled ? "text-emerald-700" : "text-muted-foreground"}`}
+              >
+                {settled ? "Đã thu đủ" : "Còn cần thu"}
+              </p>
+            </>
+          )}
         </div>
         <Button
           type="button"
-          className="mt-4 min-h-11 w-full rounded-2xl"
+          size="sm"
+          className="min-h-11 shrink-0 rounded-2xl px-4"
           onClick={onPay}
         >
-          <Plus size={16} />
-          Ghi nhận thanh toán
+          Thu
         </Button>
       </CardContent>
     </Card>
