@@ -60,7 +60,7 @@ export function TuitionPage() {
         `${API}/tuition?month=${monthKey(target)}`,
         { credentials: "include" },
       );
-      if (\!response.ok) throw new Error("Không thể tải học phí.");
+      if (!response.ok) throw new Error("Không thể tải học phí.");
       setData((await response.json()) as TuitionResponse);
     } catch (requestError) {
       setError(
@@ -108,7 +108,7 @@ export function TuitionPage() {
     const term = search.trim().toLocaleLowerCase("vi");
     return rows.filter((row) => {
       const matchesSearch =
-        \!term || row.name.toLocaleLowerCase("vi").includes(term);
+        !term || row.name.toLocaleLowerCase("vi").includes(term);
       const matchesFilter =
         filter === "all" ||
         (filter === "debt" ? row.balance > 0 : row.balance <= 0);
@@ -171,7 +171,7 @@ export function TuitionPage() {
                 </option>
               ))}
             </select>
-            {\!isCurrentMonth && (
+            {!isCurrentMonth && (
               <Button
                 type="button"
                 variant="ghost"
@@ -190,7 +190,7 @@ export function TuitionPage() {
             Đang tải học phí...
           </p>
         )}
-        {\!loading && error && (
+        {!loading && error && (
           <Card className="mt-4 border-red-100 bg-red-50">
             <CardContent
               role="alert"
@@ -208,7 +208,7 @@ export function TuitionPage() {
             </CardContent>
           </Card>
         )}
-        {\!loading && \!error && data && (
+        {!loading && !error && data && (
           <div className="mt-4 space-y-4">
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70">
               <div className="flex items-start justify-between gap-4">
@@ -298,7 +298,7 @@ export function TuitionPage() {
       <PaymentDialog
         student={paying ? { id: paying.id, name: paying.name } : null}
         balance={paying?.balance ?? 0}
-        onOpenChange={(open) => \!open && setPaying(null)}
+        onOpenChange={(open) => !open && setPaying(null)}
         onSaved={() => {
           setPaying(null);
           void load(month);
@@ -354,7 +354,7 @@ function TuitionRowCard({
   onPay: () => void;
 }) {
   const noActivity = row.sessionCount === 0 && row.paid <= 0;
-  const settled = \!noActivity && row.balance <= 0;
+  const settled = !noActivity && row.balance <= 0;
   return (
     <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
       <CardContent className="flex items-center gap-3 p-4">
