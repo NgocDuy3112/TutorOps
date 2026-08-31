@@ -11,6 +11,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { SubmissionsModule } from "./submissions/submissions.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
+import { TuitionModule } from "./tuition/tuition.module";
 import { ClassesModule } from "./classes/classes.module";
 import { OcrModule } from "./ocr/ocr.module";
 import { CommonModule } from "./common/common.module";
@@ -31,6 +32,7 @@ import { VersionModule } from "./version/version.module";
     SubmissionsModule,
     NotificationsModule,
     DashboardModule,
+    TuitionModule,
     ClassesModule,
     OcrModule,
     VersionModule,
