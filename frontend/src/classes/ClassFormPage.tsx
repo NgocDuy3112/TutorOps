@@ -121,10 +121,11 @@ export function ClassFormPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="class-price">Giá mặc định</Label>
+                  <Label htmlFor="class-price">Giá mặc định (tối đa 10 tỷ ₫)</Label>
                   <Input
                     id="class-price"
                     inputMode="numeric"
+                    max={10_000_000_000}
                     value={form.defaultPriceVnd}
                     onChange={(e) =>
                       setForm({

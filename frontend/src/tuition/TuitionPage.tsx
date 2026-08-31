@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, Plus, Search, Wallet } from "lucide-react";
+import { CheckCircle2, Loader2, Plus, Search, Wallet, Receipt, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/EmptyState";
 import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
@@ -152,7 +153,7 @@ export function TuitionPage() {
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  className="min-h-12 rounded-2xl bg-white pl-10"
+                  className="bg-white pl-10"
                   placeholder="Tìm học sinh"
                 />
               </div>
@@ -179,17 +180,17 @@ export function TuitionPage() {
             </section>
 
             {rows.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="p-10 text-center text-sm text-muted-foreground">
-                  Không có dữ liệu.
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={<Receipt size={28} />}
+                title="Chưa có học phí"
+                description="Thêm học sinh và ghi nhận buổi dạy để hệ thống tự tính học phí. Bạn có thể ghi nhận thanh toán khi nhận tiền từ phụ huynh."
+              />
             ) : filteredRows.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="p-10 text-center text-sm text-muted-foreground">
-                  Không có dữ liệu.
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={<SearchX size={28} />}
+                title="Không tìm thấy"
+                description="Thử thay đổi từ khóa tìm hoặc bộ lọc để xem kết quả khác."
+              />
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredRows.map((row) => (

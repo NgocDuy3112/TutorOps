@@ -11,7 +11,11 @@ import {
 } from "@nestjs/common";
 import { AuthGuard } from "../auth/auth.guard";
 import { AssignmentsService } from "./assignments.service";
-import { CreateAssignmentDto, UpdateAssignmentDto } from "./assignments.dto";
+import {
+  CreateAssignmentDto,
+  ReviewDropboxSubmissionDto,
+  UpdateAssignmentDto,
+} from "./assignments.dto";
 import { ParseUUIDPipe } from "@nestjs/common";
 
 @Controller("assignments")
@@ -47,6 +51,21 @@ export class AssignmentsController {
     @Param("id", new ParseUUIDPipe()) id: string,
   ) {
     return this.assignments.dropboxSubmissions(request.user.id, id);
+  }
+
+  @Patch(":id/dropbox-submissions/:submissionId/review")
+  reviewDropboxSubmission(
+    @Req() request: AuthenticatedRequest,
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Param("submissionId", new ParseUUIDPipe()) submissionId: string,
+    @Body() body: ReviewDropboxSubmissionDto,
+  ) {
+    return this.assignments.reviewDropboxSubmission(
+      request.user.id,
+      id,
+      submissionId,
+      body,
+    );
   }
 
   @Patch(":id/dropbox-submissions/:submissionId/:status")

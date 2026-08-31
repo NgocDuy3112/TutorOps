@@ -36,9 +36,9 @@ export class AuthService {
       throw error;
     }
   }
-  getGoogleUrl() {
+  async getGoogleUrl() {
     const state = crypto.randomBytes(32).toString("base64url");
-    void redis.set(`oauth:google:state:${state}`, "1", { EX: 600 });
+    await redis.set(`oauth:google:state:${state}`, "1", { EX: 600 });
     return {
       url: this.google.generateAuthUrl({
         access_type: "online",

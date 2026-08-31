@@ -2,10 +2,11 @@ import type { PushSubscriptionDto } from "./notifications.dto";
 import { Injectable, BadRequestException } from "@nestjs/common";
 import webpush from "web-push";
 import { pool } from "../db/client";
+import { NotificationsRepository } from "./notifications.repository";
 
 @Injectable()
 export class NotificationsService {
-  constructor() {
+  constructor(private readonly repository: NotificationsRepository) {
     const publicKey = process.env.VAPID_PUBLIC_KEY;
     const privateKey = process.env.VAPID_PRIVATE_KEY;
     if (publicKey && privateKey)
@@ -18,6 +19,10 @@ export class NotificationsService {
   publicKey() {
     return process.env.VAPID_PUBLIC_KEY ?? null;
   }
+  async listActiveSubscriptions(userId: string) {
+    return this.repository.activeSubscriptions(userId);
+  }
+
   async subscribe(userId: string, input: PushSubscriptionDto) {
     if (!input?.endpoint || !input?.keys?.p256dh || !input?.keys?.auth)
       throw new BadRequestException("invalid_push_subscription");
@@ -34,10 +39,7 @@ export class NotificationsService {
     return { ok: true };
   }
   async unsubscribe(userId: string, endpoint: string) {
-    await pool.query(
-      `UPDATE push_subscriptions SET revoked_at = now(), updated_at = now() WHERE user_id = $1 AND endpoint = $2`,
-      [userId, endpoint],
-    );
+    await this.repository.revoke(userId, endpoint);
     return { ok: true };
   }
   async sendToUser(

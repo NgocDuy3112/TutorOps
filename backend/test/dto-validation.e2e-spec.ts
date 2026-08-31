@@ -1,5 +1,8 @@
 import { BadRequestException, ValidationPipe } from "@nestjs/common";
-import { CreateAssignmentDto } from "../src/assignments/assignments.dto";
+import {
+  CreateAssignmentDto,
+  ReviewDropboxSubmissionDto,
+} from "../src/assignments/assignments.dto";
 import { CreateStudentDto } from "../src/students/students.dto";
 import { TeachingSessionDto } from "../src/sessions/sessions.dto";
 
@@ -17,6 +20,15 @@ describe("DTO validation", () => {
   it("rejects assignment without students or with invalid UUID", async () => {
     await expect(validate(CreateAssignmentDto, { title: "Task" })).rejects.toBeInstanceOf(BadRequestException);
     await expect(validate(CreateAssignmentDto, { title: "Task", studentIds: ["bad-id"] })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it("rejects invalid dropbox review data", async () => {
+    await expect(
+      validate(ReviewDropboxSubmissionDto, {
+        studentId: "not-a-uuid",
+        score: 11,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it("rejects student with negative price or invalid mode", async () => {

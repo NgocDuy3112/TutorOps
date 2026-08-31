@@ -20,12 +20,17 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: redis-server /usr/local/etc/redis/redis.conf
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command:
+      - sh
+      - -c
+      - exec redis-server /usr/local/etc/redis/redis.conf --requirepass "$$REDIS_PASSWORD"
     volumes:
       - ./configs/redis.conf:/usr/local/etc/redis/redis.conf:ro
       - ./data/redis:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -41,6 +46,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      default: {}
+      edge-network:
+        aliases:
+          - tutorops-backend
 
   frontend:
     build:
@@ -48,15 +58,13 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL}
     restart: unless-stopped
+    networks:
+      default: {}
+      edge-network:
+        aliases:
+          - tutorops-frontend
 
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
-    ports:
-      - "${NGINX_HOST_PORT}:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      - backend
-      - frontend
+networks:
+  default: {}
+  edge-network:
+    external: true

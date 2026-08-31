@@ -21,6 +21,9 @@ export class NotificationsController {
   @Get("public-key") publicKey() {
     return { publicKey: this.notifications.publicKey() };
   }
+  @Get("subscriptions") subscriptions(@Req() req: AuthenticatedRequest) {
+    return this.notifications.listActiveSubscriptions(req.user.id);
+  }
   @Post("subscriptions") subscribe(
     @Req() req: AuthenticatedRequest,
     @Body() body: PushSubscriptionDto,

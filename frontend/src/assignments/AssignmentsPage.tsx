@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { FileText, Loader2, Pencil, Plus } from "lucide-react";
+import { FileText, Loader2, Pencil, Plus, Trash2, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { EditAssignmentSheet } from "./EditAssignmentSheet";
 
 type Assignment = {
   id: string;
@@ -14,6 +17,7 @@ type Assignment = {
   dueAt: string | null;
   studentCount: number;
   classNames?: string[];
+  classIds?: string[];
   students: { id: string; name: string; status: string }[];
 };
 
@@ -24,6 +28,8 @@ export function AssignmentsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState<Assignment | null>(null);
+  const [deleting, setDeleting] = useState<Assignment | null>(null);
 
   async function load() {
     setLoading(true);
@@ -91,34 +97,63 @@ export function AssignmentsPage() {
             Đang tải...
           </p>
         ) : !error && assignments.length === 0 ? (
-          <Card className="mt-5 border-dashed">
-            <CardContent className="p-8 text-center">
-              <p className="text-sm text-muted-foreground">Không có dữ liệu.</p>
-              <Button
-                className="mt-3"
-                size="sm"
-                onClick={() => navigate("/assignments/new")}
-              >
-                <Plus size={16} />
-                Tạo bài
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="mt-5">
+            <EmptyState
+              icon={<ClipboardList size={28} />}
+              title="Chưa có bài tập"
+              description="Giao bài tập cho học sinh với deadline rõ ràng. Học sinh có thể tự nộp bài qua link."
+              action={
+                <Button className="min-h-11 rounded-2xl" onClick={() => navigate("/assignments/new")}>
+                  <Plus size={16} />
+                  Tạo bài tập
+                </Button>
+              }
+            />
+          </div>
         ) : !error ? (
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {assignments.map((assignment) => (
               <AssignmentCard
                 key={assignment.id}
                 assignment={assignment}
-                onEdit={() => navigate(`/assignments/${assignment.id}/edit`)}
+                onEdit={() => setEditing(assignment)}
                 onInbox={() =>
                   navigate(`/assignments/${assignment.id}/submissions`)
                 }
+                onDelete={() => setDeleting(assignment)}
               />
             ))}
           </div>
         ) : null}
       </main>
+      <Dialog open={Boolean(deleting)} onOpenChange={(open) => !open && setDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xóa bài tập?</DialogTitle>
+            <DialogDescription>Bài “{deleting?.title}” sẽ được ẩn khỏi danh sách.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleting(null)}>Hủy</Button>
+            <Button type="button" variant="destructive" onClick={async () => {
+              if (!deleting) return;
+              const response = await fetch(`${API}/assignments/${deleting.id}`, { method: "DELETE", credentials: "include" });
+              if (!response.ok) { setError("Không thể xóa bài tập. Vui lòng thử lại."); return; }
+              setAssignments((current) => current.filter((item) => item.id !== deleting.id));
+              setDeleting(null);
+            }}>Xóa bài</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {editing && (
+        <EditAssignmentSheet
+          assignment={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            void load();
+          }}
+        />
+      )}
     </MobileShell>
   );
 }
@@ -127,10 +162,12 @@ function AssignmentCard({
   assignment,
   onEdit,
   onInbox,
+  onDelete,
 }: {
   assignment: Assignment;
   onEdit: () => void;
   onInbox: () => void;
+  onDelete: () => void;
 }) {
   async function createLink() {
     const response = await fetch(
@@ -163,16 +200,28 @@ function AssignmentCard({
                 : "Chưa có lớp"}
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="shrink-0 rounded-2xl"
-            aria-label="Sửa bài tập"
-            onClick={onEdit}
-          >
-            <Pencil size={16} />
-          </Button>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="min-h-11 min-w-11 rounded-2xl"
+              aria-label="Sửa bài tập"
+              onClick={onEdit}
+            >
+              <Pencil size={16} />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="min-size-11 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+              aria-label="Xóa bài tập"
+              onClick={onDelete}
+            >
+              <Trash2 size={16} />
+            </Button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Button

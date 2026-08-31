@@ -89,9 +89,14 @@ export function PersonalInfoPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="phone">Số điện thoại</Label>
+                <Label htmlFor="phone">Số điện thoại (10 chữ số)</Label>
                 <Input
                   id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="^0\d{9}$"
+                  maxLength={10}
+                  placeholder="0912345678"
                   value={profile.phone}
                   readOnly={!editing}
                   onChange={(event) =>

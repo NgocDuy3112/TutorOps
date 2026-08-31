@@ -2,11 +2,15 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
   IsArray,
   IsDateString,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Max,
+  Min,
   MinLength,
 } from "class-validator";
+import { Type } from "class-transformer";
 export class CreateAssignmentDto {
   @ApiProperty() @IsString() @MinLength(1) title!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
@@ -28,6 +32,17 @@ export class CreateAssignmentDto {
   fileIds?: string[];
 }
 
+export class ReviewDropboxSubmissionDto {
+  @ApiProperty() @IsUUID() studentId!: string;
+  @ApiProperty({ minimum: 0, maximum: 10 })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(10)
+  score!: number;
+  @ApiPropertyOptional() @IsOptional() @IsString() reviewNote?: string;
+}
+
 export class UpdateAssignmentDto {
   @ApiProperty() @IsString() @MinLength(1) title!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
@@ -37,4 +52,9 @@ export class UpdateAssignmentDto {
   @IsArray()
   @IsUUID(undefined, { each: true })
   studentIds!: string[];
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  classIds?: string[];
 }

@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, UserMinus, Users } from "lucide-react";
+import { ArrowLeft, Loader2, UserMinus, Users, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import type { Student, TutorClass } from "./ClassesPage";
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -46,10 +55,22 @@ export function ClassDetailPage() {
       ),
     [students, item, search],
   );
-  async function change(student: Student, method: "POST" | "DELETE") {
+  const [removing, setRemoving] = useState<Student | null>(null);
+
+  async function removeStudent() {
+    if (!removing) return;
+    const response = await fetch(
+      `${API}/classes/${classId}/students/${removing.id}`,
+      { method: "DELETE", credentials: "include" },
+    );
+    if (response.ok) void load();
+    setRemoving(null);
+  }
+
+  async function addStudent(student: Student) {
     const response = await fetch(
       `${API}/classes/${classId}/students/${student.id}`,
-      { method, credentials: "include" },
+      { method: "POST", credentials: "include" },
     );
     if (response.ok) void load();
   }
@@ -112,7 +133,7 @@ export function ClassDetailPage() {
                           size="icon"
                           className="text-red-600"
                           aria-label={`Bỏ ${s.name} khỏi lớp`}
-                          onClick={() => void change(s, "DELETE")}
+                          onClick={() => setRemoving(s)}
                         >
                           <UserMinus size={17} />
                         </Button>
@@ -120,11 +141,11 @@ export function ClassDetailPage() {
                     </Card>
                   ))
                 ) : (
-                  <Card className="border-dashed">
-                    <CardContent className="p-6 text-center text-sm text-muted-foreground">
-                      Không có dữ liệu.
-                    </CardContent>
-                  </Card>
+                  <EmptyState
+                    icon={<UserPlus size={24} />}
+                    title="Lớp chưa có học sinh"
+                    description="Tìm học sinh bên dưới để thêm vào lớp."
+                  />
                 )}
               </div>
             </section>
@@ -143,7 +164,7 @@ export function ClassDetailPage() {
                     type="button"
                     className="flex min-h-16 w-full items-center gap-3 rounded-2xl border bg-white p-4 text-left shadow-sm shadow-slate-100 transition-colors hover:bg-slate-50"
                     aria-label={`Thêm ${s.name} vào lớp`}
-                    onClick={() => void change(s, "POST")}
+                    onClick={() => void addStudent(s)}
                   >
                     <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-sm font-bold text-primary">
                       {s.name.slice(0, 2).toLocaleUpperCase("vi")}
@@ -161,6 +182,20 @@ export function ClassDetailPage() {
           </>
         )}
       </main>
+      <Dialog open={Boolean(removing)} onOpenChange={(open) => !open && setRemoving(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bỏ học sinh khỏi lớp?</DialogTitle>
+            <DialogDescription>
+              {removing?.name} sẽ không còn trong lớp này. Học sinh vẫn được giữ trong hệ thống.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setRemoving(null)}>Hủy</Button>
+            <Button type="button" variant="destructive" onClick={() => void removeStudent()}>Xác nhận</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileShell>
   );
 }

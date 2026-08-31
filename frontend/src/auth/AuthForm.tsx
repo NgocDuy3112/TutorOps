@@ -70,20 +70,23 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
             required
             type="password"
             minLength={8}
+            maxLength={64}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(event) => setRememberMe(event.target.checked)}
-            className="size-4 accent-indigo-600"
-          />
-          Ghi nhớ đăng nhập
-        </label>
+        {isLogin && (
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.target.checked)}
+              className="size-4 accent-indigo-600"
+            />
+            Ghi nhớ đăng nhập
+          </label>
+        )}
 
         {error && (
           <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">

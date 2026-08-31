@@ -32,7 +32,7 @@ export class AuthController {
       this.auth.register(body.email, body.password, body.rememberMe),
     );
   }
-  @Get("google") google() {
+  @Get("google") async google() {
     return this.auth.getGoogleUrl();
   }
   @Get("google/callback") async googleCallback(
