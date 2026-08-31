@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { isIosBrowserNotStandalone } from "@/lib/platform";
 
@@ -24,10 +24,19 @@ function supported() {
 
 export function PushNotificationSetup() {
   const [state, setState] = useState<State>("loading");
+  const publicKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     void loadState();
   }, []);
+
+  async function fetchPublicKey(): Promise<string | null> {
+    if (publicKeyRef.current) return publicKeyRef.current;
+    const keyResponse = await fetch(`${API}/notifications/public-key`, { credentials: "include" });
+    const { publicKey } = await keyResponse.json();
+    if (publicKey) publicKeyRef.current = publicKey as string;
+    return publicKeyRef.current;
+  }
 
   async function loadState() {
     if (isIosBrowserNotStandalone()) {
@@ -38,6 +47,8 @@ export function PushNotificationSetup() {
       setState("unsupported");
       return;
     }
+    // Preload the VAPID key — non-fatal if it fails, enable() retries.
+    await fetchPublicKey().catch(() => undefined);
     try {
       const registration = await navigator.serviceWorker.register("/sw.js");
       const subscription = await registration.pushManager.getSubscription();
@@ -81,9 +92,9 @@ export function PushNotificationSetup() {
         return;
       }
       if (permission !== "granted") throw new Error("permission_default");
-      const keyResponse = await fetch(`${API}/notifications/public-key`, { credentials: "include" });
-      const { publicKey } = await keyResponse.json();
+      const publicKey = await fetchPublicKey();
       if (!publicKey) throw new Error("missing_vapid_public_key");
+      publicKeyRef.current = publicKey;
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
