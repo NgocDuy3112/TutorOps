@@ -1,40 +1,43 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+declare const __APP_VERSION__: string;
 
 export function VersionBanner() {
   const [show, setShow] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function check() {
-      try {
-        const res = await fetch(`${API}/version`, { cache: "no-store" });
-        if (!res.ok) return;
-        const { version } = await res.json();
-        if (!cancelled && version !== __APP_VERSION__) {
-          setShow(true);
-        }
-      } catch {
-      }
+  const check = useCallback(async () => {
+    try {
+      const res = await fetch(`/version.json?t=${Date.now()}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const { version } = (await res.json()) as { version: string };
+      setShow(version !== __APP_VERSION__);
+    } catch {
+      // Version endpoint unreachable — keep current state.
     }
-
-    check();
-    document.addEventListener("visibilitychange", check);
-    return () => {
-      cancelled = true;
-      document.removeEventListener("visibilitychange", check);
-    };
   }, []);
+
+  useEffect(() => {
+    void check();
+    function onVisibility() {
+      if (document.visibilityState === "visible") void check();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibility);
+  }, [check]);
 
   if (!show) return null;
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 bg-linear-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm text-white shadow-lg">
-      <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
+    <div
+      role="status"
+      className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 bg-linear-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm text-white shadow-lg"
+    >
+      <RefreshCw className="h-4 w-4 shrink-0" aria-hidden="true" />
       <span className="font-medium">Có bản cập nhật mới.</span>
       <Button
         size="sm"
