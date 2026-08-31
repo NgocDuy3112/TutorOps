@@ -7,7 +7,7 @@ import {
   ImageIcon,
   Loader2,
   RotateCcw,
-  Trash2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -367,16 +367,14 @@ export function StudentSubmissionPage() {
                           {formatBytes(item.file.size)}
                         </p>
                       </div>
-                      <Button
+                      <button
                         type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-600"
                         onClick={() => removeFile(index)}
                         aria-label="Bỏ file"
+                        className="grid size-8 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-red-100 hover:text-red-600"
                       >
-                        <Trash2 size={16} />
-                      </Button>
+                        <X size={16} />
+                      </button>
                     </div>
                   ))}
                 </div>

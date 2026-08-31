@@ -53,6 +53,21 @@ export class AssignmentsController {
     return this.assignments.dropboxSubmissions(request.user.id, id);
   }
 
+  @Patch(":id/dropbox-submissions/:submissionId/review")
+  reviewDropboxSubmission(
+    @Req() request: AuthenticatedRequest,
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Param("submissionId", new ParseUUIDPipe()) submissionId: string,
+    @Body() body: ReviewDropboxSubmissionDto,
+  ) {
+    return this.assignments.reviewDropboxSubmission(
+      request.user.id,
+      id,
+      submissionId,
+      body,
+    );
+  }
+
   @Patch(":id/dropbox-submissions/:submissionId/:status")
   markDropboxSubmission(
     @Req() request: AuthenticatedRequest,
@@ -67,21 +82,6 @@ export class AssignmentsController {
       id,
       submissionId,
       status,
-    );
-  }
-
-  @Patch(":id/dropbox-submissions/:submissionId/review")
-  reviewDropboxSubmission(
-    @Req() request: AuthenticatedRequest,
-    @Param("id", new ParseUUIDPipe()) id: string,
-    @Param("submissionId", new ParseUUIDPipe()) submissionId: string,
-    @Body() body: ReviewDropboxSubmissionDto,
-  ) {
-    return this.assignments.reviewDropboxSubmission(
-      request.user.id,
-      id,
-      submissionId,
-      body,
     );
   }
 

@@ -14,6 +14,7 @@ import { DashboardModule } from "./dashboard/dashboard.module";
 import { ClassesModule } from "./classes/classes.module";
 import { OcrModule } from "./ocr/ocr.module";
 import { CommonModule } from "./common/common.module";
+import { VersionModule } from "./version/version.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { CommonModule } from "./common/common.module";
     DashboardModule,
     ClassesModule,
     OcrModule,
+    VersionModule,
   ],
 })
 export class AppModule {}

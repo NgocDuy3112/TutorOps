@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -86,18 +88,22 @@ export function MarkTaughtSheet({
     if (response.ok) onSaved();
   }
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   async function remove() {
-    if (!session || !confirm("Xóa buổi dạy này?")) return;
+    if (!session) return;
     setDeleting(true);
     const response = await fetch(`${API}/sessions/${session.id}`, {
       method: "DELETE",
       credentials: "include",
     });
     setDeleting(false);
+    setConfirmDelete(false);
     if (response.ok) onSaved();
   }
 
   return (
+    <>
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
@@ -110,13 +116,11 @@ export function MarkTaughtSheet({
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="taughtAt">Thời gian</Label>
-            <Input
-              id="taughtAt"
-              required
-              type="datetime-local"
-              value={taughtAt}
-              onChange={(event) => setTaughtAt(event.target.value)}
+            <Label>Thời gian</Label>
+            <DatePicker
+              value={taughtAt ? new Date(taughtAt) : null}
+              onChange={(date) => setTaughtAt(date ? date.toISOString().slice(0, 16) : "")}
+              min={new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}
             />
           </div>
           <div className="space-y-1.5">
@@ -150,7 +154,7 @@ export function MarkTaughtSheet({
                 type="button"
                 variant="outline"
                 disabled={saving || deleting}
-                onClick={() => void remove()}
+                onClick={() => setConfirmDelete(true)}
                 className="min-h-11 text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto"
               >
                 {deleting ? (
@@ -173,5 +177,23 @@ export function MarkTaughtSheet({
         </form>
       </DialogContent>
     </Dialog>
+    <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Xóa buổi dạy?</DialogTitle>
+          <DialogDescription>
+            Buổi dạy này sẽ bị xóa khỏi danh sách. Hành động này không thể hoàn tác.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setConfirmDelete(false)}>Hủy</Button>
+          <Button type="button" variant="destructive" disabled={deleting} onClick={() => void remove()}>
+            {deleting && <Loader2 className="animate-spin" size={16} />}
+            Xóa
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

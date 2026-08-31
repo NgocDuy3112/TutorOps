@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { EditAssignmentSheet } from "./EditAssignmentSheet";
 
 type Assignment = {
   id: string;
@@ -16,6 +17,7 @@ type Assignment = {
   dueAt: string | null;
   studentCount: number;
   classNames?: string[];
+  classIds?: string[];
   students: { id: string; name: string; status: string }[];
 };
 
@@ -26,6 +28,7 @@ export function AssignmentsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState<Assignment | null>(null);
   const [deleting, setDeleting] = useState<Assignment | null>(null);
 
   async function load() {
@@ -113,7 +116,7 @@ export function AssignmentsPage() {
               <AssignmentCard
                 key={assignment.id}
                 assignment={assignment}
-                onEdit={() => navigate(`/assignments/${assignment.id}/edit`)}
+                onEdit={() => setEditing(assignment)}
                 onInbox={() =>
                   navigate(`/assignments/${assignment.id}/submissions`)
                 }
@@ -141,6 +144,16 @@ export function AssignmentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {editing && (
+        <EditAssignmentSheet
+          assignment={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            void load();
+          }}
+        />
+      )}
     </MobileShell>
   );
 }

@@ -18,9 +18,13 @@ export class AssignmentsRepository {
         a.created_at AS "createdAt",
         COUNT(sa.id)::int AS "studentCount",
         COALESCE(
-          json_agg(DISTINCT c.name) FILTER (WHERE c.id IS NOT NULL),
+          (SELECT json_agg(c.name ORDER BY c.name)
+           FROM classes c
+           WHERE c.id IN (SELECT jsonb_array_elements_text(COALESCE(a.class_ids, '[]'::jsonb))::uuid)
+             AND c.deleted_at IS NULL),
           '[]'::json
         ) AS "classNames",
+        COALESCE(a.class_ids, '[]'::jsonb) AS "classIds",
         COALESCE(
           json_agg(
             json_build_object(
@@ -35,8 +39,6 @@ export class AssignmentsRepository {
       FROM assignments AS a
       LEFT JOIN student_assignments AS sa ON sa.assignment_id = a.id
       LEFT JOIN students AS s ON s.id = sa.student_id AND s.deleted_at IS NULL
-      LEFT JOIN class_students AS cs ON cs.student_id = s.id AND cs.teacher_id = a.teacher_id
-      LEFT JOIN classes AS c ON c.id = cs.class_id AND c.deleted_at IS NULL
       WHERE a.teacher_id = $1
         AND a.deleted_at IS NULL
       GROUP BY a.id
@@ -50,13 +52,14 @@ export class AssignmentsRepository {
     try {
       await client.query("BEGIN");
       const assignmentQuery = `
-        INSERT INTO assignments (teacher_id, title, description, lesson_id, due_at)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO assignments (teacher_id, title, description, lesson_id, due_at, class_ids)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING
           id,
           title,
           description,
           due_at AS "dueAt",
+          class_ids AS "classIds",
           created_at AS "createdAt"
       `;
       const assignment = (
@@ -66,6 +69,7 @@ export class AssignmentsRepository {
           input.description ?? null,
           input.lessonId ?? null,
           input.dueAt ?? null,
+          JSON.stringify(input.classIds ?? []),
         ])
       ).rows[0];
 
@@ -126,12 +130,13 @@ export class AssignmentsRepository {
     try {
       await client.query("BEGIN");
       const assignment = await client.query(
-        `UPDATE assignments SET title = $1, description = $2, lesson_id = $3, due_at = $4, updated_at = now() WHERE id = $5 AND teacher_id = $6 AND deleted_at IS NULL RETURNING id`,
+        `UPDATE assignments SET title = $1, description = $2, lesson_id = $3, due_at = $4, class_ids = $5, updated_at = now() WHERE id = $6 AND teacher_id = $7 AND deleted_at IS NULL RETURNING id`,
         [
           input.title.trim(),
           input.description ?? null,
           input.lessonId ?? null,
           input.dueAt ?? null,
+          JSON.stringify(input.classIds ?? []),
           id,
           teacherId,
         ],
@@ -144,11 +149,13 @@ export class AssignmentsRepository {
         `DELETE FROM student_assignments WHERE assignment_id = $1 AND teacher_id = $2`,
         [id, teacherId],
       );
+      const linkQuery = `INSERT INTO student_assignments (assignment_id, student_id, teacher_id) SELECT $1, id, teacher_id FROM students WHERE id = $2 AND teacher_id = $3 AND deleted_at IS NULL ON CONFLICT DO NOTHING`;
       for (const studentId of input.studentIds) {
-        await client.query(
-          `INSERT INTO student_assignments (assignment_id, student_id, teacher_id) SELECT $1, id, teacher_id FROM students WHERE id = $2 AND teacher_id = $3 AND deleted_at IS NULL ON CONFLICT DO NOTHING`,
-          [id, studentId, teacherId],
-        );
+        await client.query(linkQuery, [id, studentId, teacherId]);
+      }
+      const classLinkQuery = `INSERT INTO student_assignments (assignment_id, student_id, teacher_id) SELECT $1, cs.student_id, cs.teacher_id FROM class_students AS cs INNER JOIN classes AS c ON c.id = cs.class_id INNER JOIN students AS s ON s.id = cs.student_id WHERE cs.class_id = $2 AND cs.teacher_id = $3 AND c.deleted_at IS NULL AND s.deleted_at IS NULL ON CONFLICT DO NOTHING`;
+      for (const classId of input.classIds ?? []) {
+        await client.query(classLinkQuery, [id, classId, teacherId]);
       }
       await client.query("COMMIT");
       return { id };

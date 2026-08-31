@@ -52,4 +52,9 @@ export class UpdateAssignmentDto {
   @IsArray()
   @IsUUID(undefined, { each: true })
   studentIds!: string[];
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  classIds?: string[];
 }
