@@ -4,12 +4,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Search,
   SearchX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { formatMonthLabel, formatVnd, monthKey } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
@@ -47,7 +45,6 @@ export function TuitionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [paying, setPaying] = useState<TuitionStudent | null>(null);
-  const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
   async function load(target: Date) {
@@ -85,16 +82,11 @@ export function TuitionPage() {
   const paidCount = rows.length - (totals?.debtCount ?? 0);
 
   const filteredRows = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase("vi");
-    return rows.filter((row) => {
-      const matchesSearch =
-        !term || row.name.toLocaleLowerCase("vi").includes(term);
-      const matchesFilter =
-        filter === "all" ||
-        (filter === "debt" ? row.balance > 0 : row.balance <= 0);
-      return matchesSearch && matchesFilter;
-    });
-  }, [rows, search, filter]);
+    return rows.filter((row) =>
+      filter === "all" ||
+      (filter === "debt" ? row.balance > 0 : row.balance <= 0),
+    );
+  }, [rows, filter]);
 
   return (
     <MobileShell>
@@ -126,15 +118,14 @@ export function TuitionPage() {
               <ChevronRight size={18} />
             </Button>
           </div>
-        </section>
-
-        <section className="mt-4 flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70">
-          <p className="text-sm font-semibold text-muted-foreground">
-            Tổng tiền
-          </p>
-          <p className="text-xl font-black tracking-tight text-slate-950">
-            {formatVnd(totals?.totalDue ?? 0)}
-          </p>
+          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+            <p className="text-sm font-semibold text-muted-foreground">
+              Tổng tiền
+            </p>
+            <p className="text-xl font-black tracking-tight text-slate-950">
+              {formatVnd(totals?.totalDue ?? 0)}
+            </p>
+          </div>
         </section>
 
         {loading && (
@@ -164,40 +155,26 @@ export function TuitionPage() {
         {!loading && !error && data && (
           <div className="mt-4 space-y-4">
             {rows.length > 0 && (
-              <section className="space-y-3">
-                <div className="relative">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    size={17}
-                  />
-                  <Input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    className="bg-white pl-10"
-                    placeholder="Tìm học sinh"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <FilterButton
-                    active={filter === "all"}
-                    onClick={() => setFilter("all")}
-                    label="Tất cả"
-                    count={rows.length}
-                  />
-                  <FilterButton
-                    active={filter === "debt"}
-                    onClick={() => setFilter("debt")}
-                    label="Còn nợ"
-                    count={totals?.debtCount ?? 0}
-                  />
-                  <FilterButton
-                    active={filter === "paid"}
-                    onClick={() => setFilter("paid")}
-                    label="Đã đủ"
-                    count={paidCount}
-                  />
-                </div>
-              </section>
+              <div className="grid grid-cols-3 gap-2">
+                <FilterButton
+                  active={filter === "all"}
+                  onClick={() => setFilter("all")}
+                  label="Tất cả"
+                  count={rows.length}
+                />
+                <FilterButton
+                  active={filter === "debt"}
+                  onClick={() => setFilter("debt")}
+                  label="Còn nợ"
+                  count={totals?.debtCount ?? 0}
+                />
+                <FilterButton
+                  active={filter === "paid"}
+                  onClick={() => setFilter("paid")}
+                  label="Đã đủ"
+                  count={paidCount}
+                />
+              </div>
             )}
 
             {rows.length === 0 ? (
