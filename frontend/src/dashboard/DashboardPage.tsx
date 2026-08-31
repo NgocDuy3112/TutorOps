@@ -425,10 +425,12 @@ export function DashboardPage() {
                     key={tutorClass.id}
                     type="button"
                     onClick={() => setSelectedClass(tutorClass)}
-                    className={`flex min-h-14 w-full items-center justify-between rounded-xl border p-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${active ? "border-primary bg-primary/5" : "hover:bg-accent"}`}
+                    className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${active ? "border-primary bg-primary/5" : "hover:bg-accent"}`}
                   >
-                    <strong className="text-sm">{tutorClass.name}</strong>
-                    <span className="text-xs text-muted-foreground">
+                    <strong className="min-w-0 truncate text-sm">
+                      {tutorClass.name}
+                    </strong>
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {tutorClass.students.length} học sinh
                     </span>
                   </button>
@@ -456,10 +458,12 @@ export function DashboardPage() {
                     type="button"
                     disabled={creatingSession}
                     onClick={() => void chooseStudent(student)}
-                    className="flex min-h-14 w-full items-center justify-between rounded-xl border p-3 text-left transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
+                    className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
                   >
-                    <strong className="text-sm">{student.name}</strong>
-                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <strong className="min-w-0 truncate text-sm">
+                      {student.name}
+                    </strong>
+                    <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
                       {creatingSession && (
                         <Loader2 size={14} className="animate-spin" />
                       )}
@@ -571,7 +575,7 @@ function DayAgendaDialog({
               <p className="mt-3 text-sm font-medium text-slate-700">
                 Chưa có hoạt động nào
               </p>
-              <p className="mt-1 max-w-[220px] text-xs text-muted-foreground">
+              <p className="mt-1 max-w-55 text-xs text-muted-foreground">
                 Bấm nút bên dưới để ghi nhận buổi dạy trong ngày này.
               </p>
             </div>
@@ -587,8 +591,8 @@ function DayAgendaDialog({
                   className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-100"
                 >
                   <div className="mb-4 flex items-start justify-between gap-3">
-                    <div>
-                      <h4 className="font-bold text-slate-800">
+                    <div className="min-w-0">
+                      <h4 className="truncate font-bold text-slate-800">
                         {group.studentName}
                       </h4>
                       <p className="text-xs text-muted-foreground">
