@@ -558,7 +558,7 @@ function DayAgendaDialog({
         <DialogHeader>
           <DialogTitle className="capitalize">{selectedLabel}</DialogTitle>
           <DialogDescription>
-            Tổng tiền buổi dạy: {formatVnd(selectedTotal)}
+            Tổng tiền: {formatVnd(selectedTotal)}
           </DialogDescription>
         </DialogHeader>
 
