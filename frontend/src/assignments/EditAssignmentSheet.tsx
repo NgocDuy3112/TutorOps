@@ -47,7 +47,6 @@ export function EditAssignmentSheet({
   const [classSearch, setClassSearch] = useState("");
   const [loaded, setLoaded] = useState(false);
 
-  // Reset form when assignment changes
   useEffect(() => {
     setTitle(assignment.title);
     setDescription(assignment.description ?? "");
@@ -60,7 +59,6 @@ export function EditAssignmentSheet({
     setLoaded(false);
   }, [assignment]);
 
-  // Load classes
   useEffect(() => {
     async function loadClasses() {
       try {
@@ -162,7 +160,6 @@ export function EditAssignmentSheet({
               />
             </div>
 
-            {/* Chọn lớp */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Chọn lớp</Label>

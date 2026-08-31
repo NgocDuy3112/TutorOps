@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
+import { isIosBrowserNotStandalone } from "@/lib/platform";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-type State = "loading" | "enabled" | "disabled" | "unsupported" | "error";
+type State =
+  | "loading"
+  | "enabled"
+  | "disabled"
+  | "unsupported"
+  | "ios-browser"  | "blocked"  | "error"
+  | "blocked";
 
 function decodeKey(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
@@ -22,6 +29,10 @@ export function PushNotificationSetup() {
   }, []);
 
   async function loadState() {
+    if (isIosBrowserNotStandalone()) {
+      setState("ios-browser");
+      return;
+    }
     if (!supported()) {
       setState("unsupported");
       return;
@@ -38,7 +49,19 @@ export function PushNotificationSetup() {
       });
       if (!response.ok) throw new Error();
       const body = await response.json() as { subscriptions: { endpoint: string }[] };
-      setState(body.subscriptions.some((item) => item.endpoint === subscription.endpoint) ? "enabled" : "disabled");
+      if (body.subscriptions.some((item) => item.endpoint === subscription.endpoint)) {
+        setState("enabled");
+        return;
+      }
+      // iOS periodically revokes subscriptions server-side while the local
+      // one is still valid — re-register instead of asking the user again.
+      const saved = await fetch(`${API}/notifications/subscriptions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ...subscription.toJSON(), userAgent: navigator.userAgent }),
+      });
+      setState(saved.ok ? "enabled" : "disabled");
     } catch {
       setState("error");
     }
@@ -49,7 +72,12 @@ export function PushNotificationSetup() {
     try {
       const keyResponse = await fetch(`${API}/notifications/public-key`, { credentials: "include" });
       const { publicKey } = await keyResponse.json();
-      if (!publicKey || (await Notification.requestPermission()) !== "granted") throw new Error();
+      const permission = await Notification.requestPermission();
+      if (permission === "denied") {
+        setState("blocked");
+        return;
+      }
+      if (!publicKey || permission !== "granted") throw new Error();
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -89,12 +117,32 @@ export function PushNotificationSetup() {
     }
   }
 
+  if (state === "ios-browser") {
+    return (
+      <small className="max-w-48 text-right text-xs text-amber-600">
+        Cài app vào Màn hình chính để bật thông báo
+      </small>
+    );
+  }
+
   return (
-    <Switch
-      checked={state === "enabled"}
-      disabled={state === "loading" || state === "unsupported"}
-      aria-label="Thông báo đẩy"
-      onCheckedChange={(checked) => void (checked ? enable() : disable())}
-    />
+    <div className="flex flex-col items-end gap-1">
+      <Switch
+        checked={state === "enabled"}
+        disabled={state === "loading" || state === "unsupported"}
+        aria-label="Thông báo đẩy"
+        onCheckedChange={(checked) => void (checked ? enable() : disable())}
+      />
+      {state === "blocked" && (
+        <small className="max-w-48 text-right text-xs text-amber-600">
+          Đã bị chặn — bật lại trong Cài đặt iOS, mục Thông báo
+        </small>
+      )}
+      {state === "error" && (
+        <small className="max-w-48 text-right text-xs text-red-600">
+          Có lỗi, thử bật lại
+        </small>
+      )}
+    </div>
   );
 }

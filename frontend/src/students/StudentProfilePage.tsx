@@ -128,7 +128,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           </p>
         )}
 
-        {/* Thông tin liên hệ */}
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -158,7 +157,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           </CardContent>
         </Card>
 
-        {/* Buổi dạy */}
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="text-lg">Buổi dạy ({sessions.length})</CardTitle>
@@ -199,7 +197,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           </CardContent>
         </Card>
 
-        {/* Bài tập */}
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="text-lg">

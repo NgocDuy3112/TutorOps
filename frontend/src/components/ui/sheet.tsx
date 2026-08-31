@@ -61,11 +61,10 @@ export const SheetContent = React.forwardRef<
       const shouldDismiss = dragOffset > 100 || velocity > 0.5;
 
       if (shouldDismiss) {
-        setDragOffset(el!.offsetHeight); // animate out
+        setDragOffset(el!.offsetHeight);
         setTimeout(() => {
           setDragOffset(0);
           setIsDragging(false);
-          // Trigger close via Radix
           el!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
         }, 150);
       } else {
@@ -106,7 +105,6 @@ export const SheetContent = React.forwardRef<
         }}
         {...props}
       >
-        {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <span className="h-1.5 w-12 rounded-full bg-slate-300" />
         </div>

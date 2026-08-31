@@ -123,7 +123,6 @@ export function DatePicker({
 
       {open && (
         <div className="absolute inset-x-0 top-full z-50 mt-2 rounded-2xl border bg-white p-4 shadow-lg sm:left-0 sm:right-auto sm:w-[340px]">
-          {/* Month navigation */}
           <div className="mb-3 flex items-center justify-between">
             <button
               type="button"
@@ -144,7 +143,6 @@ export function DatePicker({
             </button>
           </div>
 
-          {/* Weekday headers */}
           <div className="mb-1 grid grid-cols-7 gap-1">
             {WEEKDAYS.map((day) => (
               <div
@@ -156,7 +154,6 @@ export function DatePicker({
             ))}
           </div>
 
-          {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: firstDay }).map((_, i) => (
               <div key={`empty-${i}`} />
@@ -189,7 +186,6 @@ export function DatePicker({
             })}
           </div>
 
-          {/* Time picker */}
           <div className="mt-3 flex items-center justify-center gap-2 border-t pt-3">
             <Clock size={16} className="text-muted-foreground" />
             <select

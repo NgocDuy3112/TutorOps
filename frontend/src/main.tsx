@@ -5,6 +5,7 @@ import {
   Navigate,
   Route,
   Routes,
+  useNavigate,
   useParams,
 } from "react-router-dom";
 import "./styles.css";
@@ -27,16 +28,32 @@ import { AssignmentDropboxPage } from "./public/AssignmentDropboxPage";
 import { SettingsPage } from "./settings/SettingsPage";
 import { PersonalInfoPage } from "./settings/PersonalInfoPage";
 import { ChangePasswordPage } from "./settings/ChangePasswordPage";
+import { VersionBanner } from "./components/VersionBanner";
+import { OnboardingDialog } from "./onboarding/OnboardingDialog";
+import { IosInstallBanner } from "./notifications/IosInstallBanner";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const navigate = useNavigate();
   const isPublicSubmission = window.location.pathname.startsWith("/submit/");
   const isPublicParent = window.location.pathname.startsWith("/parent/");
   const isAssignmentDropbox = window.location.pathname.startsWith(
     "/assignment-submit/",
   );
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    function onMessage(event: MessageEvent) {
+      if (event.data?.type === "navigate" && typeof event.data.url === "string") {
+        navigate(event.data.url);
+      }
+    }
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [navigate]);
 
   useEffect(() => {
     if (isPublicSubmission || isPublicParent || isAssignmentDropbox) return;
@@ -64,6 +81,8 @@ function App() {
 
   return (
     <>
+      {authenticated ? <OnboardingDialog /> : null}
+      {authenticated ? <IosInstallBanner /> : null}
       <Routes>
         <Route
           path="/login"
@@ -223,6 +242,7 @@ function StudentProfileRoute() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
+      <VersionBanner />
       <App />
     </BrowserRouter>
   </StrictMode>,

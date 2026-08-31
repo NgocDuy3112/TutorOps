@@ -71,7 +71,6 @@ export function EditClassSheet({
         });
         if (response.ok) setAllStudents(await response.json());
       } catch {
-        // ignore
       }
     }
     void loadStudents();
@@ -146,7 +145,6 @@ export function EditClassSheet({
 
         <div className="flex h-full flex-col">
           <div className="flex-1 space-y-6 overflow-y-auto pb-4">
-            {/* Thông tin lớp */}
             <form onSubmit={submitInfo} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-name">Tên lớp</Label>
@@ -204,7 +202,6 @@ export function EditClassSheet({
               </Button>
             </form>
 
-            {/* Quản lý học sinh */}
             <section className="space-y-3">
               <h3 className="text-sm font-bold text-slate-800">
                 Học sinh ({currentStudents.length})
@@ -245,7 +242,6 @@ export function EditClassSheet({
               )}
             </section>
 
-            {/* Thêm học sinh */}
             <section className="space-y-3">
               <h3 className="text-sm font-bold text-slate-800">
                 Thêm học sinh
