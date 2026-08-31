@@ -24,6 +24,7 @@ type Assignment = {
   description: string | null;
   dueAt: string | null;
   classNames: string[];
+  classIds?: string[];
   students: { id: string; name: string; status: string }[];
 };
 type TutorClass = { id: string; name: string; studentCount: number };
@@ -74,10 +75,7 @@ export function AssignmentFormPage() {
               ? new Date(assignment.dueAt).toISOString().slice(0, 16)
               : "",
           );
-          const matchedClassIds = allClasses
-            .filter((c) => (assignment.classNames ?? []).includes(c.name))
-            .map((c) => c.id);
-          setClassIds(matchedClassIds);
+          setClassIds(assignment.classIds ?? []);
         }
       } catch (requestError) {
         setError(

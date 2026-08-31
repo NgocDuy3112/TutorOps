@@ -18,7 +18,10 @@ export class AssignmentsRepository {
         a.created_at AS "createdAt",
         COUNT(sa.id)::int AS "studentCount",
         COALESCE(
-          json_agg(DISTINCT c.name) FILTER (WHERE c.id IS NOT NULL AND c.deleted_at IS NULL),
+          (SELECT json_agg(c.name ORDER BY c.name)
+           FROM classes c
+           WHERE c.id IN (SELECT jsonb_array_elements_text(COALESCE(a.class_ids, '[]'::jsonb))::uuid)
+             AND c.deleted_at IS NULL),
           '[]'::json
         ) AS "classNames",
         COALESCE(a.class_ids, '[]'::jsonb) AS "classIds",
@@ -36,8 +39,6 @@ export class AssignmentsRepository {
       FROM assignments AS a
       LEFT JOIN student_assignments AS sa ON sa.assignment_id = a.id
       LEFT JOIN students AS s ON s.id = sa.student_id AND s.deleted_at IS NULL
-      LEFT JOIN class_students AS cs ON cs.student_id = s.id AND cs.teacher_id = a.teacher_id AND cs.class_id IN (SELECT id FROM classes WHERE deleted_at IS NULL)
-      LEFT JOIN classes AS c ON c.id = cs.class_id AND c.deleted_at IS NULL
       WHERE a.teacher_id = $1
         AND a.deleted_at IS NULL
       GROUP BY a.id
