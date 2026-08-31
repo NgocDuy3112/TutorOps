@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarX2,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Loader2,
   Search,
   SearchX,
-  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,19 +85,6 @@ export function TuitionPage() {
     );
   }
 
-  function updateMonth(value: string) {
-    setMonth((current) => new Date(current.getFullYear(), Number(value), 1));
-  }
-
-  function updateYear(value: string) {
-    setMonth((current) => new Date(Number(value), current.getMonth(), 1));
-  }
-
-  const yearOptions = Array.from(
-    { length: 7 },
-    (_, index) => new Date().getFullYear() - 3 + index,
-  );
-
   const rows = data?.students ?? [];
   const totals = data?.totals;
   const paidCount = rows.length - (totals?.debtCount ?? 0);
@@ -146,42 +131,17 @@ export function TuitionPage() {
               <ChevronRight size={18} />
             </Button>
           </div>
-          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
-            <select
-              value={month.getMonth()}
-              onChange={(event) => updateMonth(event.target.value)}
-              className="min-h-11 rounded-2xl border border-input bg-white px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-              aria-label="Chọn tháng"
+          {!isCurrentMonth && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mx-auto mt-1 block rounded-2xl text-sm font-semibold text-muted-foreground"
+              onClick={() => setMonth(new Date())}
             >
-              {Array.from({ length: 12 }, (_, index) => (
-                <option key={index} value={index}>
-                  Tháng {index + 1}
-                </option>
-              ))}
-            </select>
-            <select
-              value={month.getFullYear()}
-              onChange={(event) => updateYear(event.target.value)}
-              className="min-h-11 rounded-2xl border border-input bg-white px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-              aria-label="Chọn năm"
-            >
-              {yearOptions.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-            {!isCurrentMonth && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-11 rounded-2xl text-sm font-semibold"
-                onClick={() => setMonth(new Date())}
-              >
-                Hôm nay
-              </Button>
-            )}
-          </div>
+              Về tháng này
+            </Button>
+          )}
         </section>
 
         {loading && (
@@ -211,25 +171,16 @@ export function TuitionPage() {
         {!loading && !error && data && (
           <div className="mt-4 space-y-4">
             <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Còn cần thu · {formatMonthLabel(month).toLowerCase()}
-                  </p>
-                  <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">
-                    {formatVnd(totals?.balance ?? 0)}
-                  </p>
-                </div>
-                <span className="grid size-11 place-items-center rounded-2xl bg-violet-50 text-primary">
-                  <Wallet size={21} />
-                </span>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <Metric label="Cần thu" value={formatVnd(totals?.totalDue ?? 0)} />
-                <Metric label="Đã thu" value={formatVnd(totals?.totalPaid ?? 0)} />
-                <Metric label="HS còn nợ" value={String(totals?.debtCount ?? 0)} />
-                <Metric label="Buổi dạy" value={String(totals?.sessionCount ?? 0)} />
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Còn cần thu · {formatMonthLabel(month).toLowerCase()}
+              </p>
+              <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">
+                {formatVnd(totals?.balance ?? 0)}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Đã thu {formatVnd(totals?.totalPaid ?? 0)} / Cần thu{" "}
+                {formatVnd(totals?.totalDue ?? 0)}
+              </p>
             </section>
 
             {rows.length > 0 && (
@@ -308,15 +259,6 @@ export function TuitionPage() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-slate-50 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 truncate font-bold">{value}</p>
-    </div>
-  );
-}
-
 function FilterButton({
   active,
   onClick,
@@ -359,15 +301,16 @@ function TuitionRowCard({
     <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
       <CardContent className="flex items-center gap-3 p-4">
         <span
-          className={`grid size-11 shrink-0 place-items-center rounded-2xl ${
+          className={`grid size-10 shrink-0 place-items-center rounded-full text-sm font-bold ${
             noActivity
               ? "bg-slate-100 text-slate-500"
               : settled
                 ? "bg-emerald-50 text-emerald-700"
                 : "bg-amber-50 text-amber-700"
           }`}
+          aria-hidden
         >
-          {settled ? <CheckCircle2 size={20} /> : <Wallet size={20} />}
+          {row.name.charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-bold">{row.name}</h3>
@@ -381,18 +324,11 @@ function TuitionRowCard({
           {noActivity ? (
             <p className="text-sm font-semibold text-muted-foreground">—</p>
           ) : (
-            <>
-              <p
-                className={`text-base font-black ${settled ? "text-emerald-700" : "text-amber-700"}`}
-              >
-                {formatVnd(settled ? row.paid : row.balance)}
-              </p>
-              <p
-                className={`text-xs font-semibold ${settled ? "text-emerald-700" : "text-muted-foreground"}`}
-              >
-                {settled ? "Đã thu đủ" : "Còn cần thu"}
-              </p>
-            </>
+            <p
+              className={`text-base font-black ${settled ? "text-emerald-700" : "text-amber-700"}`}
+            >
+              {formatVnd(settled ? row.paid : row.balance)}
+            </p>
           )}
         </div>
         <Button
