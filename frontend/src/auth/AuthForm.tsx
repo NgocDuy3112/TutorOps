@@ -18,7 +18,6 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
   const isLogin = mode === "login";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +31,7 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ email, password, rememberMe }),
+      body: JSON.stringify({ email, password }),
     });
 
     setLoading(false);
@@ -75,18 +74,6 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
             onChange={(event) => setPassword(event.target.value)}
           />
         </div>
-
-        {isLogin && (
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(event) => setRememberMe(event.target.checked)}
-              className="size-4 accent-indigo-600"
-            />
-            Ghi nhớ đăng nhập
-          </label>
-        )}
 
         {error && (
           <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">

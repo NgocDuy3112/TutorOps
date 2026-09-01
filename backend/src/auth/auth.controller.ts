@@ -29,7 +29,7 @@ export class AuthController {
   ) {
     return this.setSession(
       response,
-      this.auth.register(body.email, body.password, body.rememberMe),
+      this.auth.register(body.email, body.password),
     );
   }
   @Get("google") async google() {
@@ -41,7 +41,7 @@ export class AuthController {
     @Res() response: HttpResponse,
   ) {
     const result = await this.auth.googleCallback(code, state);
-    this.setCookie(response, result.token, true);
+    this.setCookie(response, result.token);
     return response.redirect(
       process.env.FRONTEND_URL ?? "http://localhost:5173",
     );
@@ -52,7 +52,7 @@ export class AuthController {
   ) {
     return this.setSession(
       response,
-      this.auth.login(body.email, body.password, body.rememberMe),
+      this.auth.login(body.email, body.password),
     );
   }
   @Get("me") @UseGuards(AuthGuard) async me(
@@ -85,20 +85,19 @@ export class AuthController {
     sessionPromise: Promise<any>,
   ) {
     const result = await sessionPromise;
-    this.setCookie(response, result.token, Boolean(result.user));
+    this.setCookie(response, result.token);
     return { user: result.user };
   }
   private setCookie(
     response: HttpResponse,
     token: string,
-    rememberMe: boolean,
   ) {
     response.cookie("tutorops_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
-      maxAge: rememberMe ? 30 * 86400 : 86400,
+      maxAge: 86400,
     });
   }
 }

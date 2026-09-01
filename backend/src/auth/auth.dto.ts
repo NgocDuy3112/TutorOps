@@ -1,8 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import {
-  IsBoolean,
   IsEmail,
-  IsOptional,
   IsString,
   MaxLength,
   MinLength,
@@ -18,9 +16,4 @@ export class CredentialsDto {
   @MinLength(8)
   @MaxLength(64)
   password!: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  rememberMe?: boolean;
 }

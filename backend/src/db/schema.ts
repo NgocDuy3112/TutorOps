@@ -1,7 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
   bigint,
-  boolean,
   check,
   foreignKey,
   index,
@@ -85,7 +84,6 @@ export const sessions = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
     tokenHash: text("token_hash").notNull().unique(),
-    rememberMe: boolean("remember_me").default(false).notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     userAgent: text("user_agent"),

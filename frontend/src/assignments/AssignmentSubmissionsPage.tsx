@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Check, Download, FileText, Loader2, Pencil, Star } from "lucide-react";
+import { ArrowLeft, Download, FileText, Loader2, Pencil, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -167,7 +167,7 @@ export function AssignmentSubmissionsPage() {
                 <button key={file.id} type="button" className="flex min-h-14 w-full min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-slate-50 p-2.5 text-left transition-colors hover:bg-slate-100" onClick={() => void download(item.id, file.id)}>
                   <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white text-primary"><FileText size={17} /></span><span className="min-w-0 flex-1 overflow-hidden"><span className="block w-full truncate text-sm font-medium">{shortFileName(file.name)}</span><span className="block text-xs text-muted-foreground">{fileExtension(file.name).toUpperCase() || "FILE"}</span></span><Download size={18} className="shrink-0 text-muted-foreground" />
                 </button>))}</div>
-              {!item.viewedAt && <button type="button" className="mt-3 flex min-h-11 items-center gap-1.5 text-xs font-bold text-slate-600" onClick={() => void mark(item.id, "viewed")}><Check size={14} />Đánh dấu đã xem</button>}
+
             </article>))}</div>}
       </main>
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
