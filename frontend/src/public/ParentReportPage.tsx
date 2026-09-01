@@ -13,7 +13,6 @@ type Report = {
     dueAt: string | null;
     status: string;
     submittedAt: string | null;
-    score: number | null;
     reviewNote: string | null;
     reviewedAt: string | null;
   }[];
@@ -119,9 +118,6 @@ export function ParentReportPage() {
                         Ngày chấm: {new Date(item.reviewedAt).toLocaleDateString("vi-VN")}
                       </p>
                     )}
-                    <p className="mt-3 text-lg font-bold text-primary">
-                      Điểm: {item.score == null ? "—" : `${item.score}/10`}
-                    </p>
                     {item.reviewNote && (
                       <p className="mt-2 text-sm text-muted-foreground">
                         Nhận xét: {item.reviewNote}
