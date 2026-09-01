@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { formatDeadline } from "../lib/format";
 import { EditAssignmentSheet } from "./EditAssignmentSheet";
 
 type Assignment = {
@@ -191,14 +192,25 @@ function AssignmentCard({
             <h3 className="truncate font-bold">{assignment.title}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {assignment.dueAt
-                ? `Deadline: ${new Date(assignment.dueAt).toLocaleDateString("vi-VN")}`
+                ? `Deadline: ${formatDeadline(assignment.dueAt)}`
                 : "Không có deadline"}
             </p>
-            <p className="mt-3 truncate text-sm font-medium text-primary">
-              {(assignment.classNames ?? []).length
-                ? assignment.classNames!.join(", ")
-                : "Chưa có lớp"}
-            </p>
+            {(assignment.classNames ?? []).length ? (
+              <div className="mt-3 flex flex-wrap gap-1">
+                {assignment.classNames!.map((name) => (
+                  <span
+                    key={name}
+                    className="rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-primary"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm font-medium text-muted-foreground">
+                Chưa có lớp
+              </p>
+            )}
           </div>
           <div className="flex shrink-0 gap-2">
             <Button

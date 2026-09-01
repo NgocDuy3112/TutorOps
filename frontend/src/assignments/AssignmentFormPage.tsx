@@ -1,4 +1,9 @@
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useState,
+} from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,7 +14,12 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { toLocalDateTimeInput } from "../lib/format";
 
 type Assignment = {
   id: string;
@@ -72,7 +83,7 @@ export function AssignmentFormPage() {
           setDescription(assignment.description ?? "");
           setDueAt(
             assignment.dueAt
-              ? new Date(assignment.dueAt).toISOString().slice(0, 16)
+              ? toLocalDateTimeInput(new Date(assignment.dueAt))
               : "",
           );
           setClassIds(assignment.classIds ?? []);
@@ -191,7 +202,7 @@ export function AssignmentFormPage() {
                   <Label>Deadline</Label>
                   <DatePicker
                     value={dueAt ? new Date(dueAt) : null}
-                    onChange={(date) => setDueAt(date ? date.toISOString().slice(0, 16) : "")}
+                    onChange={(date) => setDueAt(toLocalDateTimeInput(date))}
                     min={new Date()}
                   />
                 </div>
