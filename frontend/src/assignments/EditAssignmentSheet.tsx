@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { toLocalDateTimeInput } from "../lib/format";
 
 type Assignment = {
   id: string;
@@ -39,9 +40,7 @@ export function EditAssignmentSheet({
   const [title, setTitle] = useState(assignment.title);
   const [description, setDescription] = useState(assignment.description ?? "");
   const [dueAt, setDueAt] = useState(
-    assignment.dueAt
-      ? new Date(assignment.dueAt).toISOString().slice(0, 16)
-      : "",
+    assignment.dueAt ? toLocalDateTimeInput(new Date(assignment.dueAt)) : "",
   );
   const [classIds, setClassIds] = useState<string[]>(assignment.classIds ?? []);
   const [classSearch, setClassSearch] = useState("");
@@ -51,9 +50,7 @@ export function EditAssignmentSheet({
     setTitle(assignment.title);
     setDescription(assignment.description ?? "");
     setDueAt(
-      assignment.dueAt
-        ? new Date(assignment.dueAt).toISOString().slice(0, 16)
-        : "",
+      assignment.dueAt ? toLocalDateTimeInput(new Date(assignment.dueAt)) : "",
     );
     setClassIds(assignment.classIds ?? []);
     setLoaded(false);
@@ -142,9 +139,7 @@ export function EditAssignmentSheet({
               <Label>Deadline</Label>
               <DatePicker
                 value={dueAt ? new Date(dueAt) : null}
-                onChange={(date) =>
-                  setDueAt(date ? date.toISOString().slice(0, 16) : "")
-                }
+                onChange={(date) => setDueAt(toLocalDateTimeInput(date))}
                 min={new Date()}
               />
             </div>

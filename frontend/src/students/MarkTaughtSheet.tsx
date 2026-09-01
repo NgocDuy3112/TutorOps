@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatVnd, parseVnd } from "../lib/format";
+import { formatVnd, parseVnd, toLocalDateTimeInput } from "../lib/format";
 
 type Student = { id: string; defaultPriceVnd: number };
 type TeachingSession = {
@@ -24,11 +24,6 @@ type TeachingSession = {
   note: string | null;
 };
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-
-const toDateTimeLocal = (date: Date) => {
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-};
 
 export function MarkTaughtSheet({
   student,
@@ -44,7 +39,7 @@ export function MarkTaughtSheet({
   onSaved: () => void;
 }) {
   const [taughtAt, setTaughtAt] = useState(() =>
-    toDateTimeLocal(
+    toLocalDateTimeInput(
       session ? new Date(session.taughtAt) : (initialDate ?? new Date()),
     ),
   );
@@ -58,7 +53,7 @@ export function MarkTaughtSheet({
 
   useEffect(() => {
     setTaughtAt(
-      toDateTimeLocal(
+      toLocalDateTimeInput(
         session ? new Date(session.taughtAt) : (initialDate ?? new Date()),
       ),
     );
@@ -119,7 +114,7 @@ export function MarkTaughtSheet({
             <Label>Thời gian</Label>
             <DatePicker
               value={taughtAt ? new Date(taughtAt) : null}
-              onChange={(date) => setTaughtAt(date ? date.toISOString().slice(0, 16) : "")}
+              onChange={(date) => setTaughtAt(toLocalDateTimeInput(date))}
               min={new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}
             />
           </div>
