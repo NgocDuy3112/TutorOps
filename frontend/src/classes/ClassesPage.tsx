@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, Loader2, Pencil, Plus, Trash2, Users, BookOpenCheck } from "lucide-react";
+import {
+  BookOpen,
+  Coins,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  User,
+  Users,
+  BookOpenCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -159,10 +169,15 @@ function ClassCard({
             <h2 className="truncate font-bold hover:text-primary">
               {item.name}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {item.studentCount} học sinh
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <User size={13} className="shrink-0" />
+              {item.studentCount}
               {item.defaultPriceVnd != null && (
-                <> · {formatVnd(item.defaultPriceVnd)}/buổi</>
+                <>
+                  <span aria-hidden="true">·</span>
+                  <Coins size={13} className="shrink-0" />
+                  {formatVnd(item.defaultPriceVnd)}/buổi
+                </>
               )}
             </p>
             {item.note && (

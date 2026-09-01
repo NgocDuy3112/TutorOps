@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Loader2, Search, UserMinus, UserPlus } from "lucide-react";
+import { Loader2, Search, UserMinus, UserPlus, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +18,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatVnd, parseVnd } from "../lib/format";
+import { cn } from "@/lib/utils";
 
 type Student = { id: string; name: string; parentPhone: string | null };
 type TutorClass = {
@@ -145,7 +146,7 @@ export function EditClassSheet({
 
         <div className="flex h-full flex-col">
           <div className="flex-1 space-y-6 overflow-y-auto pb-4">
-            <form onSubmit={submitInfo} className="space-y-4">
+            <form id="edit-class-info-form" onSubmit={submitInfo} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-name">Tên lớp</Label>
                 <Input
@@ -193,13 +194,6 @@ export function EditClassSheet({
                   {error}
                 </p>
               )}
-              <Button
-                disabled={saving}
-                className="min-h-11 w-full rounded-2xl"
-              >
-                {saving && <Loader2 className="animate-spin" size={16} />}
-                {saving ? "Đang lưu..." : "Lưu thông tin"}
-              </Button>
             </form>
 
             <section className="space-y-3">
@@ -243,9 +237,16 @@ export function EditClassSheet({
             </section>
 
             <section className="space-y-3">
-              <h3 className="text-sm font-bold text-slate-800">
-                Thêm học sinh
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800">
+                  Thêm học sinh
+                </h3>
+                {availableStudents.length > 0 && (
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                    {availableStudents.length}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <Search
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -259,18 +260,29 @@ export function EditClassSheet({
                   autoFocus={false}
                 />
               </div>
-              <div className="max-h-[25dvh] space-y-1.5 overflow-y-auto">
+              <div className="max-h-[25dvh] overflow-y-auto rounded-2xl border border-slate-200 bg-white">
                 {availableStudents.length === 0 ? (
-                  <p className="py-3 text-center text-sm text-muted-foreground">
-                    {allStudents.length === 0
-                      ? "Chưa có học sinh nào."
-                      : "Không tìm thấy học sinh."}
-                  </p>
+                  <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+                    <span className="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-400">
+                      <UsersRound size={18} />
+                    </span>
+                    <p className="text-sm text-muted-foreground">
+                      {allStudents.length === 0
+                        ? "Chưa có học sinh nào."
+                        : "Không tìm thấy học sinh."}
+                    </p>
+                  </div>
                 ) : (
-                  availableStudents.map((student) => (
-                    <div
+                  availableStudents.map((student, index) => (
+                    <button
                       key={student.id}
-                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-slate-50"
+                      type="button"
+                      onClick={() => void addStudent(student.id)}
+                      disabled={changing === student.id}
+                      className={cn(
+                        "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50 disabled:opacity-60",
+                        index > 0 && "border-t border-slate-100",
+                      )}
                     >
                       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
                         {student.name.slice(0, 2).toLocaleUpperCase("vi")}
@@ -278,34 +290,37 @@ export function EditClassSheet({
                       <span className="min-w-0 flex-1 truncate text-sm font-medium">
                         {student.name}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => void addStudent(student.id)}
-                        disabled={changing === student.id}
-                        className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-primary/10 hover:text-primary disabled:opacity-50"
-                        aria-label={`Thêm ${student.name}`}
-                      >
+                      <span className="grid size-8 shrink-0 place-items-center rounded-lg text-primary transition-colors">
                         {changing === student.id ? (
                           <Loader2 size={16} className="animate-spin" />
                         ) : (
                           <UserPlus size={16} />
                         )}
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                   ))
                 )}
               </div>
             </section>
           </div>
 
-          <div className="pt-2">
+          <div className="grid grid-cols-2 gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 w-full rounded-2xl"
+              className="min-h-11 rounded-2xl"
               onClick={onClose}
             >
               Đóng
+            </Button>
+            <Button
+              type="submit"
+              form="edit-class-info-form"
+              disabled={saving}
+              className="min-h-11 rounded-2xl"
+            >
+              {saving && <Loader2 className="animate-spin" size={16} />}
+              {saving ? "Đang lưu..." : "Lưu thông tin"}
             </Button>
           </div>
         </div>

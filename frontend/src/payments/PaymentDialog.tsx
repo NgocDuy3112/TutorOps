@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatVnd, parseVnd } from "../lib/format";
+import { formatVnd, parseVnd, toLocalDateInput } from "../lib/format";
 import { cropReceiptImage, compressReceiptImage } from "../lib/image";
 import { ReceiptCropDialog } from "./ReceiptCropDialog";
 import type { Area } from "react-easy-crop";
@@ -32,9 +32,7 @@ export function PaymentDialog({
   onSaved,
 }: PaymentDialogProps) {
   const [amountVnd, setAmountVnd] = useState("");
-  const [paidAt, setPaidAt] = useState(() =>
-    new Date().toISOString().slice(0, 10),
-  );
+  const [paidAt, setPaidAt] = useState(() => toLocalDateInput(new Date()));
   const [note, setNote] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrSuccess, setOcrSuccess] = useState(false);
@@ -46,7 +44,7 @@ export function PaymentDialog({
   useEffect(() => {
     if (!student) return;
     setAmountVnd(balance > 0 ? formatVnd(balance).replace(" ₫", "") : "");
-    setPaidAt(new Date().toISOString().slice(0, 10));
+    setPaidAt(toLocalDateInput(new Date()));
     setNote("");
     setOcrError("");
     setCropSource((current) => {
@@ -76,7 +74,7 @@ export function PaymentDialog({
         note: string | null;
       };
       if (parsed.amountVnd != null) setAmountVnd(formatVnd(parsed.amountVnd).replace(" ₫", ""));
-      if (parsed.paidAt) setPaidAt(new Date(parsed.paidAt).toISOString().slice(0, 10));
+      if (parsed.paidAt) setPaidAt(toLocalDateInput(new Date(parsed.paidAt)));
       if (parsed.note) setNote(parsed.note);
       setOcrSuccess(true);
     } catch (requestError) {

@@ -203,7 +203,7 @@ function StudentCard({
               {student.name}
             </Link>
             <p className="mt-1 truncate text-sm text-muted-foreground">
-              {student.parentPhone || "Chưa có số điện thoại phụ huynh"}
+              {student.parentPhone || "Chưa có SĐT liên hệ"}
             </p>
             {(student.classes ?? []).length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1">

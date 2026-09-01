@@ -2,6 +2,20 @@ export function formatVnd(value: number | string | null | undefined) {
   return `${Number(value ?? 0).toLocaleString("vi-VN")} ₫`;
 }
 
+// Serialise a Date into the local wall-clock string ("YYYY-MM-DDTHH:mm") that a
+// datetime-local input expects. Uses local get* parts so no UTC shift happens;
+// toISOString().slice() would move the time by the timezone offset (e.g. -7h in VN).
+export function toLocalDateTimeInput(date: Date | null | undefined): string {
+  if (!date || Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// Local calendar date ("YYYY-MM-DD"), same rationale as above.
+export function toLocalDateInput(date: Date | null | undefined): string {
+  return toLocalDateTimeInput(date).slice(0, 10);
+}
+
 export function parseVnd(value: string) {
   const digits = value.replace(/\D/g, "");
   return digits ? Number(digits) : 0;
