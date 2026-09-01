@@ -28,3 +28,12 @@ export function monthKey(date: Date) {
 export function formatMonthLabel(date: Date) {
   return `Tháng ${date.getMonth() + 1} / ${date.getFullYear()}`;
 }
+
+// Deadline label like "12h00, 29/07" (24h local time).
+export function formatDeadline(value: string | null | undefined): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(date.getHours())}h${pad(date.getMinutes())}, ${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
+}
