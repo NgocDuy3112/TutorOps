@@ -1,3 +1,4 @@
+import "./lib/api";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -57,7 +58,7 @@ function App() {
 
   useEffect(() => {
     if (isPublicSubmission || isPublicParent || isAssignmentDropbox) return;
-    fetch(`${API}/auth/me`, { credentials: "include" })
+    fetch(`${API}/auth/me`)
       .then((response) => setAuthenticated(response.ok))
       .catch(() => setAuthenticated(false));
   }, []);

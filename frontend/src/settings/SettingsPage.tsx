@@ -13,14 +13,12 @@ import { Card } from "@/components/ui/card";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { PushNotificationSetup } from "../notifications/PushNotificationSetup";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { api } from "../lib/api";
 
 export function SettingsPage() {
   async function logout() {
-    await fetch(`${API}/auth/logout`, {
+    await api("/auth/logout", {
       method: "POST",
-      credentials: "include",
     });
     window.location.href = "/login";
   }

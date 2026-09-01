@@ -15,6 +15,7 @@ import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { EditStudentSheet } from "./EditStudentSheet";
+import { api } from "../lib/api";
 
 type StudentClass = {
   id: string;
@@ -31,8 +32,6 @@ type Student = {
   classes?: StudentClass[];
 };
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-
 export function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const navigate = useNavigate();
@@ -45,9 +44,7 @@ export function StudentsPage() {
     setLoading(true);
     setError("");
     try {
-      const studentsResponse = await fetch(`${API}/students`, {
-        credentials: "include",
-      });
+      const studentsResponse = await api("/students");
       if (!studentsResponse.ok) throw new Error("Không thể tải dữ liệu.");
       setStudents(await studentsResponse.json());
     } catch (requestError) {
@@ -64,9 +61,8 @@ export function StudentsPage() {
   }, []);
 
   async function removeStudent(id: string) {
-    const response = await fetch(`${API}/students/${id}`, {
+    const response = await api(`/students/${id}`, {
       method: "DELETE",
-      credentials: "include",
     });
     if (response.ok) {
       setStudents((current) => current.filter((student) => student.id !== id));
