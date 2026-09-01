@@ -49,6 +49,7 @@ export function MarkTaughtSheet({
   const [note, setNote] = useState(session?.note ?? "");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
   const editing = Boolean(session);
 
   useEffect(() => {
@@ -63,6 +64,11 @@ export function MarkTaughtSheet({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    setError("");
+    const taughtDate = new Date(taughtAt);
+    if (taughtDate.getTime() > Date.now() + 5 * 60 * 1000) {
+      return setError("Không thể ghi nhận buổi dạy cho ngày tương lai.");
+    }
     setSaving(true);
     const response = await fetch(
       editing
@@ -73,14 +79,19 @@ export function MarkTaughtSheet({
         headers: { "content-type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          taughtAt: new Date(taughtAt).toISOString(),
+          taughtAt: taughtDate.toISOString(),
           priceVnd: priceVnd ? parseVnd(priceVnd) : undefined,
           note,
         }),
       },
     );
     setSaving(false);
-    if (response.ok) onSaved();
+    if (response.ok) return onSaved();
+    setError(
+      response.status === 400
+        ? "Không thể ghi nhận buổi dạy cho ngày tương lai."
+        : "Không thể lưu buổi dạy. Vui lòng thử lại.",
+    );
   }
 
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -115,7 +126,7 @@ export function MarkTaughtSheet({
             <DatePicker
               value={taughtAt ? new Date(taughtAt) : null}
               onChange={(date) => setTaughtAt(toLocalDateTimeInput(date))}
-              min={new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}
+              max={new Date()}
             />
           </div>
           <div className="space-y-1.5">
@@ -143,6 +154,11 @@ export function MarkTaughtSheet({
               placeholder="Tùy chọn"
             />
           </div>
+          {error && (
+            <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </p>
+          )}
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             {editing && (
               <Button

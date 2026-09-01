@@ -39,6 +39,7 @@ type DatePickerProps = {
   value: Date | null;
   onChange: (date: Date | null) => void;
   min?: Date;
+  max?: Date;
   placeholder?: string;
   className?: string;
 };
@@ -47,6 +48,7 @@ export function DatePicker({
   value,
   onChange,
   min,
+  max,
   placeholder = "Chọn ngày giờ",
   className,
 }: DatePickerProps) {
@@ -93,6 +95,7 @@ export function DatePicker({
   function selectDay(day: number) {
     const selected = new Date(year, month, day, hour, minute);
     if (min && selected < min) return;
+    if (max && selected > max) return;
     setViewDate(selected);
     onChange(selected);
     setOpen(false);
@@ -166,18 +169,22 @@ export function DatePicker({
               const isPast = min
                 ? new Date(year, month, day) < new Date(min.getFullYear(), min.getMonth(), min.getDate())
                 : false;
+              const isFuture = max
+                ? new Date(year, month, day) > new Date(max.getFullYear(), max.getMonth(), max.getDate())
+                : false;
+              const isDisabled = isPast || isFuture;
               return (
                 <button
                   key={day}
                   type="button"
                   onClick={() => selectDay(day)}
-                  disabled={isPast}
+                  disabled={isDisabled}
                   className={cn(
                     "grid size-9 place-items-center rounded-xl text-sm font-medium transition-colors",
                     isSelected && "bg-primary text-primary-foreground",
                     !isSelected && isToday && "bg-primary/10 text-primary font-bold",
-                    !isSelected && !isPast && "hover:bg-slate-100",
-                    isPast && "text-muted-foreground/40 cursor-not-allowed",
+                    !isSelected && !isDisabled && "hover:bg-slate-100",
+                    isDisabled && "text-muted-foreground/40 cursor-not-allowed",
                   )}
                 >
                   {day}

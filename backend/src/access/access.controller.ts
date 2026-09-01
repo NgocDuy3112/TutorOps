@@ -71,28 +71,20 @@ export class AccessController {
         [access.studentId],
       ),
       pool.query(
-        `SELECT amount_vnd AS "amountVnd", paid_at AS "paidAt", status FROM payments WHERE student_id = $1 ORDER BY paid_at DESC`,
+        `SELECT amount_vnd AS "amountVnd", paid_at AS "paidAt", status FROM payments WHERE student_id = $1 AND status = 'confirmed' ORDER BY paid_at DESC`,
         [access.studentId],
       ),
+      // FR6.3: không trả điểm số cho phụ huynh — chỉ title, deadline, trạng thái, nhận xét
       pool.query(
         `SELECT a.title, a.due_at AS "dueAt", sa.status,
                 sa.submitted_at AS "submittedAt", sa.reviewed_at AS "reviewedAt",
-                sa.review_note AS "reviewNote", review.score
+                sa.review_note AS "reviewNote"
          FROM student_assignments sa
          JOIN assignments a ON a.id = sa.assignment_id
-         LEFT JOIN LATERAL (
-           SELECT ds.score::float AS score
-           FROM assignment_dropbox_submissions ds
-           WHERE ds.assignment_id = sa.assignment_id
-             AND ds.student_id = sa.student_id
-             AND ds.reviewed_at IS NOT NULL
-           ORDER BY ds.reviewed_at DESC
-           LIMIT 1
-         ) review ON true
          WHERE sa.student_id = $1
            AND sa.status = 'reviewed'
            AND a.deleted_at IS NULL
-         ORDER BY sa.reviewed_at DESC NULLS LAST`, 
+         ORDER BY sa.reviewed_at DESC NULLS LAST`,
         [access.studentId],
       ),
     ]);
