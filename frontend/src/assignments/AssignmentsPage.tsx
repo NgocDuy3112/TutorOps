@@ -10,6 +10,7 @@ import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { formatDeadline } from "../lib/format";
 import { EditAssignmentSheet } from "./EditAssignmentSheet";
+import { API } from "../lib/api";
 
 type Assignment = {
   id: string;
@@ -21,8 +22,6 @@ type Assignment = {
   classIds?: string[];
   students: { id: string; name: string; status: string }[];
 };
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function AssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -37,7 +36,6 @@ export function AssignmentsPage() {
     setError("");
     try {
       const response = await fetch(`${API}/assignments`, {
-        credentials: "include",
       });
       if (!response.ok) throw new Error("Không thể tải bài tập.");
       setAssignments(await response.json());
@@ -137,7 +135,7 @@ export function AssignmentsPage() {
             <Button type="button" variant="outline" onClick={() => setDeleting(null)}>Hủy</Button>
             <Button type="button" variant="destructive" onClick={async () => {
               if (!deleting) return;
-              const response = await fetch(`${API}/assignments/${deleting.id}`, { method: "DELETE", credentials: "include" });
+              const response = await fetch(`${API}/assignments/${deleting.id}`, { method: "DELETE" });
               if (!response.ok) { setError("Không thể xóa bài tập. Vui lòng thử lại."); return; }
               setAssignments((current) => current.filter((item) => item.id !== deleting.id));
               setDeleting(null);
@@ -173,7 +171,7 @@ function AssignmentCard({
   async function createLink() {
     const response = await fetch(
       `${API}/assignments/${assignment.id}/submission-link`,
-      { method: "POST", credentials: "include" },
+      { method: "POST" },
     );
     if (!response.ok) return;
     const { token } = await response.json();

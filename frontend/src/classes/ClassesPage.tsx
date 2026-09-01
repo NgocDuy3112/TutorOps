@@ -26,6 +26,7 @@ import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { EditClassSheet } from "./EditClassSheet";
+import { API } from "../lib/api";
 
 export type Student = { id: string; name: string; parentPhone: string | null };
 export type TutorClass = {
@@ -37,7 +38,6 @@ export type TutorClass = {
   studentCount: number;
   students: Student[];
 };
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function ClassesPage() {
   const [classes, setClasses] = useState<TutorClass[]>([]);
@@ -51,7 +51,6 @@ export function ClassesPage() {
     setError("");
     try {
       const response = await fetch(`${API}/classes`, {
-        credentials: "include",
       });
       if (!response.ok) throw new Error("Không thể tải lớp.");
       setClasses(await response.json());
@@ -138,7 +137,6 @@ export function ClassesPage() {
           if (!deleting) return;
           const response = await fetch(`${API}/classes/${deleting.id}`, {
             method: "DELETE",
-            credentials: "include",
           });
           if (response.ok) {
             setClasses((current) => current.filter((c) => c.id !== deleting.id));

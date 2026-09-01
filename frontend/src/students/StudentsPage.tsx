@@ -15,7 +15,7 @@ import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { EditStudentSheet } from "./EditStudentSheet";
-import { api } from "../lib/api";
+import { API } from "../lib/api";
 
 type StudentClass = {
   id: string;
@@ -44,7 +44,7 @@ export function StudentsPage() {
     setLoading(true);
     setError("");
     try {
-      const studentsResponse = await api("/students");
+      const studentsResponse = await fetch(`${API}/students`);
       if (!studentsResponse.ok) throw new Error("Không thể tải dữ liệu.");
       setStudents(await studentsResponse.json());
     } catch (requestError) {
@@ -61,7 +61,7 @@ export function StudentsPage() {
   }, []);
 
   async function removeStudent(id: string) {
-    const response = await api(`/students/${id}`, {
+    const response = await fetch(`${API}/students/${id}`, {
       method: "DELETE",
     });
     if (response.ok) {

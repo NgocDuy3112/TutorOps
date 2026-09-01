@@ -14,8 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MobileShell } from "../layout/MobileShell";
+import { API } from "../lib/api";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 type FileItem = { id: string; name: string; mimeType: string };
 type Student = { id: string; name: string; status: string };
 type Submission = {
@@ -62,9 +62,8 @@ export function AssignmentSubmissionsPage() {
     setError("");
     try {
       const [assignmentsResponse, submissionsResponse] = await Promise.all([
-        fetch(`${API}/assignments`, { credentials: "include" }),
+        fetch(`${API}/assignments`),
         fetch(`${API}/assignments/${assignmentId}/dropbox-submissions`, {
-          credentials: "include",
         }),
       ]);
       if (!assignmentsResponse.ok || !submissionsResponse.ok)
@@ -94,7 +93,7 @@ export function AssignmentSubmissionsPage() {
   async function mark(submissionId: string, status: "viewed" | "downloaded") {
     const response = await fetch(
       `${API}/assignments/${assignmentId}/dropbox-submissions/${submissionId}/${status}`,
-      { method: "PATCH", credentials: "include" },
+      { method: "PATCH" },
     );
     if (!response.ok) return;
     setItems((current) => current.map((item) => item.id === submissionId
@@ -104,7 +103,6 @@ export function AssignmentSubmissionsPage() {
 
   async function download(submissionId: string, fileId: string) {
     const response = await fetch(`${API}/assignments/${assignmentId}/dropbox-files/${fileId}/url`, {
-      credentials: "include",
     });
     if (!response.ok) return;
     const { url } = await response.json();
@@ -122,7 +120,6 @@ export function AssignmentSubmissionsPage() {
       {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ studentId, score: Number(score), reviewNote }),
       },
     );

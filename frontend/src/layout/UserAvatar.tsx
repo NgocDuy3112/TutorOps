@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { API } from "../lib/api";
 
 type Profile = { email: string; fullName: string | null };
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 const initials = (profile: Profile | null) => {
   const source = profile?.fullName?.trim() || profile?.email || "T";
@@ -19,7 +18,7 @@ export function UserAvatar() {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
-    fetch(`${API}/auth/me`, { credentials: "include" })
+    fetch(`${API}/auth/me`)
       .then((response) => (response.ok ? response.json() : null))
       .then(setProfile)
       .catch(() => setProfile(null));

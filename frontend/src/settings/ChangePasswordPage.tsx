@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MobileShell } from "../layout/MobileShell";
-import { api } from "../lib/api";
+import { API } from "../lib/api";
 
 export function ChangePasswordPage() {
   const [values, setValues] = useState({
@@ -25,7 +25,7 @@ export function ChangePasswordPage() {
       setError("Mật khẩu xác nhận không khớp.");
       return;
     }
-    const response = await api("/auth/password", {
+    const response = await fetch(`${API}/auth/password`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({

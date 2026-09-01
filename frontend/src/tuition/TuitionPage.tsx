@@ -14,8 +14,7 @@ import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { PaymentDialog } from "../payments/PaymentDialog";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 
 type TuitionStudent = {
   id: string;
@@ -53,7 +52,6 @@ export function TuitionPage() {
     try {
       const response = await fetch(
         `${API}/tuition?month=${monthKey(target)}`,
-        { credentials: "include" },
       );
       if (!response.ok) throw new Error("Không thể tải học phí.");
       setData((await response.json()) as TuitionResponse);

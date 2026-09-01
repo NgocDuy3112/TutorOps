@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
-import { api } from "../lib/api";
+import { API } from "../lib/api";
 
 type Student = {
   id: string;
@@ -35,7 +35,7 @@ export function StudentFormPage() {
     async function load() {
       setLoading(true);
       try {
-        const response = await api("/students");
+        const response = await fetch(`${API}/students`);
         if (!response.ok) throw new Error("Không thể tải học sinh.");
         const students: Student[] = await response.json();
         const student = students.find((item) => item.id === studentId);
@@ -62,8 +62,8 @@ export function StudentFormPage() {
     event.preventDefault();
     setSaving(true);
     setError("");
-    const response = await api(
-      editing ? `/students/${studentId}` : "/students",
+    const response = await fetch(
+      editing ? `${API}/students/${studentId}` : `${API}/students`,
       {
         method: editing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },

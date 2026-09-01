@@ -15,8 +15,7 @@ import { formatVnd, parseVnd, toLocalDateInput } from "../lib/format";
 import { cropReceiptImage, compressReceiptImage } from "../lib/image";
 import { ReceiptCropDialog } from "./ReceiptCropDialog";
 import type { Area } from "react-easy-crop";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 
 type PaymentDialogProps = {
   student: { id: string; name: string } | null;
@@ -64,7 +63,6 @@ export function PaymentDialog({
       formData.append("file", compressedFile);
       const response = await fetch(`${API}/ocr/receipt`, {
         method: "POST",
-        credentials: "include",
         body: formData,
       });
       if (!response.ok) throw new Error("Không thể đọc biên lai.");
@@ -106,7 +104,6 @@ export function PaymentDialog({
       const response = await fetch(`${API}/students/${student.id}/payments`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           amountVnd: parseVnd(amountVnd),
           paidAt: new Date(`${paidAt}T12:00:00`).toISOString(),
