@@ -195,11 +195,22 @@ function AssignmentCard({
                 ? `Deadline: ${formatDeadline(assignment.dueAt)}`
                 : "Không có deadline"}
             </p>
-            <p className="mt-3 truncate text-sm font-medium text-primary">
-              {(assignment.classNames ?? []).length
-                ? assignment.classNames!.join(", ")
-                : "Chưa có lớp"}
-            </p>
+            {(assignment.classNames ?? []).length ? (
+              <div className="mt-3 flex flex-wrap gap-1">
+                {assignment.classNames!.map((name) => (
+                  <span
+                    key={name}
+                    className="rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-primary"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm font-medium text-muted-foreground">
+                Chưa có lớp
+              </p>
+            )}
           </div>
           <div className="flex shrink-0 gap-2">
             <Button
