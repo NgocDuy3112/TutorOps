@@ -106,7 +106,7 @@ export function EditAssignmentSheet({
       body: JSON.stringify({
         title,
         description,
-        dueAt: dueAt || null,
+        dueAt: dueAt ? new Date(dueAt).toISOString() : null,
         studentIds: [],
         classIds,
       }),

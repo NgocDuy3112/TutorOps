@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { formatDeadline } from "../lib/format";
 import { EditAssignmentSheet } from "./EditAssignmentSheet";
 
 type Assignment = {
@@ -191,7 +192,7 @@ function AssignmentCard({
             <h3 className="truncate font-bold">{assignment.title}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {assignment.dueAt
-                ? `Deadline: ${new Date(assignment.dueAt).toLocaleDateString("vi-VN")}`
+                ? `Deadline: ${formatDeadline(assignment.dueAt)}`
                 : "Không có deadline"}
             </p>
             <p className="mt-3 truncate text-sm font-medium text-primary">
