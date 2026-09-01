@@ -26,6 +26,7 @@ type Submission = {
   score: number | null;
   reviewNote: string | null;
   reviewedAt: string | null;
+  isLate?: boolean;
   student: { id: string; name: string } | null;
   files: FileItem[];
 };
@@ -156,7 +157,7 @@ export function AssignmentSubmissionsPage() {
           : <div className="min-w-0 space-y-3">{items.map((item) => (
             <article key={item.id} className="w-full min-w-0 overflow-hidden rounded-3xl border bg-white p-3 shadow-sm shadow-slate-100 sm:p-4">
               <div className="flex min-w-0 items-start justify-between gap-3">
-                <div className="min-w-0"><p className="truncate text-sm font-semibold">{item.student?.name ?? "Chưa gán học sinh"}</p><time className="mt-1 block text-xs text-muted-foreground">Nộp {new Date(item.submittedAt).toLocaleString("vi-VN")}</time></div>
+                <div className="min-w-0"><p className="truncate text-sm font-semibold">{item.student?.name ?? "Chưa gán học sinh"}</p><time className="mt-1 block text-xs text-muted-foreground">Nộp {new Date(item.submittedAt).toLocaleString("vi-VN")}{item.isLate && <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">Nộp trễ</span>}</time></div>
                 <Button type="button" size="sm" className="min-h-11 shrink-0 rounded-xl" onClick={() => openReview(item)}>
                   {item.reviewedAt ? <Pencil size={16} /> : <Star size={16} />}{item.reviewedAt ? "Sửa điểm" : "Chấm bài"}
                 </Button>
