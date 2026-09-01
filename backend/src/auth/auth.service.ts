@@ -21,7 +21,7 @@ export class AuthService {
   private hash(value: string) {
     return crypto.createHash("sha256").update(value).digest("hex");
   }
-  async register(email: string, password: string, rememberMe = false) {
+  async register(email: string, password: string) {
     if (!email || !password || password.length < 8)
       throw new UnauthorizedException("invalid_credentials");
     try {
@@ -29,7 +29,7 @@ export class AuthService {
         email.toLowerCase(),
         await argon2.hash(password),
       );
-      return this.createSession(user, rememberMe);
+      return this.createSession(user);
     } catch (error: unknown) {
       if (error instanceof Error && "code" in error && error.code === "23505")
         throw new ConflictException("email_already_exists");
@@ -49,7 +49,7 @@ export class AuthService {
     };
   }
 
-  async googleCallback(code: string, state: string, rememberMe = false) {
+  async googleCallback(code: string, state: string) {
     const stateKey = `oauth:google:state:${state}`;
     if (!state || !(await redis.get(stateKey)))
       throw new UnauthorizedException("invalid_oauth_state");
@@ -69,7 +69,7 @@ export class AuthService {
       payload.sub,
       payload.name ?? payload.given_name ?? undefined,
     );
-    return this.createSession(user, rememberMe);
+    return this.createSession(user);
   }
 
   async profile(userId: string) {
@@ -105,25 +105,25 @@ export class AuthService {
     await redis.del(`session:${tokenHash}`);
   }
 
-  async login(email: string, password: string, rememberMe = false) {
+  async login(email: string, password: string) {
     const user = await this.repository.findByEmail(email?.toLowerCase());
     if (
       !user?.password_hash ||
       !(await argon2.verify(user.password_hash, password))
     )
       throw new UnauthorizedException("invalid_credentials");
-    return this.createSession(user, rememberMe);
+    return this.createSession(user);
   }
-  private async createSession(user: AuthUser, rememberMe: boolean) {
+  private async createSession(user: AuthUser) {
     const token = crypto.randomBytes(32).toString("base64url");
     const tokenHash = this.hash(token);
-    const ttl = rememberMe ? 30 * 86400 : 86400;
-    await this.repository.createSession(user.id, tokenHash, rememberMe, ttl);
+    const ttl = 86400;
+    await this.repository.createSession(user.id, tokenHash, ttl);
     await redis.set(
       `session:${tokenHash}`,
       JSON.stringify({ id: user.id, email: user.email, role: user.role }),
       { EX: ttl },
     );
-    return { token, user, rememberMe };
+    return { token, user };
   }
 }

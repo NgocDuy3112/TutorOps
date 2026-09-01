@@ -130,14 +130,13 @@ export class AuthRepository {
   async createSession(
     userId: string,
     tokenHash: string,
-    rememberMe: boolean,
     ttl: number,
   ) {
     const query = `
-      INSERT INTO sessions (user_id, token_hash, remember_me, expires_at)
-      VALUES ($1, $2, $3, now() + ($4 * interval '1 second'))
+      INSERT INTO sessions (user_id, token_hash, expires_at)
+      VALUES ($1, $2, now() + ($3 * interval '1 second'))
     `;
-    await pool.query(query, [userId, tokenHash, rememberMe, ttl]);
+    await pool.query(query, [userId, tokenHash, ttl]);
   }
 
   async revokeSession(tokenHash: string) {

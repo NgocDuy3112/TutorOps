@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { api } from "../lib/api";
 
 type Student = {
   id: string;
@@ -15,7 +16,6 @@ type Student = {
   parentName: string | null;
   parentPhone: string | null;
 };
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function StudentFormPage() {
   const { studentId } = useParams();
@@ -35,9 +35,7 @@ export function StudentFormPage() {
     async function load() {
       setLoading(true);
       try {
-        const response = await fetch(`${API}/students`, {
-          credentials: "include",
-        });
+        const response = await api("/students");
         if (!response.ok) throw new Error("Không thể tải học sinh.");
         const students: Student[] = await response.json();
         const student = students.find((item) => item.id === studentId);
@@ -64,12 +62,11 @@ export function StudentFormPage() {
     event.preventDefault();
     setSaving(true);
     setError("");
-    const response = await fetch(
-      editing ? `${API}/students/${studentId}` : `${API}/students`,
+    const response = await api(
+      editing ? `/students/${studentId}` : "/students",
       {
         method: editing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(form),
       },
     );
