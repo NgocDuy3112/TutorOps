@@ -1,4 +1,4 @@
-import "./lib/api";
+import { API } from "./lib/api";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -32,8 +32,6 @@ import { ChangePasswordPage } from "./settings/ChangePasswordPage";
 import { VersionBanner } from "./components/VersionBanner";
 import { OnboardingDialog } from "./onboarding/OnboardingDialog";
 import { IosInstallBanner } from "./notifications/IosInstallBanner";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);

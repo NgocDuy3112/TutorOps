@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { formatVnd, parseVnd } from "../lib/format";
 import { cn } from "@/lib/utils";
+import { API } from "../lib/api";
 
 type Student = { id: string; name: string; parentPhone: string | null };
 type TutorClass = {
@@ -28,8 +29,6 @@ type TutorClass = {
   note: string | null;
   students: Student[];
 };
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function EditClassSheet({
   classItem,
@@ -68,7 +67,6 @@ export function EditClassSheet({
     async function loadStudents() {
       try {
         const response = await fetch(`${API}/students`, {
-          credentials: "include",
         });
         if (response.ok) setAllStudents(await response.json());
       } catch {
@@ -95,7 +93,7 @@ export function EditClassSheet({
     setChanging(studentId);
     const response = await fetch(
       `${API}/classes/${classItem.id}/students/${studentId}`,
-      { method: "POST", credentials: "include" },
+      { method: "POST" },
     );
     if (response.ok) {
       setStudentIds((current) => [...current, studentId]);
@@ -108,7 +106,7 @@ export function EditClassSheet({
     setChanging(removing.id);
     const response = await fetch(
       `${API}/classes/${classItem.id}/students/${removing.id}`,
-      { method: "DELETE", credentials: "include" },
+      { method: "DELETE" },
     );
     if (response.ok) {
       setStudentIds((current) => current.filter((id) => id !== removing.id));
@@ -125,7 +123,6 @@ export function EditClassSheet({
     const response = await fetch(`${API}/classes/${classItem.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         name,
         defaultPriceVnd: defaultPriceVnd ? parseVnd(defaultPriceVnd) : null,

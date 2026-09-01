@@ -14,8 +14,7 @@ import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditStudentSheet } from "./EditStudentSheet";
 import { MarkTaughtSheet } from "./MarkTaughtSheet";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 
 type Student = {
   id: string;
@@ -53,11 +52,10 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
     try {
       const [studentsResponse, sessionsResponse, assignmentsResponse] =
         await Promise.all([
-          fetch(`${API}/students`, { credentials: "include" }),
+          fetch(`${API}/students`),
           fetch(`${API}/students/${studentId}/sessions`, {
-            credentials: "include",
           }),
-          fetch(`${API}/assignments`, { credentials: "include" }),
+          fetch(`${API}/assignments`),
         ]);
       if (!studentsResponse.ok || !sessionsResponse.ok || !assignmentsResponse.ok)
         throw new Error("Không thể tải hồ sơ học sinh.");

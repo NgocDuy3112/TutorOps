@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleButton } from "./AuthLayout";
+import { API } from "../lib/api";
 
 type AuthMode = "login" | "signup";
 
@@ -11,8 +12,6 @@ type AuthFormProps = {
   mode: AuthMode;
   onSuccess: () => void;
 };
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function AuthForm({ mode, onSuccess }: AuthFormProps) {
   const isLogin = mode === "login";
@@ -30,7 +29,6 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
     const response = await fetch(`${API}/auth/${endpoint}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ email, password }),
     });
 

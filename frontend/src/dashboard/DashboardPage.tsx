@@ -22,8 +22,7 @@ import { formatMonthLabel, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { UserAvatar } from "../layout/UserAvatar";
 import { MarkTaughtSheet } from "../students/MarkTaughtSheet";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 
 type Teacher = { id: string; email: string; fullName: string | null };
 type Student = { id: string; name: string; defaultPriceVnd: number };
@@ -117,14 +116,12 @@ export function DashboardPage() {
     setError("");
     try {
       const response = await fetch(`${API}/dashboard/calendar`, {
-        credentials: "include",
       });
       if (!response.ok) throw new Error("Không thể tải dashboard.");
       const data: DashboardCalendar = await response.json();
       setStudents(data.students);
       setSessions(data.sessions);
       const classesResponse = await fetch(`${API}/classes`, {
-        credentials: "include",
       });
       if (classesResponse.ok) setClasses(await classesResponse.json());
       setAssignments(data.assignments);
@@ -216,7 +213,6 @@ export function DashboardPage() {
       const response = await fetch(`${API}/students/${student.id}/sessions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           taughtAt: taughtAt.toISOString(),
           priceVnd:

@@ -1,6 +1,19 @@
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+export const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+
+/** Routes that should never trigger the 401 → /login redirect. */
+const AUTH_BYPASS_PATTERNS = [
+  "/public/",
+  "/auth/login",
+  "/auth/register",
+  "/auth/google",
+];
 
 let redirecting = false;
+
+function shouldRedirectToLogin(url: string, status: number): boolean {
+  if (status !== 401 || redirecting) return false;
+  return !AUTH_BYPASS_PATTERNS.some((pattern) => url.includes(pattern));
+}
 
 const originalFetch = window.fetch;
 
@@ -9,7 +22,7 @@ window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
 
   // Only prepend base URL for relative paths
   if (url.startsWith("/") && !url.startsWith("//")) {
-    url = `${BASE}${url}`;
+    url = `${API}${url}`;
   }
 
   const mergedInit: RequestInit = {
@@ -18,13 +31,7 @@ window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
   };
 
   return originalFetch.call(window, url, mergedInit).then((response) => {
-    if (
-      response.status === 401 &&
-      !url.includes("/public/") &&
-      !url.includes("/auth/login") &&
-      !url.includes("/auth/register") &&
-      !redirecting
-    ) {
+    if (shouldRedirectToLogin(url, response.status)) {
       redirecting = true;
       window.location.href = "/login";
     }
@@ -32,9 +39,6 @@ window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
   });
 };
 
-/**
- * Convenience wrapper for new code. Uses the intercepted fetch.
- */
 export async function api(
   path: string,
   init?: RequestInit,

@@ -18,7 +18,7 @@ type Student = {
   parentPhone: string | null;
 };
 
-import { api } from "../lib/api";
+import { API } from "../lib/api";
 
 export function EditStudentSheet({
   student,
@@ -49,7 +49,7 @@ export function EditStudentSheet({
     event.preventDefault();
     setSaving(true);
     setError("");
-    const response = await api(`/students/${student.id}`, {
+    const response = await fetch(`${API}/students/${student.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(form),

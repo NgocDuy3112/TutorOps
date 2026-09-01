@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { API } from "../lib/api";
 
 type AuthLayoutProps = {
   title: string;
@@ -30,8 +31,7 @@ export function AuthLayout({ title, description, children }: AuthLayoutProps) {
 
 export function GoogleButton() {
   async function login() {
-    const api = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-    const response = await fetch(`${api}/auth/google`);
+    const response = await fetch(`${API}/auth/google`);
     const { url } = await response.json();
     window.location.href = url;
   }

@@ -9,6 +9,7 @@ import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { formatVnd, parseVnd } from "../lib/format";
+import { API } from "../lib/api";
 
 type TutorClass = {
   id: string;
@@ -16,7 +17,6 @@ type TutorClass = {
   defaultPriceVnd: number | null;
   note: string | null;
 };
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function ClassFormPage() {
   const { classId } = useParams();
@@ -33,7 +33,6 @@ export function ClassFormPage() {
       setLoading(true);
       try {
         const response = await fetch(`${API}/classes`, {
-          credentials: "include",
         });
         if (!response.ok) throw new Error("Không thể tải lớp.");
         const classes: TutorClass[] = await response.json();
@@ -67,7 +66,6 @@ export function ClassFormPage() {
       {
         method: editing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           name: form.name,
           defaultPriceVnd: form.defaultPriceVnd

@@ -13,11 +13,11 @@ import { Card } from "@/components/ui/card";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { PushNotificationSetup } from "../notifications/PushNotificationSetup";
-import { api } from "../lib/api";
+import { API } from "../lib/api";
 
 export function SettingsPage() {
   async function logout() {
-    await api("/auth/logout", {
+    await fetch(`${API}/auth/logout`, {
       method: "POST",
     });
     window.location.href = "/login";

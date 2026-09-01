@@ -3,8 +3,8 @@ import { useParams } from "react-router-dom";
 import { BookOpenCheck, CreditCard, Loader2, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatVnd } from "../lib/format";
+import { API } from "../lib/api";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 type Report = {
   student: { name: string };
   sessions: { taughtAt: string; priceVnd: number; note: string | null }[];
