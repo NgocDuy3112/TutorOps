@@ -13,8 +13,11 @@ const AUTH_BYPASS_PATTERNS = [
 
 let redirecting = false;
 
+const AUTH_PAGES = ["/login", "/signup"];
+
 function shouldRedirectToLogin(url: string, status: number): boolean {
   if (status !== 401 || redirecting) return false;
+  if (AUTH_PAGES.includes(window.location.pathname)) return false;
   return !AUTH_BYPASS_PATTERNS.some((pattern) => url.includes(pattern));
 }
 
@@ -23,8 +26,6 @@ const originalFetch = window.fetch;
 window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
   let url = typeof input === "string" ? input : input.toString();
 
-  // Only prepend base URL for relative paths. Skip if the URL already
-  // starts with the base (e.g. "/api/auth/google" from `${API}/auth/google`).
   if (
     url.startsWith("/") &&
     !url.startsWith("//") &&
