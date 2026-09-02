@@ -1,5 +1,8 @@
 export const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
+/** Stripped base URL — used internally by the interceptor. */
+const BASE_URL = API.replace(/\/+$/, "");
+
 /** Routes that should never trigger the 401 → /login redirect. */
 const AUTH_BYPASS_PATTERNS = [
   "/public/",
@@ -20,9 +23,14 @@ const originalFetch = window.fetch;
 window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
   let url = typeof input === "string" ? input : input.toString();
 
-  // Only prepend base URL for relative paths
-  if (url.startsWith("/") && !url.startsWith("//")) {
-    url = `${API}${url}`;
+  // Only prepend base URL for relative paths. Skip if the URL already
+  // starts with the base (e.g. "/api/auth/google" from `${API}/auth/google`).
+  if (
+    url.startsWith("/") &&
+    !url.startsWith("//") &&
+    !url.startsWith(BASE_URL)
+  ) {
+    url = `${BASE_URL}${url}`;
   }
 
   const mergedInit: RequestInit = {
