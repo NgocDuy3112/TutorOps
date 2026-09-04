@@ -300,27 +300,27 @@ function TuitionRowCard({
             </p>
           )}
         </div>
-        <div className="flex shrink-0 flex-col items-stretch gap-1.5">
+        <div className="flex shrink-0 flex-col items-center gap-1">
           {row.paid > 0 && (
             <Button
               type="button"
               size="icon"
-              variant="outline"
+              variant="ghost"
               aria-label={`Sửa khoản đã nhận của ${row.name}`}
-              className="size-11 self-end rounded-2xl"
+              className="size-9 rounded-xl text-muted-foreground hover:bg-slate-100"
               onClick={onEdit}
             >
-              <Pencil size={16} />
+              <Pencil size={15} />
             </Button>
           )}
           <Button
             type="button"
             size="icon"
             aria-label={`Ghi nhận thanh toán cho ${row.name}`}
-            className="size-11 shrink-0 self-end rounded-2xl"
+            className="size-9 rounded-xl"
             onClick={onPay}
           >
-            <Check size={20} />
+            <Check size={17} />
           </Button>
         </div>
       </CardContent>
