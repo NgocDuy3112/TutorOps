@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -38,5 +39,13 @@ export class PaymentsController {
     @Body() body: UpdatePaymentDto,
   ) {
     return this.payments.update(req.user.id, studentId, paymentId, body);
+  }
+  @Delete(":paymentId")
+  remove(
+    @Req() req: AuthenticatedRequest,
+    @Param("studentId", new ParseUUIDPipe()) studentId: string,
+    @Param("paymentId", new ParseUUIDPipe()) paymentId: string,
+  ) {
+    return this.payments.remove(req.user.id, studentId, paymentId);
   }
 }

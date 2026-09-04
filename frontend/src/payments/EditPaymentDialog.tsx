@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Loader2, Pencil } from "lucide-react";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,6 +52,8 @@ export function EditPaymentDialog({
   const [appliesToMonth, setAppliesToMonth] = useState(month);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async (studentId: string) => {
@@ -86,7 +88,32 @@ export function EditPaymentDialog({
     setAmountVnd(formatVnd(record.amountVnd).replace(" ₫", ""));
     setAppliesToMonth(record.appliesToMonth);
     setNote(record.note ?? "");
+    setConfirmDelete(false);
     setError("");
+  }
+
+  async function remove() {
+    if (!student || !selected) return;
+    setDeleting(true);
+    setError("");
+    try {
+      const response = await fetch(
+        `${API}/students/${student.id}/payments/${selected.id}`,
+        { method: "DELETE" },
+      );
+      if (!response.ok)
+        throw new Error("Không thể xoá khoản thu. Vui lòng thử lại.");
+      setSelected(null);
+      await load(student.id);
+      onSaved();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
+      );
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -222,6 +249,45 @@ export function EditPaymentDialog({
               <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
                 {error}
               </p>
+            )}
+            {confirmDelete ? (
+              <div className="rounded-2xl bg-red-50 p-3">
+                <p className="text-sm font-semibold text-red-700">
+                  Xoá khoản {formatVnd(selected.amountVnd)}? Report học phí sẽ
+                  tính lại ngay.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11 flex-1 rounded-2xl bg-white"
+                    disabled={deleting}
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    Giữ lại
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="min-h-11 flex-1 rounded-2xl"
+                    disabled={deleting}
+                    onClick={() => void remove()}
+                  >
+                    {deleting && <Loader2 className="animate-spin" size={16} />}
+                    {deleting ? "Đang xoá..." : "Xoá hẳn"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11 w-full rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 size={16} />
+                Xoá khoản thu
+              </Button>
             )}
             <div className="flex gap-2">
               <Button
