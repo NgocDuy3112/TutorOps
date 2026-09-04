@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Pencil,
   SearchX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { PaymentDialog } from "../payments/PaymentDialog";
+import { EditPaymentDialog } from "../payments/EditPaymentDialog";
 import { API } from "../lib/api";
 
 type TuitionStudent = {
@@ -44,6 +46,7 @@ export function TuitionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [paying, setPaying] = useState<TuitionStudent | null>(null);
+  const [editing, setEditing] = useState<TuitionStudent | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
 
   async function load(target: Date) {
@@ -194,6 +197,7 @@ export function TuitionPage() {
                     key={row.id}
                     row={row}
                     onPay={() => setPaying(row)}
+                    onEdit={() => setEditing(row)}
                   />
                 ))}
               </div>
@@ -201,9 +205,16 @@ export function TuitionPage() {
           </div>
         )}
       </main>
+      <EditPaymentDialog
+        student={editing ? { id: editing.id, name: editing.name } : null}
+        month={monthKey(month)}
+        onOpenChange={(open) => !open && setEditing(null)}
+        onSaved={() => void load(month)}
+      />
       <PaymentDialog
         student={paying ? { id: paying.id, name: paying.name } : null}
         balance={paying?.balance ?? 0}
+        month={monthKey(month)}
         onOpenChange={(open) => !open && setPaying(null)}
         onSaved={() => {
           setPaying(null);
@@ -246,9 +257,11 @@ function FilterButton({
 function TuitionRowCard({
   row,
   onPay,
+  onEdit,
 }: {
   row: TuitionStudent;
   onPay: () => void;
+  onEdit: () => void;
 }) {
   const noActivity = row.sessionCount === 0 && row.paid <= 0;
   const settled = !noActivity && row.balance <= 0;
@@ -286,14 +299,28 @@ function TuitionRowCard({
             </p>
           )}
         </div>
-        <Button
-          type="button"
-          size="sm"
-          className="min-h-11 shrink-0 rounded-2xl px-4"
-          onClick={onPay}
-        >
-          Thu
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {row.paid > 0 && (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              aria-label={`Sửa khoản đã nhận của ${row.name}`}
+              className="size-11 rounded-2xl"
+              onClick={onEdit}
+            >
+              <Pencil size={16} />
+            </Button>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            className="min-h-11 shrink-0 rounded-2xl px-4"
+            onClick={onPay}
+          >
+            Thu
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

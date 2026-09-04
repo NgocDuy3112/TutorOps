@@ -71,7 +71,7 @@ export class AccessController {
         [access.studentId],
       ),
       pool.query(
-        `SELECT amount_vnd AS "amountVnd", paid_at AS "paidAt", status FROM payments WHERE student_id = $1 AND status = 'confirmed' ORDER BY paid_at DESC`,
+        `SELECT amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status FROM payments WHERE student_id = $1 AND status = 'confirmed' ORDER BY paid_at DESC`,
         [access.studentId],
       ),
       // FR6.3: không trả điểm số cho phụ huynh — chỉ title, deadline, trạng thái, nhận xét

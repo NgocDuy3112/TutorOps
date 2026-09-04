@@ -36,7 +36,7 @@ export class TuitionRepository {
           SUM(amount_vnd) AS paid
         FROM payments
         WHERE status = 'confirmed'
-          AND to_char(paid_at AT TIME ZONE $2, 'YYYY-MM') = $1
+          AND applies_to_month = $1
         GROUP BY student_id
       ) AS p ON p.student_id = s.id
       WHERE s.teacher_id = $3
