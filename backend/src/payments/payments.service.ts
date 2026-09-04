@@ -78,6 +78,19 @@ export class PaymentsService {
     if (result.rowCount === 0) throw new NotFoundException("payment_not_found");
     return result.rows[0];
   }
+  async remove(teacherId: string, studentId: string, paymentId: string) {
+    const result = await pool.query(
+      `DELETE FROM payments
+       WHERE id = $1 AND student_id = $2 AND status = 'confirmed'
+         AND EXISTS (
+           SELECT 1 FROM students
+           WHERE students.id = $2 AND students.teacher_id = $3 AND students.deleted_at IS NULL
+         )`,
+      [paymentId, studentId, teacherId],
+    );
+    if (result.rowCount === 0) throw new NotFoundException("payment_not_found");
+    return { ok: true };
+  }
   private async owned(teacherId: string, studentId: string) {
     const result = await pool.query(
       `SELECT 1 FROM students WHERE id = $1 AND teacher_id = $2 AND deleted_at IS NULL`,
