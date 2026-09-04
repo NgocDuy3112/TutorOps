@@ -29,6 +29,24 @@ export function formatMonthLabel(date: Date) {
   return `Tháng ${date.getMonth() + 1} / ${date.getFullYear()}`;
 }
 
+// Dropdown options for choosing a tuition month: viewed month plus (count-1)
+// months before it. "viewed" is a "YYYY-MM" key.
+export function recentMonthOptions(
+  viewed: string,
+  count = 6,
+): { value: string; label: string }[] {
+  const [year, month] = viewed.split("-").map(Number);
+  if (!year || !month) return [];
+  const base = new Date(year, month - 1, 1);
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(base.getFullYear(), base.getMonth() - index, 1);
+    return {
+      value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+      label: formatMonthLabel(date),
+    };
+  });
+}
+
 // Deadline label like "12h00, 29/07" (24h local time).
 export function formatDeadline(value: string | null | undefined): string {
   if (!value) return "";

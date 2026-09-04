@@ -16,7 +16,7 @@ type Report = {
     reviewNote: string | null;
     reviewedAt: string | null;
   }[];
-  payments: { amountVnd: number; paidAt: string; status: string }[];
+  payments: { amountVnd: number; paidAt: string; appliesToMonth: string; status: string }[];
 };
 
 export function ParentReportPage() {
@@ -139,9 +139,14 @@ export function ParentReportPage() {
                     className="flex justify-between rounded-xl bg-muted p-4 text-sm"
                     key={`${item.paidAt}-${item.amountVnd}`}
                   >
-                    <span>
-                      {new Date(item.paidAt).toLocaleDateString("vi-VN")}
-                    </span>
+                    <div>
+                      <span>
+                        {new Date(item.paidAt).toLocaleDateString("vi-VN")}
+                      </span>
+                      <p className="text-muted-foreground">
+                        Học phí tháng {item.appliesToMonth.slice(5)}/{item.appliesToMonth.slice(0, 4)}
+                      </p>
+                    </div>
                     <strong>{formatVnd(item.amountVnd)}</strong>
                   </div>
                 ))

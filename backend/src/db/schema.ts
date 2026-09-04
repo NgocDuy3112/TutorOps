@@ -422,6 +422,7 @@ export const payments = pgTable(
       .references(() => students.id, { onDelete: "restrict" }),
     amountVnd: bigint("amount_vnd", { mode: "number" }).notNull(),
     paidAt: timestamp("paid_at", { withTimezone: true }).notNull(),
+    appliesToMonth: text("applies_to_month").notNull(),
     status: paymentStatus("status").default("draft").notNull(),
     receiptFileId: uuid("receipt_file_id").references(() => files.id, {
       onDelete: "restrict",
@@ -437,7 +438,12 @@ export const payments = pgTable(
   },
   (table) => [
     index().on(table.studentId, table.paidAt),
+    index().on(table.studentId, table.appliesToMonth),
     check("payments_amount_positive", sql`${table.amountVnd} > 0`),
+    check(
+      "payments_applies_to_month_format",
+      sql`${table.appliesToMonth} ~ '^\\d{4}-(0[1-9]|1[0-2])$'`,
+    ),
   ],
 );
 
