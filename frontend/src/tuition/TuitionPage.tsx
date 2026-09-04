@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarX2,
+  Check,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -299,14 +300,14 @@ function TuitionRowCard({
             </p>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-col items-stretch gap-1.5">
           {row.paid > 0 && (
             <Button
               type="button"
               size="icon"
               variant="outline"
               aria-label={`Sửa khoản đã nhận của ${row.name}`}
-              className="size-11 rounded-2xl"
+              className="size-11 self-end rounded-2xl"
               onClick={onEdit}
             >
               <Pencil size={16} />
@@ -314,11 +315,12 @@ function TuitionRowCard({
           )}
           <Button
             type="button"
-            size="sm"
-            className="min-h-11 shrink-0 rounded-2xl px-4"
+            size="icon"
+            aria-label={`Ghi nhận thanh toán cho ${row.name}`}
+            className="size-11 shrink-0 self-end rounded-2xl"
             onClick={onPay}
           >
-            Thu
+            <Check size={20} />
           </Button>
         </div>
       </CardContent>

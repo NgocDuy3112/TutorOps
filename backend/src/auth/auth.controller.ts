@@ -12,6 +12,8 @@ import {
 import { AuthGuard } from "./auth.guard";
 
 const SESSION_COOKIE = "tutorops_session";
+// Session TTL in seconds; keep in sync with auth.service createSession.
+const SESSION_TTL_SECONDS = 86400;
 import { AuthService } from "./auth.service";
 import { CredentialsDto } from "./auth.dto";
 import { UpdateProfileDto, ChangePasswordDto } from "./profile.dto";
@@ -97,7 +99,9 @@ export class AuthController {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
-      maxAge: 86400,
+      // Express maxAge is MILLISECONDS — passing seconds here expired the
+      // cookie in ~86s, logging users out after ~2 minutes.
+      maxAge: SESSION_TTL_SECONDS * 1000,
     });
   }
 }
