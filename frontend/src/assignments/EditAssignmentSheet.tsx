@@ -12,6 +12,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { toLocalDateTimeInput } from "../lib/format";
+import { API } from "../lib/api";
 
 type Assignment = {
   id: string;
@@ -22,8 +23,6 @@ type Assignment = {
   classIds?: string[];
 };
 type TutorClass = { id: string; name: string; studentCount: number };
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function EditAssignmentSheet({
   assignment,
@@ -60,7 +59,6 @@ export function EditAssignmentSheet({
     async function loadClasses() {
       try {
         const response = await fetch(`${API}/classes`, {
-          credentials: "include",
         });
         if (response.ok) {
           const allClasses: TutorClass[] = await response.json();
@@ -102,7 +100,6 @@ export function EditAssignmentSheet({
     const response = await fetch(`${API}/assignments/${assignment.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         title,
         description,

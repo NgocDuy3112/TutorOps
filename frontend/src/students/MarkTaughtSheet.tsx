@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatVnd, parseVnd, toLocalDateTimeInput } from "../lib/format";
+import { API } from "../lib/api";
 
 type Student = { id: string; defaultPriceVnd: number };
 type TeachingSession = {
@@ -23,7 +24,6 @@ type TeachingSession = {
   priceVnd: number;
   note: string | null;
 };
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function MarkTaughtSheet({
   student,
@@ -77,7 +77,6 @@ export function MarkTaughtSheet({
       {
         method: editing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           taughtAt: taughtDate.toISOString(),
           priceVnd: priceVnd ? parseVnd(priceVnd) : undefined,
@@ -101,7 +100,6 @@ export function MarkTaughtSheet({
     setDeleting(true);
     const response = await fetch(`${API}/sessions/${session.id}`, {
       method: "DELETE",
-      credentials: "include",
     });
     setDeleting(false);
     setConfirmDelete(false);

@@ -28,6 +28,7 @@ import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { toLocalDateTimeInput } from "../lib/format";
+import { API } from "../lib/api";
 
 type Assignment = {
   id: string;
@@ -39,8 +40,6 @@ type Assignment = {
   students: { id: string; name: string; status: string }[];
 };
 type TutorClass = { id: string; name: string; studentCount: number };
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function AssignmentFormPage() {
   const { assignmentId } = useParams();
@@ -63,9 +62,9 @@ export function AssignmentFormPage() {
       setError("");
       try {
         const [classesResponse, assignmentsResponse] = await Promise.all([
-          fetch(`${API}/classes`, { credentials: "include" }),
+          fetch(`${API}/classes`),
           editing
-            ? fetch(`${API}/assignments`, { credentials: "include" })
+            ? fetch(`${API}/assignments`)
             : Promise.resolve(null),
         ]);
         if (!classesResponse.ok) throw new Error("Không thể tải lớp.");
@@ -130,7 +129,6 @@ export function AssignmentFormPage() {
       formData.append("file", file);
       const uploadResponse = await fetch(`${API}/files`, {
         method: "POST",
-        credentials: "include",
         body: formData,
       });
       if (!uploadResponse.ok) {
@@ -144,7 +142,6 @@ export function AssignmentFormPage() {
       {
         method: editing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           title,
           description,

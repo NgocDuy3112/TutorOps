@@ -19,8 +19,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { API } from "../lib/api";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const maxFiles = 10;
 const maxFileSize = 20 * 1024 * 1024;
 const acceptedTypes = [

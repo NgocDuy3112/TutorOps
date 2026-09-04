@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { MobileShell } from "../layout/MobileShell";
 import type { Student, TutorClass } from "./ClassesPage";
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 export function ClassDetailPage() {
   const { classId = "" } = useParams();
   const [item, setItem] = useState<TutorClass | null>(null);
@@ -27,8 +27,8 @@ export function ClassDetailPage() {
     setLoading(true);
     try {
       const [classes, studentsResponse] = await Promise.all([
-        fetch(`${API}/classes`, { credentials: "include" }),
-        fetch(`${API}/students`, { credentials: "include" }),
+        fetch(`${API}/classes`),
+        fetch(`${API}/students`),
       ]);
       if (!classes.ok || !studentsResponse.ok)
         throw new Error("Không thể tải lớp.");
@@ -61,7 +61,7 @@ export function ClassDetailPage() {
     if (!removing) return;
     const response = await fetch(
       `${API}/classes/${classId}/students/${removing.id}`,
-      { method: "DELETE", credentials: "include" },
+      { method: "DELETE" },
     );
     if (response.ok) void load();
     setRemoving(null);
@@ -70,7 +70,7 @@ export function ClassDetailPage() {
   async function addStudent(student: Student) {
     const response = await fetch(
       `${API}/classes/${classId}/students/${student.id}`,
-      { method: "POST", credentials: "include" },
+      { method: "POST" },
     );
     if (response.ok) void load();
   }

@@ -1,15 +1,3 @@
-#!/bin/bash
-
-# TutorOps Migration Script
-# Chạy tất cả SQL migrations trên PostgreSQL container
-#
-# Usage:
-#   ./scripts/migrate.sh
-#   ./scripts/migrate.sh <postgres_container> <db_user> <db_name>
-
-set -e
-
-# Default values
 CONTAINER=${1:-tutorops-postgres}
 DB_USER=${2:-${POSTGRES_DB_USER:-postgres}}
 DB_NAME=${3:-${POSTGRES_DB_NAME:-tutorops}}

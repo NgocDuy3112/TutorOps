@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   BookOpenCheck,
-  CalendarDays,
   GraduationCap,
   Loader2,
   Pencil,
   Plus,
   CalendarOff,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -17,12 +18,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatVnd } from "../lib/format";
+import { formatMonthLabel, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { UserAvatar } from "../layout/UserAvatar";
 import { MarkTaughtSheet } from "../students/MarkTaughtSheet";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 
 type Teacher = { id: string; email: string; fullName: string | null };
 type Student = { id: string; name: string; defaultPriceVnd: number };
@@ -116,14 +116,12 @@ export function DashboardPage() {
     setError("");
     try {
       const response = await fetch(`${API}/dashboard/calendar`, {
-        credentials: "include",
       });
       if (!response.ok) throw new Error("Không thể tải dashboard.");
       const data: DashboardCalendar = await response.json();
       setStudents(data.students);
       setSessions(data.sessions);
       const classesResponse = await fetch(`${API}/classes`, {
-        credentials: "include",
       });
       if (classesResponse.ok) setClasses(await classesResponse.json());
       setAssignments(data.assignments);
@@ -187,18 +185,12 @@ export function DashboardPage() {
     month: "long",
     year: "numeric",
   }).format(selectedDate);
-  const monthLabel = `${month.getMonth() + 1}/${month.getFullYear()}`;
-  const yearOptions = Array.from(
-    { length: 7 },
-    (_, index) => new Date().getFullYear() - 3 + index,
-  );
 
-  function updateCalendarMonth(value: string) {
-    setMonth((current) => new Date(current.getFullYear(), Number(value), 1));
-  }
-
-  function updateCalendarYear(value: string) {
-    setMonth((current) => new Date(Number(value), current.getMonth(), 1));
+  function shiftMonth(deltaMonths: number) {
+    setMonth(
+      (current) =>
+        new Date(current.getFullYear(), current.getMonth() + deltaMonths, 1),
+    );
   }
 
   function openAgenda(day: Date) {
@@ -221,7 +213,6 @@ export function DashboardPage() {
       const response = await fetch(`${API}/students/${student.id}/sessions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           taughtAt: taughtAt.toISOString(),
           priceVnd:
@@ -268,46 +259,30 @@ export function DashboardPage() {
       <main className="mx-auto max-w-4xl px-4 py-5">
         <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
           <CardHeader className="space-y-3 border-b border-slate-100 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="text-primary" size={21} />
-                <h2 className="sr-only">Lịch học</h2>
-              </div>
+            <div className="flex items-center justify-between gap-2">
               <Button
                 type="button"
                 size="icon"
-                className="min-h-11 rounded-full"
-                onClick={startCreateSession}
-                aria-label="Thêm buổi dạy"
+                variant="outline"
+                aria-label="Tháng trước"
+                className="size-11 shrink-0 rounded-2xl"
+                onClick={() => shiftMonth(-1)}
               >
-                <Plus size={18} />
+                <ChevronLeft size={18} />
               </Button>
-            </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
-              <select
-                value={month.getMonth()}
-                onChange={(event) => updateCalendarMonth(event.target.value)}
-                className="min-h-12 rounded-2xl border border-input bg-white px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-                aria-label="Chọn tháng"
+              <p className="text-lg font-black tracking-tight text-slate-950">
+                {formatMonthLabel(month)}
+              </p>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                aria-label="Tháng sau"
+                className="size-11 shrink-0 rounded-2xl"
+                onClick={() => shiftMonth(1)}
               >
-                {Array.from({ length: 12 }, (_, index) => (
-                  <option key={index} value={index}>
-                    Tháng {index + 1}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={month.getFullYear()}
-                onChange={(event) => updateCalendarYear(event.target.value)}
-                className="min-h-12 rounded-2xl border border-input bg-white px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
-                aria-label="Chọn năm"
-              >
-                {yearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
+                <ChevronRight size={18} />
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="p-3 sm:p-4">

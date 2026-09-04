@@ -2,8 +2,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Download, FileText, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 
 type AssignmentFile = {
   id: string;

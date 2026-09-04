@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { isIosBrowserNotStandalone } from "@/lib/platform";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 type State =
   | "loading"
   | "enabled"
@@ -43,7 +42,7 @@ export function PushNotificationSetup() {
 
   async function fetchPublicKey(): Promise<string | null> {
     if (publicKeyRef.current) return publicKeyRef.current;
-    const keyResponse = await fetch(`${API}/notifications/public-key`, { credentials: "include" });
+    const keyResponse = await fetch(`${API}/notifications/public-key`);
     const { publicKey } = await keyResponse.json();
     if (publicKey) publicKeyRef.current = publicKey as string;
     return publicKeyRef.current;
@@ -68,7 +67,6 @@ export function PushNotificationSetup() {
         return;
       }
       const response = await fetch(`${API}/notifications/subscriptions`, {
-        credentials: "include",
       });
       if (!response.ok) throw new Error();
       const body = await response.json() as { subscriptions: { endpoint: string }[] };
@@ -81,7 +79,6 @@ export function PushNotificationSetup() {
       const saved = await fetch(`${API}/notifications/subscriptions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ ...subscription.toJSON(), userAgent: navigator.userAgent }),
       });
       setState(saved.ok ? "enabled" : "disabled");
@@ -114,7 +111,6 @@ export function PushNotificationSetup() {
       const response = await fetch(`${API}/notifications/subscriptions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ ...subscription.toJSON(), userAgent: navigator.userAgent }),
       });
       if (!response.ok) throw new Error(`save_failed_${response.status}`);
@@ -133,7 +129,6 @@ export function PushNotificationSetup() {
         const response = await fetch(`${API}/notifications/subscriptions`, {
           method: "DELETE",
           headers: { "content-type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ endpoint: subscription.endpoint }),
         });
         if (!response.ok) throw new Error();

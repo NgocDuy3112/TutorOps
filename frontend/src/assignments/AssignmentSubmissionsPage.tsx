@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Check, Download, FileText, Loader2, Pencil, Star } from "lucide-react";
+import { ArrowLeft, Download, FileText, Loader2, Pencil, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -14,8 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MobileShell } from "../layout/MobileShell";
+import { API } from "../lib/api";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 type FileItem = { id: string; name: string; mimeType: string };
 type Student = { id: string; name: string; status: string };
 type Submission = {
@@ -62,9 +62,8 @@ export function AssignmentSubmissionsPage() {
     setError("");
     try {
       const [assignmentsResponse, submissionsResponse] = await Promise.all([
-        fetch(`${API}/assignments`, { credentials: "include" }),
+        fetch(`${API}/assignments`),
         fetch(`${API}/assignments/${assignmentId}/dropbox-submissions`, {
-          credentials: "include",
         }),
       ]);
       if (!assignmentsResponse.ok || !submissionsResponse.ok)
@@ -94,7 +93,7 @@ export function AssignmentSubmissionsPage() {
   async function mark(submissionId: string, status: "viewed" | "downloaded") {
     const response = await fetch(
       `${API}/assignments/${assignmentId}/dropbox-submissions/${submissionId}/${status}`,
-      { method: "PATCH", credentials: "include" },
+      { method: "PATCH" },
     );
     if (!response.ok) return;
     setItems((current) => current.map((item) => item.id === submissionId
@@ -104,7 +103,6 @@ export function AssignmentSubmissionsPage() {
 
   async function download(submissionId: string, fileId: string) {
     const response = await fetch(`${API}/assignments/${assignmentId}/dropbox-files/${fileId}/url`, {
-      credentials: "include",
     });
     if (!response.ok) return;
     const { url } = await response.json();
@@ -122,7 +120,6 @@ export function AssignmentSubmissionsPage() {
       {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ studentId, score: Number(score), reviewNote }),
       },
     );
@@ -167,7 +164,7 @@ export function AssignmentSubmissionsPage() {
                 <button key={file.id} type="button" className="flex min-h-14 w-full min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-slate-50 p-2.5 text-left transition-colors hover:bg-slate-100" onClick={() => void download(item.id, file.id)}>
                   <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white text-primary"><FileText size={17} /></span><span className="min-w-0 flex-1 overflow-hidden"><span className="block w-full truncate text-sm font-medium">{shortFileName(file.name)}</span><span className="block text-xs text-muted-foreground">{fileExtension(file.name).toUpperCase() || "FILE"}</span></span><Download size={18} className="shrink-0 text-muted-foreground" />
                 </button>))}</div>
-              {!item.viewedAt && <button type="button" className="mt-3 flex min-h-11 items-center gap-1.5 text-xs font-bold text-slate-600" onClick={() => void mark(item.id, "viewed")}><Check size={14} />Đánh dấu đã xem</button>}
+
             </article>))}</div>}
       </main>
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>

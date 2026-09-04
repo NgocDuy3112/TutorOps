@@ -18,7 +18,7 @@ type Student = {
   parentPhone: string | null;
 };
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 
 export function EditStudentSheet({
   student,
@@ -52,7 +52,6 @@ export function EditStudentSheet({
     const response = await fetch(`${API}/students/${student.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      credentials: "include",
       body: JSON.stringify(form),
     });
     setSaving(false);

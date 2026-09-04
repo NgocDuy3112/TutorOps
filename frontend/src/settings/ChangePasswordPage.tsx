@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MobileShell } from "../layout/MobileShell";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 
 export function ChangePasswordPage() {
   const [values, setValues] = useState({
@@ -29,7 +28,6 @@ export function ChangePasswordPage() {
     const response = await fetch(`${API}/auth/password`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,

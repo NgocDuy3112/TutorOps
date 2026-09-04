@@ -1,3 +1,4 @@
+import { API } from "./lib/api";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -32,8 +33,6 @@ import { VersionBanner } from "./components/VersionBanner";
 import { OnboardingDialog } from "./onboarding/OnboardingDialog";
 import { IosInstallBanner } from "./notifications/IosInstallBanner";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-
 function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const navigate = useNavigate();
@@ -57,7 +56,7 @@ function App() {
 
   useEffect(() => {
     if (isPublicSubmission || isPublicParent || isAssignmentDropbox) return;
-    fetch(`${API}/auth/me`, { credentials: "include" })
+    fetch(`${API}/auth/me`)
       .then((response) => setAuthenticated(response.ok))
       .catch(() => setAuthenticated(false));
   }, []);

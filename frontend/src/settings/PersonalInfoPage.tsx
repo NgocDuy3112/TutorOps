@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MobileShell } from "../layout/MobileShell";
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { API } from "../lib/api";
 type Profile = { fullName: string; email: string; phone: string };
 
 export function PersonalInfoPage() {
@@ -20,7 +19,7 @@ export function PersonalInfoPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch(`${API}/auth/me`, { credentials: "include" })
+    fetch(`${API}/auth/me`)
       .then((r) => r.json())
       .then(setProfile);
   }, []);
@@ -30,7 +29,6 @@ export function PersonalInfoPage() {
     const response = await fetch(`${API}/auth/profile`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         fullName: profile.fullName,
         phone: profile.phone,
