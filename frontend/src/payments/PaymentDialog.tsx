@@ -8,10 +8,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatVnd, parseVnd, toLocalDateInput } from "../lib/format";
+import { formatVnd, parseVnd, recentMonthOptions } from "../lib/format";
 import { cropReceiptImage, compressReceiptImage } from "../lib/image";
 import { ReceiptCropDialog } from "./ReceiptCropDialog";
 import type { Area } from "react-easy-crop";
@@ -20,6 +27,8 @@ import { API } from "../lib/api";
 type PaymentDialogProps = {
   student: { id: string; name: string } | null;
   balance: number;
+  /** Month being viewed in tuition report ("YYYY-MM") — default for appliesToMonth. */
+  month: string;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 };
@@ -27,11 +36,12 @@ type PaymentDialogProps = {
 export function PaymentDialog({
   student,
   balance,
+  month,
   onOpenChange,
   onSaved,
 }: PaymentDialogProps) {
   const [amountVnd, setAmountVnd] = useState("");
-  const [paidAt, setPaidAt] = useState(() => toLocalDateInput(new Date()));
+  const [appliesToMonth, setAppliesToMonth] = useState(month);
   const [note, setNote] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrSuccess, setOcrSuccess] = useState(false);
@@ -43,7 +53,7 @@ export function PaymentDialog({
   useEffect(() => {
     if (!student) return;
     setAmountVnd(balance > 0 ? formatVnd(balance).replace(" ₫", "") : "");
-    setPaidAt(toLocalDateInput(new Date()));
+    setAppliesToMonth(month);
     setNote("");
     setOcrError("");
     setCropSource((current) => {
@@ -72,7 +82,6 @@ export function PaymentDialog({
         note: string | null;
       };
       if (parsed.amountVnd != null) setAmountVnd(formatVnd(parsed.amountVnd).replace(" ₫", ""));
-      if (parsed.paidAt) setPaidAt(toLocalDateInput(new Date(parsed.paidAt)));
       if (parsed.note) setNote(parsed.note);
       setOcrSuccess(true);
     } catch (requestError) {
@@ -106,7 +115,7 @@ export function PaymentDialog({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           amountVnd: parseVnd(amountVnd),
-          paidAt: new Date(`${paidAt}T12:00:00`).toISOString(),
+          appliesToMonth,
           note: note.trim() || undefined,
         }),
       });
@@ -152,14 +161,19 @@ export function PaymentDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="payment-date">Ngày nhận</Label>
-            <Input
-              id="payment-date"
-              required
-              type="date"
-              value={paidAt}
-              onChange={(event) => setPaidAt(event.target.value)}
-            />
+            <Label htmlFor="payment-month">Áp dụng cho tháng học phí</Label>
+            <Select value={appliesToMonth} onValueChange={setAppliesToMonth}>
+              <SelectTrigger id="payment-month" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {recentMonthOptions(month).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="payment-note">Ghi chú</Label>

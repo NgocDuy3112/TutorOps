@@ -1,4 +1,4 @@
-import type { CreatePaymentDto } from "./payments.dto";
+import type { CreatePaymentDto, UpdatePaymentDto } from "./payments.dto";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { pool } from "../db/client";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -11,7 +11,7 @@ export class PaymentsService {
     if (!owned) throw new NotFoundException("student_not_found");
     const [payments, totals] = await Promise.all([
       pool.query(
-        `SELECT id, amount_vnd AS "amountVnd", paid_at AS "paidAt", status, note FROM payments WHERE student_id = $1 ORDER BY paid_at DESC`,
+        `SELECT id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note FROM payments WHERE student_id = $1 ORDER BY paid_at DESC`,
         [studentId],
       ),
       pool.query(
@@ -37,11 +37,11 @@ export class PaymentsService {
     if (!(await this.owned(teacherId, studentId)))
       throw new NotFoundException("student_not_found");
     const result = await pool.query(
-      `INSERT INTO payments (student_id, amount_vnd, paid_at, status, note) VALUES ($1, $2, $3, 'confirmed', $4) RETURNING id, amount_vnd AS "amountVnd", paid_at AS "paidAt", status, note`,
+      `INSERT INTO payments (student_id, amount_vnd, paid_at, applies_to_month, status, note) VALUES ($1, $2, now(), $3, 'confirmed', $4) RETURNING id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note`,
       [
         studentId,
         input.amountVnd,
-        input.paidAt ?? new Date(),
+        input.appliesToMonth ?? currentMonth(),
         input.note ?? null,
       ],
     );
@@ -52,6 +52,32 @@ export class PaymentsService {
     });
     return result.rows[0];
   }
+  async update(
+    teacherId: string,
+    studentId: string,
+    paymentId: string,
+    input: UpdatePaymentDto,
+  ) {
+    const result = await pool.query(
+      `UPDATE payments SET amount_vnd = $4, applies_to_month = $5, note = $6
+       WHERE id = $1 AND student_id = $2 AND status = 'confirmed'
+         AND EXISTS (
+           SELECT 1 FROM students
+           WHERE students.id = $2 AND students.teacher_id = $3 AND students.deleted_at IS NULL
+         )
+       RETURNING id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note`,
+      [
+        paymentId,
+        studentId,
+        teacherId,
+        input.amountVnd,
+        input.appliesToMonth,
+        input.note ?? null,
+      ],
+    );
+    if (result.rowCount === 0) throw new NotFoundException("payment_not_found");
+    return result.rows[0];
+  }
   private async owned(teacherId: string, studentId: string) {
     const result = await pool.query(
       `SELECT 1 FROM students WHERE id = $1 AND teacher_id = $2 AND deleted_at IS NULL`,
@@ -59,4 +85,10 @@ export class PaymentsService {
     );
     return Boolean(result.rowCount);
   }
+}
+
+function currentMonth(): string {
+  // VN local time (UTC+7), no DST — fixed offset is safe.
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 }
