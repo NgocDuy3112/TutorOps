@@ -1,5 +1,7 @@
 import type { CreatePaymentDto, UpdatePaymentDto } from "./payments.dto";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { NotFoundError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { pool } from "../db/client";
 import { NotificationsService } from "../notifications/notifications.service";
 
@@ -8,7 +10,7 @@ export class PaymentsService {
   constructor(private readonly notifications: NotificationsService) {}
   async list(teacherId: string, studentId: string) {
     const owned = await this.owned(teacherId, studentId);
-    if (!owned) throw new NotFoundException("student_not_found");
+    if (!owned) throw new NotFoundError(ErrorCodes.STUDENT_NOT_FOUND);
     const [payments, totals] = await Promise.all([
       pool.query(
         `SELECT id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note FROM payments WHERE student_id = $1 ORDER BY paid_at DESC`,
@@ -35,7 +37,7 @@ export class PaymentsService {
   }
   async create(teacherId: string, studentId: string, input: CreatePaymentDto) {
     if (!(await this.owned(teacherId, studentId)))
-      throw new NotFoundException("student_not_found");
+      throw new NotFoundError(ErrorCodes.STUDENT_NOT_FOUND);
     const result = await pool.query(
       `INSERT INTO payments (student_id, amount_vnd, paid_at, applies_to_month, status, note) VALUES ($1, $2, now(), $3, 'confirmed', $4) RETURNING id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note`,
       [
@@ -75,7 +77,8 @@ export class PaymentsService {
         input.note ?? null,
       ],
     );
-    if (result.rowCount === 0) throw new NotFoundException("payment_not_found");
+    if (result.rowCount === 0)
+      throw new NotFoundError(ErrorCodes.PAYMENT_NOT_FOUND);
     return result.rows[0];
   }
   async remove(teacherId: string, studentId: string, paymentId: string) {
@@ -88,7 +91,8 @@ export class PaymentsService {
          )`,
       [paymentId, studentId, teacherId],
     );
-    if (result.rowCount === 0) throw new NotFoundException("payment_not_found");
+    if (result.rowCount === 0)
+      throw new NotFoundError(ErrorCodes.PAYMENT_NOT_FOUND);
     return { ok: true };
   }
   private async owned(teacherId: string, studentId: string) {

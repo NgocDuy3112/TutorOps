@@ -1,5 +1,7 @@
 import type { CreateStudentDto, UpdateStudentDto } from "./students.dto";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { NotFoundError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { StudentsRepository } from "./students.repository";
 import { AccessService } from "../access/access.service";
 
@@ -22,12 +24,12 @@ export class StudentsService {
   }
   async update(teacherId: string, id: string, input: CreateStudentDto) {
     const student = await this.repository.update(teacherId, id, input);
-    if (!student) throw new NotFoundException("student_not_found");
+    if (!student) throw new NotFoundError(ErrorCodes.STUDENT_NOT_FOUND);
     return student;
   }
   async remove(teacherId: string, id: string) {
     if (!(await this.repository.softDelete(teacherId, id)))
-      throw new NotFoundException("student_not_found");
+      throw new NotFoundError(ErrorCodes.STUDENT_NOT_FOUND);
     return { ok: true };
   }
 }

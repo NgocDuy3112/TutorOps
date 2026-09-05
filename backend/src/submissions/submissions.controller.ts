@@ -1,11 +1,12 @@
 import {
-  BadRequestException,
   Controller,
   Post,
   Query,
   UploadedFiles,
   UseInterceptors,
 } from "@nestjs/common";
+import { BadRequestError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { FilesInterceptor } from "@nestjs/platform-express";
 import { FilesService } from "../files/files.service";
 import { AccessService } from "../access/access.service";
@@ -28,7 +29,7 @@ export class SubmissionsController {
     @UploadedFiles() uploadedFiles: Express.Multer.File[],
   ) {
     if (!token || !uploadedFiles?.length)
-      throw new BadRequestException("files_required");
+      throw new BadRequestError(ErrorCodes.FILES_REQUIRED);
     const link = await this.access.authenticateAssignmentLink(token);
     const files = await Promise.all(
       uploadedFiles.map((file) => this.files.upload(null, file, "submissions")),
@@ -60,7 +61,7 @@ export class SubmissionsController {
     @UploadedFiles() uploadedFiles: Express.Multer.File[],
   ) {
     if (!token || !assignmentId || !uploadedFiles?.length)
-      throw new BadRequestException("files_required");
+      throw new BadRequestError(ErrorCodes.FILES_REQUIRED);
     await this.access.authenticate(token, "student");
     const files = await Promise.all(
       uploadedFiles.map((file) => this.files.upload(null, file, "submissions")),

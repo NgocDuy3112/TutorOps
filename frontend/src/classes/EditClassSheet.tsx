@@ -156,7 +156,7 @@ export function EditClassSheet({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-price">
-                  Giá mặc định (tối đa 10 tỷ ₫)
+                  Giá mặc định
                 </Label>
                 <Input
                   id="sheet-class-price"

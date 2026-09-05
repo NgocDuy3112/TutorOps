@@ -17,6 +17,8 @@ import {
   UpdateAssignmentDto,
 } from "./assignments.dto";
 import { ParseUUIDPipe } from "@nestjs/common";
+import { BadRequestError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 
 @Controller("assignments")
 @UseGuards(AuthGuard)
@@ -76,7 +78,7 @@ export class AssignmentsController {
     @Param("status") status: "viewed" | "downloaded",
   ) {
     if (status !== "viewed" && status !== "downloaded")
-      throw new Error("invalid_status");
+      throw new BadRequestError(ErrorCodes.INVALID_STATUS);
     return this.assignments.markDropboxSubmission(
       request.user.id,
       id,

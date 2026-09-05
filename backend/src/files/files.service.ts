@@ -1,4 +1,6 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { BadRequestError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { StorageService } from "../storage/storage.service";
 import { FilesRepository } from "./files.repository";
 
@@ -29,7 +31,7 @@ export class FilesService {
       file.size > maxFileSize ||
       !this.matchesContent(file)
     )
-      throw new BadRequestException("invalid_file");
+      throw new BadRequestError(ErrorCodes.INVALID_FILE);
     const extension = file.originalname.includes(".")
       ? (file.originalname.split(".").pop() ?? null)
       : null;

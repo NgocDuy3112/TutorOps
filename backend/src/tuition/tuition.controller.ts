@@ -1,4 +1,6 @@
-import { BadRequestException, Controller, Get, Query, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, Req, UseGuards } from "@nestjs/common";
+import { BadRequestError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { AuthGuard } from "../auth/auth.guard";
 import { TuitionService } from "./tuition.service";
 
@@ -13,7 +15,7 @@ export class TuitionController {
   report(@Req() req: AuthenticatedRequest, @Query("month") month?: string) {
     const target = month ?? currentMonth();
     if (!MONTH_PATTERN.test(target)) {
-      throw new BadRequestException("month_must_be_yyyy_mm");
+      throw new BadRequestError(ErrorCodes.MONTH_MUST_BE_YYYY_MM);
     }
     return this.tuition.report(req.user.id, target);
   }

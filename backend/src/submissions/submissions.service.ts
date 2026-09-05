@@ -1,9 +1,10 @@
 type SubmissionInput = { fileIds: string[] };
+import { Injectable } from "@nestjs/common";
 import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from "@nestjs/common";
+  BadRequestError,
+  NotFoundError,
+} from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { pool } from "../db/client";
 import { AccessService } from "../access/access.service";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -23,7 +24,8 @@ export class SubmissionsService {
         `SELECT sa.id FROM student_assignments sa JOIN assignments a ON a.id = sa.assignment_id WHERE sa.student_id = $1 AND sa.assignment_id = $2 AND a.deleted_at IS NULL FOR UPDATE`,
         [identity.studentId, assignmentId],
       );
-      if (!link.rowCount) throw new NotFoundException("assignment_not_found");
+      if (!link.rowCount)
+        throw new NotFoundError(ErrorCodes.ASSIGNMENT_NOT_FOUND);
       const attempt = await client.query(
         `SELECT COALESCE(MAX(attempt_no), 0) + 1 AS attempt FROM submissions WHERE student_assignment_id = $1`,
         [link.rows[0].id],
@@ -39,7 +41,8 @@ export class SubmissionsService {
           `SELECT id FROM files WHERE id = $1 AND deleted_at IS NULL`,
           [fileId],
         );
-        if (!file.rowCount) throw new BadRequestException("file_not_found");
+        if (!file.rowCount)
+          throw new BadRequestError(ErrorCodes.FILE_NOT_FOUND);
         await client.query(
           `INSERT INTO submission_files (submission_id, file_id) VALUES ($1, $2)`,
           [submission.id, fileId],
