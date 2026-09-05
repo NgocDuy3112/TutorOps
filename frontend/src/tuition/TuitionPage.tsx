@@ -7,9 +7,17 @@ import {
   Loader2,
   Pencil,
   SearchX,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/EmptyState";
 import { formatMonthLabel, formatVnd, monthKey } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
@@ -48,6 +56,8 @@ export function TuitionPage() {
   const [error, setError] = useState("");
   const [paying, setPaying] = useState<TuitionStudent | null>(null);
   const [editing, setEditing] = useState<TuitionStudent | null>(null);
+  const [deleting, setDeleting] = useState<TuitionStudent | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
 
   async function load(target: Date) {
@@ -77,6 +87,42 @@ export function TuitionPage() {
       (current) =>
         new Date(current.getFullYear(), current.getMonth() + deltaMonths, 1),
     );
+  }
+
+  async function deleteMonthPayments() {
+    if (!deleting) return;
+    setDeletingBusy(true);
+    try {
+      const listResponse = await fetch(
+        `${API}/students/${deleting.id}/payments`,
+      );
+      if (!listResponse.ok)
+        throw new Error("Không thể tải khoản đã nhận.");
+      const body = (await listResponse.json()) as {
+        payments: { id: string; appliesToMonth: string }[];
+      };
+      const targetMonth = monthKey(month);
+      const ids = body.payments
+        .filter((record) => record.appliesToMonth === targetMonth)
+        .map((record) => record.id);
+      for (const id of ids) {
+        const response = await fetch(
+          `${API}/students/${deleting.id}/payments/${id}`,
+          { method: "DELETE" },
+        );
+        if (!response.ok)
+          throw new Error("Không thể xoá khoản thu. Vui lòng thử lại.");
+      }
+      setDeleting(null);
+      await load(month);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
+      );
+      setDeleting(null);
+    } finally {
+      setDeletingBusy(false);
+    }
   }
 
   const rows = data?.students ?? [];
@@ -199,6 +245,7 @@ export function TuitionPage() {
                     row={row}
                     onPay={() => setPaying(row)}
                     onEdit={() => setEditing(row)}
+                    onDelete={() => setDeleting(row)}
                   />
                 ))}
               </div>
@@ -206,6 +253,12 @@ export function TuitionPage() {
           </div>
         )}
       </main>
+      <DeleteMonthPaymentsDialog
+        student={deleting}
+        busy={deletingBusy}
+        onOpenChange={(open) => !open && !deletingBusy && setDeleting(null)}
+        onConfirm={() => void deleteMonthPayments()}
+      />
       <EditPaymentDialog
         student={editing ? { id: editing.id, name: editing.name } : null}
         month={monthKey(month)}
@@ -223,6 +276,56 @@ export function TuitionPage() {
         }}
       />
     </MobileShell>
+  );
+}
+
+function DeleteMonthPaymentsDialog({
+  student,
+  busy,
+  onOpenChange,
+  onConfirm,
+}: {
+  student: TuitionStudent | null;
+  busy: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Xoá khoản đã nhận?</DialogTitle>
+          <DialogDescription>
+            Xoá các khoản đã nhận của {student?.name} áp dụng cho tháng này. Học
+            sinh sẽ quay lại trạng thái còn nợ. Bạn có chắc muốn xoá?
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            disabled={busy}
+            onClick={() => onOpenChange(false)}
+          >
+            Hủy
+          </Button>
+          <Button
+            type="button"
+            className="min-h-11 bg-red-600 hover:bg-red-700"
+            disabled={busy}
+            onClick={onConfirm}
+          >
+            {busy ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <Trash2 size={16} />
+            )}
+            Xoá khoản
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -259,10 +362,12 @@ function TuitionRowCard({
   row,
   onPay,
   onEdit,
+  onDelete,
 }: {
   row: TuitionStudent;
   onPay: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   const noActivity = row.sessionCount === 0 && row.paid <= 0;
   const settled = !noActivity && row.balance <= 0;
@@ -300,28 +405,40 @@ function TuitionRowCard({
             </p>
           )}
         </div>
-        <div className="flex shrink-0 flex-col items-center gap-1">
-          {row.paid > 0 && (
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              aria-label={`Sửa khoản đã nhận của ${row.name}`}
-              className="size-9 rounded-xl text-muted-foreground hover:bg-slate-100"
-              onClick={onEdit}
-            >
-              <Pencil size={15} />
-            </Button>
-          )}
+        <div className="flex shrink-0 items-center gap-2">
           <Button
             type="button"
             size="icon"
-            aria-label={`Ghi nhận thanh toán cho ${row.name}`}
-            className="size-9 rounded-xl"
-            onClick={onPay}
+            variant="outline"
+            aria-label={`Sửa khoản đã nhận của ${row.name}`}
+            className="min-h-10 min-w-10 rounded-2xl"
+            onClick={onEdit}
           >
-            <Check size={17} />
+            <Pencil size={15} />
           </Button>
+          {settled ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              aria-label={`Xoá khoản đã nhận trong tháng của ${row.name}`}
+              className="min-h-10 min-w-10 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={onDelete}
+            >
+              <Trash2 size={15} />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              aria-label={`Ghi nhận thanh toán cho ${row.name}`}
+              className="min-h-10 min-w-10 rounded-2xl text-primary hover:bg-primary/10 hover:text-primary"
+              onClick={onPay}
+            >
+              <Check size={15} />
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
