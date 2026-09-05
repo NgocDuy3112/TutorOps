@@ -161,7 +161,7 @@ export function EditClassSheet({
                 <Input
                   id="sheet-class-price"
                   inputMode="numeric"
-                  max={10_000_000_000}
+                  max={10_000_000}
                   value={defaultPriceVnd}
                   onChange={(e) =>
                     setDefaultPriceVnd(
