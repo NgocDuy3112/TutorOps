@@ -175,7 +175,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
                 onClick={() => setShowEditForm(true)}
               >
                 <Pencil size={15} />
-                Sửa
               </Button>
               <Button
                 type="button"
@@ -203,17 +202,9 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
 
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
-            <CardTitle className="text-lg">Buổi dạy ({sessions.length})</CardTitle>
+            <CardTitle className="text-lg">Buổi đã dạy ({sessions.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 p-5">
-            <Button
-              type="button"
-              onClick={() => setShowSessionForm(true)}
-              className="min-h-12 w-full justify-start gap-3 rounded-2xl"
-            >
-              <CalendarCheck size={18} />
-              Đã dạy hôm nay
-            </Button>
             {recentSessions.length === 0 ? (
               <p className="text-sm text-muted-foreground">Chưa có buổi dạy nào.</p>
             ) : (

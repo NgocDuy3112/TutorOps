@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { Fab } from "@/components/Fab";
+import { FilterChips } from "@/components/FilterChips";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
@@ -32,6 +33,7 @@ export function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("all");
 
   async function loadData() {
     setLoading(true);
@@ -53,6 +55,46 @@ export function StudentsPage() {
     void loadData();
   }, []);
 
+  // Class filter options derive from the students' own class memberships.
+  const classCounts = new Map<string, { name: string; count: number }>();
+  for (const student of students) {
+    for (const item of student.classes ?? []) {
+      const entry = classCounts.get(item.id);
+      classCounts.set(item.id, {
+        name: item.name,
+        count: (entry?.count ?? 0) + 1,
+      });
+    }
+  }
+  const unassignedCount = students.filter(
+    (student) => (student.classes ?? []).length === 0,
+  ).length;
+  const classFilterOptions = [
+    { value: "all", label: "Tất cả", count: students.length },
+    ...[...classCounts.entries()]
+      .sort((a, b) => a[1].name.localeCompare(b[1].name, "vi"))
+      .map(([id, entry]) => ({
+        value: id,
+        label: entry.name,
+        count: entry.count,
+      })),
+    ...(unassignedCount > 0
+      ? [{ value: "none", label: "Chưa có lớp", count: unassignedCount }]
+      : []),
+  ];
+
+  const filteredStudents = students.filter((student) => {
+    const matchesClass =
+      classFilter === "all" ||
+      (classFilter === "none"
+        ? (student.classes ?? []).length === 0
+        : (student.classes ?? []).some((item) => item.id === classFilter));
+    const matchesSearch = student.name
+      .toLocaleLowerCase("vi")
+      .includes(search.trim().toLocaleLowerCase("vi"));
+    return matchesClass && matchesSearch;
+  });
+
   return (
     <MobileShell>
       <PageHeader title="Học sinh" action={<UserAvatar />} />
@@ -71,6 +113,16 @@ export function StudentsPage() {
             className="min-h-11 rounded-2xl bg-white pl-9"
           />
         </div>
+        {students.length > 0 && (
+          <div className="mb-4">
+            <FilterChips
+              ariaLabel="Lọc theo lớp"
+              options={classFilterOptions}
+              value={classFilter}
+              onChange={setClassFilter}
+            />
+          </div>
+        )}
         {error && (
           <Card className="mb-4 border-amber-200 bg-amber-50">
             <CardContent className="p-4 text-sm text-amber-800">
@@ -88,12 +140,9 @@ export function StudentsPage() {
 
         {!loading && (
           <StudentsGrid
-            students={students.filter((student) =>
-              student.name
-                .toLocaleLowerCase("vi")
-                .includes(search.trim().toLocaleLowerCase("vi")),
-            )}
+            students={filteredStudents}
             onAdd={() => navigate("/students/new")}
+            hasAnyStudents={students.length > 0}
           />
         )}
       </main>
@@ -104,12 +153,20 @@ export function StudentsPage() {
 function StudentsGrid({
   students,
   onAdd,
+  hasAnyStudents,
 }: {
   students: Student[];
   onAdd: () => void;
+  hasAnyStudents: boolean;
 }) {
   if (students.length === 0) {
-    return (
+    return hasAnyStudents ? (
+      <EmptyState
+        icon={<UserRound size={28} />}
+        title="Không tìm thấy"
+        description="Thử đổi từ khóa tìm kiếm hoặc bộ lọc lớp."
+      />
+    ) : (
       <EmptyState
         icon={<UserPlus size={28} />}
         title="Chưa có học sinh"

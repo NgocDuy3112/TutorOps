@@ -13,6 +13,7 @@ const CLASS_COLUMNS = `
   default_price_vnd AS "defaultPriceVnd",
   pricing_mode AS "pricingMode",
   auto_schedule AS "autoSchedule",
+  venue,
   note,
   created_at AS "createdAt",
   updated_at AS "updatedAt"
@@ -29,6 +30,7 @@ export class ClassesRepository {
         c.default_price_vnd AS "defaultPriceVnd",
         c.pricing_mode AS "pricingMode",
         c.auto_schedule AS "autoSchedule",
+        c.venue,
         c.note,
         c.created_at AS "createdAt",
         c.updated_at AS "updatedAt",
@@ -74,9 +76,9 @@ export class ClassesRepository {
         `
         INSERT INTO classes (
           teacher_id, name, subject, default_price_vnd, pricing_mode,
-          auto_schedule, note
+          auto_schedule, venue, note
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING ${CLASS_COLUMNS}
         `,
         [
@@ -86,6 +88,7 @@ export class ClassesRepository {
           input.defaultPriceVnd ?? null,
           input.pricingMode ?? "per_session",
           input.autoSchedule ?? false,
+          input.venue ?? null,
           input.note ?? null,
         ],
       );
@@ -118,10 +121,11 @@ export class ClassesRepository {
           default_price_vnd = $3,
           pricing_mode = $4,
           auto_schedule = $5,
-          note = $6,
+          venue = $6,
+          note = $7,
           updated_at = now()
-        WHERE id = $7
-          AND teacher_id = $8
+        WHERE id = $8
+          AND teacher_id = $9
           AND deleted_at IS NULL
         RETURNING ${CLASS_COLUMNS}
         `,
@@ -131,6 +135,7 @@ export class ClassesRepository {
           input.defaultPriceVnd ?? null,
           input.pricingMode ?? "per_session",
           input.autoSchedule ?? false,
+          input.venue ?? null,
           input.note ?? null,
           id,
           teacherId,
