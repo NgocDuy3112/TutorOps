@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Plus } from "lucide-react";
 
 /**
  * Floating action button, bottom-right. Sits above the mobile bottom nav
  * (bottom-24 clears nav + safe area); docks to the corner on desktop.
+ * Rendered through a portal: page containers carry a transform from the
+ * page-in animation, which would break position:fixed inside them.
  */
 export function Fab({
   onClick,
@@ -14,7 +17,7 @@ export function Fab({
   label: string;
   children?: ReactNode;
 }) {
-  return (
+  return createPortal(
     <button
       type="button"
       onClick={onClick}
@@ -22,6 +25,7 @@ export function Fab({
       className="fixed bottom-24 right-4 z-30 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95 sm:bottom-6 sm:right-6"
     >
       {children ?? <Plus size={24} aria-hidden />}
-    </button>
+    </button>,
+    document.body,
   );
 }
