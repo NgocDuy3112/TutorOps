@@ -17,7 +17,15 @@ export class StudentsRepository {
         updated_at AS "updatedAt",
         COALESCE(
           (
-            SELECT json_agg(json_build_object('id', c.id, 'name', c.name, 'subject', c.subject) ORDER BY c.name)
+            SELECT json_agg(
+              json_build_object(
+                'id', c.id,
+                'name', c.name,
+                'subject', c.subject,
+                'pricingMode', c.pricing_mode,
+                'defaultPriceVnd', c.default_price_vnd
+              ) ORDER BY c.name
+            )
             FROM class_students cs
             INNER JOIN classes c ON c.id = cs.class_id
             WHERE cs.student_id = students.id

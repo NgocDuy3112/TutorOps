@@ -1,14 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpenCheck,
   CalendarCheck,
+  Loader2,
   Pencil,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/EmptyState";
 import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
@@ -23,6 +33,7 @@ type Student = {
   parentPhone: string | null;
   defaultPriceVnd: number;
   submissionMode: string;
+  classes?: { pricingMode?: string }[];
 };
 type Session = {
   id: string;
@@ -38,11 +49,14 @@ type Assignment = {
 };
 
 export function StudentProfilePage({ studentId }: { studentId: string }) {
+  const navigate = useNavigate();
   const [student, setStudent] = useState<Student | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showSessionForm, setShowSessionForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -75,6 +89,26 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
   useEffect(() => {
     void load();
   }, [studentId]);
+
+  async function deleteStudent() {
+    if (!student) return;
+    setDeleting(true);
+    try {
+      const response = await fetch(`${API}/students/${student.id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok)
+        throw new Error("Không thể xóa học sinh. Vui lòng thử lại.");
+      navigate("/students");
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
+      );
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (loading)
     return (
@@ -132,16 +166,28 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
               <UserRound size={20} className="text-primary" />
               Thông tin
             </CardTitle>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-2xl"
-              onClick={() => setShowEditForm(true)}
-            >
-              <Pencil size={15} />
-              Sửa
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-2xl"
+                onClick={() => setShowEditForm(true)}
+              >
+                <Pencil size={15} />
+                Sửa
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="min-h-10 min-w-10 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                aria-label="Xóa học sinh"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 size={15} />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-5">
             <dl className="space-y-3 text-sm">
@@ -274,6 +320,39 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           }}
         />
       )}
+      <Dialog
+        open={showDeleteConfirm}
+        onOpenChange={(open) => !open && !deleting && setShowDeleteConfirm(false)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xóa học sinh?</DialogTitle>
+            <DialogDescription>
+              Hành động này sẽ ẩn học sinh {student?.name} khỏi danh sách. Dữ
+              liệu liên quan vẫn được giữ. Bạn có chắc muốn xóa?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deleting}
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleting}
+              onClick={() => void deleteStudent()}
+            >
+              {deleting && <Loader2 className="animate-spin" size={16} />}
+              Xóa học sinh
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileShell>
   );
 }

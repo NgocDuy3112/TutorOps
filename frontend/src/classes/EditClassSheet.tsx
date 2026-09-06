@@ -20,12 +20,32 @@ import {
 import { formatVnd, parseVnd } from "../lib/format";
 import { cn } from "@/lib/utils";
 import { API } from "../lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ScheduleEditor, type ScheduleSlot } from "./ScheduleEditor";
+
+const PRICING_MODE_OPTIONS = [
+  { value: "per_session", label: "Theo buổi", priceLabel: "Giá mỗi buổi" },
+  { value: "per_hour", label: "Theo giờ", priceLabel: "Giá mỗi giờ" },
+  { value: "per_month", label: "Theo tháng", priceLabel: "Phí cố định / tháng" },
+] as const;
+
+type PricingMode = (typeof PRICING_MODE_OPTIONS)[number]["value"];
 
 type Student = { id: string; name: string; parentPhone: string | null };
 type TutorClass = {
   id: string;
   name: string;
   defaultPriceVnd: number | null;
+  pricingMode?: PricingMode;
+  autoSchedule?: boolean;
+  schedules?: ScheduleSlot[];
   note: string | null;
   students: Student[];
 };
@@ -47,6 +67,15 @@ export function EditClassSheet({
     classItem.defaultPriceVnd == null ? "" : String(classItem.defaultPriceVnd),
   );
   const [note, setNote] = useState(classItem.note ?? "");
+  const [pricingMode, setPricingMode] = useState<PricingMode>(
+    classItem.pricingMode ?? "per_session",
+  );
+  const [autoSchedule, setAutoSchedule] = useState(
+    classItem.autoSchedule ?? false,
+  );
+  const [schedules, setSchedules] = useState<ScheduleSlot[]>(
+    classItem.schedules ?? [],
+  );
   const [studentIds, setStudentIds] = useState<string[]>(
     classItem.students.map((s) => s.id),
   );
@@ -60,6 +89,9 @@ export function EditClassSheet({
       classItem.defaultPriceVnd == null ? "" : String(classItem.defaultPriceVnd),
     );
     setNote(classItem.note ?? "");
+    setPricingMode(classItem.pricingMode ?? "per_session");
+    setAutoSchedule(classItem.autoSchedule ?? false);
+    setSchedules(classItem.schedules ?? []);
     setStudentIds(classItem.students.map((s) => s.id));
   }, [classItem]);
 
@@ -126,6 +158,9 @@ export function EditClassSheet({
       body: JSON.stringify({
         name,
         defaultPriceVnd: defaultPriceVnd ? parseVnd(defaultPriceVnd) : null,
+        pricingMode,
+        autoSchedule: schedules.length > 0 ? autoSchedule : false,
+        schedules,
         note: note || null,
       }),
     });
@@ -155,13 +190,35 @@ export function EditClassSheet({
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="sheet-class-pricing">Cách tính học phí</Label>
+                <Select
+                  value={pricingMode}
+                  onValueChange={(value) => setPricingMode(value as PricingMode)}
+                >
+                  <SelectTrigger id="sheet-class-pricing" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRICING_MODE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="sheet-class-price">
-                  Giá mặc định
+                  {
+                    PRICING_MODE_OPTIONS.find(
+                      (option) => option.value === pricingMode,
+                    )?.priceLabel
+                  }
                 </Label>
                 <Input
                   id="sheet-class-price"
                   inputMode="numeric"
-                  max={10_000_000}
+                  max={10_000_000_000}
                   value={defaultPriceVnd}
                   onChange={(e) =>
                     setDefaultPriceVnd(
@@ -172,6 +229,28 @@ export function EditClassSheet({
                   }
                   autoFocus={false}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Lịch dạy cố định</Label>
+                <ScheduleEditor slots={schedules} onChange={setSchedules} />
+                {schedules.length > 0 && (
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        Tự động tạo buổi dạy
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Hệ thống tự tạo buổi theo lịch trên, bạn chỉ cần xoá nếu
+                        nghỉ.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={autoSchedule}
+                      onCheckedChange={setAutoSchedule}
+                      aria-label="Tự động tạo buổi dạy"
+                    />
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-note">Ghi chú</Label>
