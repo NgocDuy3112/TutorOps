@@ -1,20 +1,14 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Pencil, Plus, Trash2, UserRound, UserPlus } from "lucide-react";
+import { Loader2, Plus, Search, UserRound, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
+import { Fab } from "@/components/Fab";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
-import { EditStudentSheet } from "./EditStudentSheet";
 import { API } from "../lib/api";
 
 type StudentClass = {
@@ -35,10 +29,9 @@ type Student = {
 export function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const navigate = useNavigate();
-  const [editing, setEditing] = useState<Student | null>(null);
-  const [deleting, setDeleting] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   async function loadData() {
     setLoading(true);
@@ -60,36 +53,24 @@ export function StudentsPage() {
     void loadData();
   }, []);
 
-  async function removeStudent(id: string) {
-    const response = await fetch(`${API}/students/${id}`, {
-      method: "DELETE",
-    });
-    if (response.ok) {
-      setStudents((current) => current.filter((student) => student.id !== id));
-      setDeleting(null);
-    }
-  }
-
   return (
     <MobileShell>
-      <PageHeader
-        title="Học sinh"
-        action={
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              className="min-h-11 rounded-2xl"
-              onClick={() => navigate("/students/new")}
-            >
-              <Plus size={16} />
-              Thêm
-            </Button>
-            <UserAvatar />
-          </div>
-        }
-      />
+      <PageHeader title="Học sinh" action={<UserAvatar />} />
+      <Fab onClick={() => navigate("/students/new")} label="Thêm học sinh" />
       <main className="mx-auto max-w-6xl px-4 py-6">
+        <div className="relative mb-4">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Tìm học sinh"
+            aria-label="Tìm học sinh"
+            className="min-h-11 rounded-2xl bg-white pl-9"
+          />
+        </div>
         {error && (
           <Card className="mb-4 border-amber-200 bg-amber-50">
             <CardContent className="p-4 text-sm text-amber-800">
@@ -107,29 +88,15 @@ export function StudentsPage() {
 
         {!loading && (
           <StudentsGrid
-            students={students}
+            students={students.filter((student) =>
+              student.name
+                .toLocaleLowerCase("vi")
+                .includes(search.trim().toLocaleLowerCase("vi")),
+            )}
             onAdd={() => navigate("/students/new")}
-            onEdit={setEditing}
-            onDelete={setDeleting}
           />
         )}
       </main>
-
-      <DeleteStudentDialog
-        student={deleting}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        onConfirm={() => deleting && void removeStudent(deleting.id)}
-      />
-      {editing && (
-        <EditStudentSheet
-          student={editing}
-          onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            void loadData();
-          }}
-        />
-      )}
     </MobileShell>
   );
 }
@@ -137,13 +104,9 @@ export function StudentsPage() {
 function StudentsGrid({
   students,
   onAdd,
-  onEdit,
-  onDelete,
 }: {
   students: Student[];
   onAdd: () => void;
-  onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
 }) {
   if (students.length === 0) {
     return (
@@ -164,43 +127,28 @@ function StudentsGrid({
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {students.map((student) => (
-        <StudentCard
-          key={student.id}
-          student={student}
-          onEdit={() => onEdit(student)}
-          onDelete={() => onDelete(student)}
-        />
+        <StudentCard key={student.id} student={student} />
       ))}
     </div>
   );
 }
 
-function StudentCard({
-  student,
-  onEdit,
-  onDelete,
-}: {
-  student: Student;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
+function StudentCard({ student }: { student: Student }) {
   return (
     <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
       <CardContent className="p-4">
-        <div className="flex items-start gap-3">
+        <Link
+          to={`/students/${student.id}`}
+          className="flex items-start gap-3"
+          aria-label={`Xem hồ sơ ${student.name}`}
+        >
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-primary">
             <UserRound size={20} />
           </span>
           <div className="min-w-0 flex-1">
-            <Link
-              to={`/students/${student.id}`}
-              className="block truncate font-bold hover:text-primary"
-            >
+            <span className="block truncate font-bold hover:text-primary">
               {student.name}
-            </Link>
-            <p className="mt-1 truncate text-sm text-muted-foreground">
-              {student.parentPhone || "Chưa có SĐT liên hệ"}
-            </p>
+            </span>
             {(student.classes ?? []).length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1">
                 {student.classes!.map((item) => (
@@ -214,69 +162,8 @@ function StudentCard({
               </div>
             )}
           </div>
-          <div className="flex shrink-0 gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="min-h-10 min-w-10 rounded-2xl"
-              onClick={onEdit}
-              aria-label="Sửa học sinh"
-            >
-              <Pencil size={15} />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="min-h-10 min-w-10 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={onDelete}
-              aria-label="Xóa học sinh"
-            >
-              <Trash2 size={15} />
-            </Button>
-          </div>
-        </div>
+        </Link>
       </CardContent>
     </Card>
-  );
-}
-
-function DeleteStudentDialog({
-  student,
-  onOpenChange,
-  onConfirm,
-}: {
-  student: Student | null;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Xóa học sinh?</DialogTitle>
-          <DialogDescription>
-            Hành động này sẽ ẩn học sinh {student?.name}. Bạn có chắc muốn xóa?
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            onClick={() => onOpenChange(false)}
-          >
-            Hủy
-          </Button>
-          <Button
-            type="button"
-            className="min-h-11 bg-red-600 hover:bg-red-700"
-            onClick={onConfirm}
-          >
-            <Trash2 size={16} />
-            Xóa học sinh
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/EmptyState";
+import { Fab } from "@/components/Fab";
 import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
@@ -18,11 +19,15 @@ import { UserAvatar } from "../layout/UserAvatar";
 import { API } from "../lib/api";
 
 export type Student = { id: string; name: string; parentPhone: string | null };
+export type ScheduleSlot = { weekday: number; startTime: string; endTime: string };
 export type TutorClass = {
   id: string;
   name: string;
   subject: string | null;
   defaultPriceVnd: number | null;
+  pricingMode?: "per_session" | "per_hour" | "per_month";
+  autoSchedule?: boolean;
+  schedules?: ScheduleSlot[];
   note: string | null;
   studentCount: number;
   students: Student[];
@@ -52,23 +57,8 @@ export function ClassesPage() {
   }, []);
   return (
     <MobileShell>
-      <PageHeader
-        title="Lớp"
-        action={
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              className="rounded-2xl"
-              onClick={() => navigate("/classes/new")}
-            >
-              <Plus size={16} />
-              Tạo lớp
-            </Button>
-            <UserAvatar />
-          </div>
-        }
-      />
+      <PageHeader title="Lớp" action={<UserAvatar />} />
+      <Fab onClick={() => navigate("/classes/new")} label="Tạo lớp" />
       <main className="mx-auto max-w-6xl px-4 py-6">
         {error && (
           <Card className="mb-4 border-red-100 bg-red-50">

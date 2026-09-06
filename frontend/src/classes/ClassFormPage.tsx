@@ -10,11 +10,31 @@ import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { formatVnd, parseVnd } from "../lib/format";
 import { API } from "../lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ScheduleEditor, type ScheduleSlot } from "./ScheduleEditor";
+
+const PRICING_MODE_OPTIONS = [
+  { value: "per_session", label: "Theo buổi", priceLabel: "Giá mỗi buổi" },
+  { value: "per_hour", label: "Theo giờ", priceLabel: "Giá mỗi giờ" },
+  { value: "per_month", label: "Theo tháng", priceLabel: "Phí cố định / tháng" },
+] as const;
+
+type PricingMode = (typeof PRICING_MODE_OPTIONS)[number]["value"];
 
 type TutorClass = {
   id: string;
   name: string;
   defaultPriceVnd: number | null;
+  pricingMode?: PricingMode;
+  autoSchedule?: boolean;
+  schedules?: ScheduleSlot[];
   note: string | null;
 };
 
@@ -25,7 +45,14 @@ export function ClassFormPage() {
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", defaultPriceVnd: "", note: "" });
+  const [form, setForm] = useState({
+    name: "",
+    defaultPriceVnd: "",
+    note: "",
+  });
+  const [pricingMode, setPricingMode] = useState<PricingMode>("per_session");
+  const [autoSchedule, setAutoSchedule] = useState(false);
+  const [schedules, setSchedules] = useState<ScheduleSlot[]>([]);
 
   useEffect(() => {
     if (!editing) return;
@@ -44,6 +71,9 @@ export function ClassFormPage() {
             item.defaultPriceVnd == null ? "" : String(item.defaultPriceVnd),
           note: item.note ?? "",
         });
+        setPricingMode(item.pricingMode ?? "per_session");
+        setAutoSchedule(item.autoSchedule ?? false);
+        setSchedules(item.schedules ?? []);
       } catch (requestError) {
         setError(
           requestError instanceof Error
@@ -71,6 +101,9 @@ export function ClassFormPage() {
           defaultPriceVnd: form.defaultPriceVnd
             ? parseVnd(form.defaultPriceVnd)
             : null,
+          pricingMode,
+          autoSchedule: schedules.length > 0 ? autoSchedule : false,
+          schedules,
           note: form.note || null,
         }),
       },
@@ -119,7 +152,31 @@ export function ClassFormPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="class-price">Giá mặc định</Label>
+                  <Label htmlFor="class-pricing-mode">Cách tính học phí</Label>
+                  <Select
+                    value={pricingMode}
+                    onValueChange={(value) => setPricingMode(value as PricingMode)}
+                  >
+                    <SelectTrigger id="class-pricing-mode" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRICING_MODE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="class-price">
+                    {
+                      PRICING_MODE_OPTIONS.find(
+                        (option) => option.value === pricingMode,
+                      )?.priceLabel
+                    }
+                  </Label>
                   <Input
                     id="class-price"
                     inputMode="numeric"
@@ -137,6 +194,25 @@ export function ClassFormPage() {
                       })
                     }
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Lịch dạy cố định</Label>
+                  <ScheduleEditor slots={schedules} onChange={setSchedules} />
+                  {schedules.length > 0 && (
+                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                      <div>
+                        <p className="text-sm font-semibold">Tự động tạo buổi dạy</p>
+                        <p className="text-xs text-muted-foreground">
+                          Hệ thống tự tạo buổi theo lịch trên, bạn chỉ cần xoá nếu nghỉ.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={autoSchedule}
+                        onCheckedChange={setAutoSchedule}
+                        aria-label="Tự động tạo buổi dạy"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="class-note">Ghi chú</Label>

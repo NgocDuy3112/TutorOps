@@ -25,7 +25,12 @@ import { MarkTaughtSheet } from "../students/MarkTaughtSheet";
 import { API } from "../lib/api";
 
 type Teacher = { id: string; email: string; fullName: string | null };
-type Student = { id: string; name: string; defaultPriceVnd: number };
+type Student = {
+  id: string;
+  name: string;
+  defaultPriceVnd: number;
+  classes?: { pricingMode?: string }[];
+};
 type TutorClass = {
   id: string;
   name: string;

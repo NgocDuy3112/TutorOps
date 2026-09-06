@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,6 +8,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Search,
   Trash2,
   UserMinus,
   Users,
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
+import { Fab } from "@/components/Fab";
 import { formatDeadline, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditAssignmentSheet } from "../assignments/EditAssignmentSheet";
@@ -97,6 +99,8 @@ export function ClassDetailPage() {
     [students, item, search],
   );
   const [removing, setRemoving] = useState<Student | null>(null);
+  const [adding, setAdding] = useState<string | null>(null);
+  const [tab, setTab] = useState<"assignments" | "students">("assignments");
 
   async function removeStudent() {
     if (!removing) return;
@@ -109,11 +113,16 @@ export function ClassDetailPage() {
   }
 
   async function addStudent(student: Student) {
-    const response = await fetch(
-      `${API}/classes/${classId}/students/${student.id}`,
-      { method: "POST" },
-    );
-    if (response.ok) void load();
+    setAdding(student.id);
+    try {
+      const response = await fetch(
+        `${API}/classes/${classId}/students/${student.id}`,
+        { method: "POST" },
+      );
+      if (response.ok) void load();
+    } finally {
+      setAdding(null);
+    }
   }
   async function deleteClass() {
     if (!item) return;
@@ -166,20 +175,21 @@ export function ClassDetailPage() {
               {item?.defaultPriceVnd != null && (
                 <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                   <Coins size={13} className="shrink-0" />
-                  {formatVnd(item.defaultPriceVnd)}/buổi
+                  {formatVnd(item.defaultPriceVnd)}
+                  {item.pricingMode === "per_hour"
+                    ? "/giờ"
+                    : item.pricingMode === "per_month"
+                      ? "/tháng"
+                      : "/buổi"}
+                </p>
+              )}
+              {(item?.schedules?.length ?? 0) > 0 && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Lịch: {formatSchedule(item!.schedules!)}
                 </p>
               )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                className="min-h-11 rounded-2xl"
-                onClick={() => navigate(`/assignments/new?classId=${classId}`)}
-              >
-                <Plus size={16} />
-                Tạo bài
-              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -204,6 +214,12 @@ export function ClassDetailPage() {
           </div>
         </div>
       </header>
+      {tab === "assignments" && (
+        <Fab
+          onClick={() => navigate(`/assignments/new?classId=${classId}`)}
+          label="Tạo bài tập"
+        />
+      )}
       <main className="mx-auto max-w-3xl space-y-6 px-4 py-6">
         {loading ? (
           <p className="flex gap-2 text-sm text-muted-foreground">
@@ -224,6 +240,25 @@ export function ClassDetailPage() {
           </Card>
         ) : (
           <>
+            <div
+              role="tablist"
+              aria-label="Nội dung lớp"
+              className="grid grid-cols-2 gap-1 rounded-2xl bg-primary/10 p-1"
+            >
+              <TabButton
+                active={tab === "assignments"}
+                onClick={() => setTab("assignments")}
+              >
+                Bài tập ({classAssignments.length})
+              </TabButton>
+              <TabButton
+                active={tab === "students"}
+                onClick={() => setTab("students")}
+              >
+                Học sinh ({item.students.length})
+              </TabButton>
+            </div>
+            {tab === "assignments" ? (
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 font-bold">
@@ -264,6 +299,8 @@ export function ClassDetailPage() {
                 )}
               </div>
             </section>
+            ) : (
+            <>
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 font-bold">
@@ -274,23 +311,38 @@ export function ClassDetailPage() {
               <div className="space-y-2">
                 {item.students.length ? (
                   item.students.map((s) => (
-                    <Card key={s.id}>
-                      <CardContent className="flex items-center justify-between gap-3 p-4">
-                        <div className="min-w-0">
-                          <strong className="block truncate">{s.name}</strong>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {s.parentPhone || "Chưa có SĐT"}
-                          </p>
-                        </div>
+                    <Card
+                      key={s.id}
+                      className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70"
+                    >
+                      <CardContent className="flex items-center gap-3 p-4">
+                        <Link
+                          to={`/students/${s.id}`}
+                          className="flex min-w-0 flex-1 items-center gap-3"
+                          aria-label={`Xem hồ sơ ${s.name}`}
+                        >
+                          <span
+                            className="grid size-10 shrink-0 place-items-center rounded-full bg-violet-50 text-sm font-bold text-primary"
+                            aria-hidden
+                          >
+                            {s.name.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="min-w-0">
+                            <strong className="block truncate">{s.name}</strong>
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              {s.parentPhone || "Chưa có SĐT"}
+                            </span>
+                          </span>
+                        </Link>
                         <Button
                           type="button"
                           variant="outline"
                           size="icon"
-                          className="text-red-600"
+                          className="min-h-10 min-w-10 shrink-0 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
                           aria-label={`Bỏ ${s.name} khỏi lớp`}
                           onClick={() => setRemoving(s)}
                         >
-                          <UserMinus size={17} />
+                          <UserMinus size={16} />
                         </Button>
                       </CardContent>
                     </Card>
@@ -306,34 +358,60 @@ export function ClassDetailPage() {
             </section>
             <section>
               <h2 className="mb-3 font-bold">Thêm học sinh</h2>
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm học sinh"
-                aria-label="Tìm học sinh"
-              />
+              <div className="relative">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden
+                />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tìm học sinh"
+                  aria-label="Tìm học sinh"
+                  className="pl-9"
+                />
+              </div>
               <div className="mt-3 space-y-2">
                 {available.map((s) => (
-                  <button
+                  <Card
                     key={s.id}
-                    type="button"
-                    className="flex min-h-16 w-full items-center gap-3 rounded-2xl border bg-white p-4 text-left shadow-sm shadow-slate-100 transition-colors hover:bg-slate-50"
-                    aria-label={`Thêm ${s.name} vào lớp`}
-                    onClick={() => void addStudent(s)}
+                    className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70"
                   >
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-sm font-bold text-primary">
-                      {s.name.slice(0, 2).toLocaleUpperCase("vi")}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <strong className="block truncate">{s.name}</strong>
-                      <small className="text-muted-foreground">
-                        {s.parentPhone || "Chưa có SĐT"}
-                      </small>
-                    </span>
-                  </button>
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <span
+                        className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-bold text-slate-500"
+                        aria-hidden
+                      >
+                        {s.name.charAt(0).toUpperCase()}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <strong className="block truncate">{s.name}</strong>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          {s.parentPhone || "Chưa có SĐT"}
+                        </span>
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="min-h-10 min-w-10 shrink-0 rounded-2xl text-primary hover:bg-primary/10 hover:text-primary"
+                        aria-label={`Thêm ${s.name} vào lớp`}
+                        disabled={adding === s.id}
+                        onClick={() => void addStudent(s)}
+                      >
+                        {adding === s.id ? (
+                          <Loader2 className="animate-spin" size={16} />
+                        ) : (
+                          <UserPlus size={16} />
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </section>
+            </>
+            )}
           </>
         )}
       </main>
@@ -528,5 +606,50 @@ function ClassAssignmentCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+const WEEKDAY_LABELS = [
+  "CN",
+  "T2",
+  "T3",
+  "T4",
+  "T5",
+  "T6",
+  "T7",
+];
+
+function formatSchedule(slots: { weekday: number; startTime: string; endTime: string }[]) {
+  return slots
+    .map(
+      (slot) =>
+        `${WEEKDAY_LABELS[slot.weekday] ?? "?"} ${slot.startTime}–${slot.endTime}`,
+    )
+    .join(" · ");
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`min-h-10 rounded-xl px-3 text-sm font-bold transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-slate-700 hover:text-primary"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

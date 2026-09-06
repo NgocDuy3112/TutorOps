@@ -32,7 +32,42 @@ export class SessionsService {
     if (!input.taughtAt)
       throw new BadRequestError(ErrorCodes.INVALID_TEACHING_SESSION);
     this.assertNotFuture(input.taughtAt);
-    return this.repository.create(studentId, input);
+    if (input.endsAt) {
+      if (new Date(input.endsAt).getTime() <= new Date(input.taughtAt).getTime())
+        throw new BadRequestError(ErrorCodes.INVALID_TEACHING_SESSION);
+    }
+    const pricing = await this.repository.resolvePricing(studentId, input.classId);
+    const priceVnd = this.computePrice(pricing, input);
+    return this.repository.create(studentId, {
+      ...input,
+      classId: pricing.classId,
+      priceVnd,
+    });
+  }
+
+  // Price depends on the class pricing mode:
+  // - per_session: manual price, else class default, else student default
+  // - per_hour: hourly rate x duration (needs endsAt), manual override wins
+  // - per_month: fixed monthly fee charged by the tuition report; sessions cost 0
+  private computePrice(
+    pricing: {
+      classId: string | null;
+      pricingMode: "per_session" | "per_hour" | "per_month";
+      classPrice: number | null;
+      studentDefaultPrice: number;
+    },
+    input: TeachingSessionDto,
+  ): number {
+    if (input.priceVnd != null) return input.priceVnd;
+    if (pricing.pricingMode === "per_month") return 0;
+    if (pricing.pricingMode === "per_hour") {
+      if (!input.endsAt || pricing.classPrice == null) return 0;
+      const hours =
+        (new Date(input.endsAt).getTime() - new Date(input.taughtAt).getTime()) /
+        3_600_000;
+      return Math.round(pricing.classPrice * Math.max(hours, 0));
+    }
+    return pricing.classPrice ?? pricing.studentDefaultPrice;
   }
   async update(teacherId: string, id: string, input: UpdateTeachingSessionDto) {
     if (input.taughtAt) this.assertNotFuture(input.taughtAt);

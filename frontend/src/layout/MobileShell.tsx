@@ -24,7 +24,8 @@ function TeacherBottomNavigation() {
 
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t bg-white/95 px-1 py-2 backdrop-blur sm:hidden">
-      <div className="mx-auto grid max-w-lg grid-cols-5">
+      {/* auto-cols-fr: one equal column per item, adapts when tabs are added/removed */}
+      <div className="mx-auto grid max-w-lg grid-flow-col auto-cols-fr">
         {navigationItems.map((item) => {
           const isActive =
             item.href === "/"

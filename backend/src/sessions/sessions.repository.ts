@@ -22,17 +22,21 @@ export class SessionsRepository {
   async list(studentId: string) {
     const query = `
       SELECT
-        id,
-        student_id AS "studentId",
-        taught_at AS "taughtAt",
-        price_vnd AS "priceVnd",
-        note,
-        created_at AS "createdAt",
-        updated_at AS "updatedAt"
-      FROM teaching_sessions
-      WHERE student_id = $1
-        AND deleted_at IS NULL
-      ORDER BY taught_at DESC
+        ts.id,
+        ts.student_id AS "studentId",
+        ts.class_id AS "classId",
+        c.name AS "className",
+        ts.taught_at AS "taughtAt",
+        ts.ends_at AS "endsAt",
+        ts.price_vnd AS "priceVnd",
+        ts.note,
+        ts.created_at AS "createdAt",
+        ts.updated_at AS "updatedAt"
+      FROM teaching_sessions AS ts
+      LEFT JOIN classes AS c ON c.id = ts.class_id
+      WHERE ts.student_id = $1
+        AND ts.deleted_at IS NULL
+      ORDER BY ts.taught_at DESC
     `;
     return (await pool.query(query, [studentId])).rows;
   }
@@ -58,15 +62,83 @@ export class SessionsRepository {
     return (await pool.query(query, [teacherId])).rows;
   }
 
+  // Resolve which class governs pricing for a new session: explicit classId if
+  // given (must contain the student), else the student's only class, else none.
+  async resolvePricing(studentId: string, classId?: string) {
+    let resolvedClassId = classId ?? null;
+    if (!resolvedClassId) {
+      const owned = await pool.query(
+        `
+        SELECT c.id
+        FROM class_students AS cs
+        INNER JOIN classes AS c ON c.id = cs.class_id AND c.deleted_at IS NULL
+        WHERE cs.student_id = $1
+        `,
+        [studentId],
+      );
+      resolvedClassId = owned.rows.length === 1 ? owned.rows[0].id : null;
+    }
+    if (!resolvedClassId) {
+      const student = await pool.query(
+        `SELECT default_price_vnd FROM students WHERE id = $1`,
+        [studentId],
+      );
+      return {
+        classId: null,
+        pricingMode: "per_session" as const,
+        classPrice: null,
+        studentDefaultPrice: Number(student.rows[0]?.default_price_vnd ?? 0),
+      };
+    }
+    const result = await pool.query(
+      `
+      SELECT
+        c.id,
+        c.pricing_mode AS "pricingMode",
+        c.default_price_vnd AS "classPrice",
+        s.default_price_vnd AS "studentDefaultPrice"
+      FROM classes AS c
+      INNER JOIN students AS s ON s.id = $2
+      INNER JOIN class_students AS cs ON cs.class_id = c.id AND cs.student_id = $2
+      WHERE c.id = $1
+        AND c.deleted_at IS NULL
+        AND s.deleted_at IS NULL
+      `,
+      [resolvedClassId, studentId],
+    );
+    if (result.rows.length === 0) {
+      // Class does not contain this student — fall back to student default.
+      const student = await pool.query(
+        `SELECT default_price_vnd FROM students WHERE id = $1`,
+        [studentId],
+      );
+      return {
+        classId: null,
+        pricingMode: "per_session" as const,
+        classPrice: null,
+        studentDefaultPrice: Number(student.rows[0]?.default_price_vnd ?? 0),
+      };
+    }
+    const row = result.rows[0];
+    return {
+      classId: row.id,
+      pricingMode: row.pricingMode,
+      classPrice: row.classPrice == null ? null : Number(row.classPrice),
+      studentDefaultPrice: Number(row.studentDefaultPrice ?? 0),
+    };
+  }
+
   async create(studentId: string, input: TeachingSessionDto) {
     const query = `
       INSERT INTO teaching_sessions (
         student_id,
+        class_id,
         taught_at,
+        ends_at,
         price_vnd,
         note
       )
-      SELECT $1, $2, COALESCE($3, default_price_vnd), $4
+      SELECT $1, $5, $2, $6, COALESCE($3, default_price_vnd), $4
       FROM students
       WHERE id = $1
       RETURNING *
@@ -77,6 +149,8 @@ export class SessionsRepository {
         input.taughtAt,
         input.priceVnd ?? null,
         input.note ?? null,
+        input.classId ?? null,
+        input.endsAt ?? null,
       ])
     ).rows[0];
   }
@@ -86,6 +160,7 @@ export class SessionsRepository {
       UPDATE teaching_sessions AS ts
       SET
         taught_at = COALESCE($1, ts.taught_at),
+        ends_at = $6,
         price_vnd = COALESCE($2, ts.price_vnd),
         note = COALESCE($3, ts.note),
         updated_at = now()
@@ -104,6 +179,7 @@ export class SessionsRepository {
         input.note,
         id,
         teacherId,
+        input.endsAt ?? null,
       ])
     ).rows[0];
   }
