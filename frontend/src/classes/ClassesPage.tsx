@@ -12,10 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/EmptyState";
 import { Fab } from "@/components/Fab";
+import { FilterChips } from "@/components/FilterChips";
 import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { venueLabel, VENUE_OPTIONS } from "./venue";
 import { API } from "../lib/api";
 
 export type Student = { id: string; name: string; parentPhone: string | null };
@@ -28,6 +30,7 @@ export type TutorClass = {
   pricingMode?: "per_session" | "per_hour" | "per_month";
   autoSchedule?: boolean;
   schedules?: ScheduleSlot[];
+  venue?: string | null;
   note: string | null;
   studentCount: number;
   students: Student[];
@@ -38,6 +41,7 @@ export function ClassesPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [venueFilter, setVenueFilter] = useState("all");
   async function load() {
     setLoading(true);
     setError("");
@@ -55,11 +59,46 @@ export function ClassesPage() {
   useEffect(() => {
     void load();
   }, []);
+
+  const venueCounts = new Map<string, number>();
+  for (const item of classes) {
+    const key = item.venue ?? "none";
+    venueCounts.set(key, (venueCounts.get(key) ?? 0) + 1);
+  }
+  const venueFilterOptions = [
+    { value: "all", label: "Tất cả", count: classes.length },
+    ...VENUE_OPTIONS.map((option) => ({
+      value: option.value,
+      label: option.label,
+      count: venueCounts.get(option.value) ?? 0,
+    })),
+    ...(venueCounts.get("none")
+      ? [{ value: "none", label: "Chưa phân loại", count: venueCounts.get("none")! }]
+      : []),
+  ].filter((option) => option.value === "all" || (option.count ?? 0) > 0);
+
+  const filteredClasses =
+    venueFilter === "all"
+      ? classes
+      : classes.filter(
+          (item) => (item.venue ?? "none") === venueFilter,
+        );
+
   return (
     <MobileShell>
       <PageHeader title="Lớp" action={<UserAvatar />} />
       <Fab onClick={() => navigate("/classes/new")} label="Tạo lớp" />
       <main className="mx-auto max-w-6xl px-4 py-6">
+        {classes.length > 0 && (
+          <div className="mb-4">
+            <FilterChips
+              ariaLabel="Lọc theo nơi dạy"
+              options={venueFilterOptions}
+              value={venueFilter}
+              onChange={setVenueFilter}
+            />
+          </div>
+        )}
         {error && (
           <Card className="mb-4 border-red-100 bg-red-50">
             <CardContent className="p-4 text-sm text-red-700">
@@ -84,9 +123,15 @@ export function ClassesPage() {
               </Button>
             }
           />
+        ) : filteredClasses.length === 0 ? (
+          <EmptyState
+            icon={<BookOpenCheck size={28} />}
+            title="Không tìm thấy"
+            description="Thử chọn nhóm nơi dạy khác."
+          />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {classes.map((item) => (
+            {filteredClasses.map((item) => (
               <ClassCard key={item.id} item={item} />
             ))}
           </div>
@@ -95,6 +140,8 @@ export function ClassesPage() {
     </MobileShell>
   );
 }
+
+
 function ClassCard({ item }: { item: TutorClass }) {
   return (
     <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
@@ -114,13 +161,21 @@ function ClassCard({ item }: { item: TutorClass }) {
                 <>
                   <span aria-hidden="true">·</span>
                   <Coins size={13} className="shrink-0" />
-                  {formatVnd(item.defaultPriceVnd)}/buổi
+                  {formatVnd(item.defaultPriceVnd)}
+                  {item.pricingMode === "per_hour"
+                    ? "/giờ"
+                    : item.pricingMode === "per_month"
+                      ? "/tháng"
+                      : "/buổi"}
+                </>
+              )}
+              {venueLabel(item.venue) && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  {venueLabel(item.venue)}
                 </>
               )}
             </p>
-            {item.note && (
-              <p className="mt-1 text-xs text-muted-foreground">{item.note}</p>
-            )}
           </div>
         </Link>
       </CardContent>

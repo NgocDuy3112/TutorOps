@@ -31,6 +31,7 @@ import { formatDeadline, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditAssignmentSheet } from "../assignments/EditAssignmentSheet";
 import { EditClassSheet } from "./EditClassSheet";
+import { venueLabel } from "./venue";
 import type { Student, TutorClass } from "./ClassesPage";
 import { API } from "../lib/api";
 
@@ -188,6 +189,11 @@ export function ClassDetailPage() {
                   Lịch: {formatSchedule(item!.schedules!)}
                 </p>
               )}
+              {venueLabel(item?.venue) && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Nơi dạy: {venueLabel(item?.venue)}
+                </p>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Button
@@ -260,12 +266,6 @@ export function ClassDetailPage() {
             </div>
             {tab === "assignments" ? (
             <section>
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 font-bold">
-                  <ClipboardList size={18} className="text-primary" />
-                  Bài tập ({classAssignments.length})
-                </h2>
-              </div>
               <div className="space-y-2">
                 {classAssignments.length ? (
                   classAssignments.map((assignment) => (
@@ -302,12 +302,6 @@ export function ClassDetailPage() {
             ) : (
             <>
             <section>
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 font-bold">
-                  <Users size={18} className="text-primary" />
-                  Học sinh ({item.students.length})
-                </h2>
-              </div>
               <div className="space-y-2">
                 {item.students.length ? (
                   item.students.map((s) => (
