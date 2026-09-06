@@ -4,7 +4,12 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   ArrowLeft,
   FileText,
@@ -43,6 +48,7 @@ type TutorClass = { id: string; name: string; studentCount: number };
 
 export function AssignmentFormPage() {
   const { assignmentId } = useParams();
+  const [searchParams] = useSearchParams();
   const editing = Boolean(assignmentId);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(editing);
@@ -86,6 +92,10 @@ export function AssignmentFormPage() {
               : "",
           );
           setClassIds(assignment.classIds ?? []);
+        } else {
+          // Prefill the class when creating from a class detail page.
+          const classIdParam = searchParams.get("classId");
+          if (classIdParam) setClassIds([classIdParam]);
         }
       } catch (requestError) {
         setError(
@@ -98,7 +108,7 @@ export function AssignmentFormPage() {
       }
     }
     void load();
-  }, [assignmentId, editing]);
+  }, [assignmentId, editing, searchParams]);
 
   const searchTerm = classSearch.trim().toLocaleLowerCase("vi");
   const visibleClasses = classes.filter((item) =>

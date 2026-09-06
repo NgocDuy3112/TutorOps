@@ -1,5 +1,7 @@
 import type { PushSubscriptionDto } from "./notifications.dto";
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { BadRequestError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import webpush from "web-push";
 import { pool } from "../db/client";
 import { NotificationsRepository } from "./notifications.repository";
@@ -25,7 +27,7 @@ export class NotificationsService {
 
   async subscribe(userId: string, input: PushSubscriptionDto) {
     if (!input?.endpoint || !input?.keys?.p256dh || !input?.keys?.auth)
-      throw new BadRequestException("invalid_push_subscription");
+      throw new BadRequestError(ErrorCodes.INVALID_PUSH_SUBSCRIPTION);
     await pool.query(
       `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, user_agent, revoked_at) VALUES ($1, $2, $3, $4, $5, NULL) ON CONFLICT (endpoint) DO UPDATE SET user_id = EXCLUDED.user_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth, user_agent = EXCLUDED.user_agent, revoked_at = NULL, updated_at = now()`,
       [

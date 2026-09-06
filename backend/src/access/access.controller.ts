@@ -6,9 +6,10 @@ import {
   Post,
   Query,
   Req,
-  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
+import { UnauthorizedError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { AuthGuard } from "../auth/auth.guard";
 import { AccessService } from "./access.service";
 import { pool } from "../db/client";
@@ -25,9 +26,9 @@ export class AccessController {
     @Param("type") type: "student" | "parent",
   ) {
     if (!["student", "parent"].includes(type))
-      throw new UnauthorizedException("invalid_token_type");
+      throw new UnauthorizedError(ErrorCodes.INVALID_TOKEN_TYPE);
     const token = await this.access.regenerate(req.user.id, id, type);
-    if (!token) throw new UnauthorizedException("student_not_found");
+    if (!token) throw new UnauthorizedError(ErrorCodes.STUDENT_NOT_FOUND);
     return { token };
   }
 
@@ -38,7 +39,7 @@ export class AccessController {
     @Param("id") id: string,
   ) {
     const token = await this.access.createAssignmentLink(req.user.id, id);
-    if (!token) throw new UnauthorizedException("assignment_not_found");
+    if (!token) throw new UnauthorizedError(ErrorCodes.ASSIGNMENT_NOT_FOUND);
     return { token };
   }
 

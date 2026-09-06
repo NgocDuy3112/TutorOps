@@ -119,7 +119,7 @@ export function ClassFormPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="class-price">Giá mặc định (tối đa 10 tỷ ₫)</Label>
+                  <Label htmlFor="class-price">Giá mặc định</Label>
                   <Input
                     id="class-price"
                     inputMode="numeric"

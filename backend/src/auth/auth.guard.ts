@@ -2,8 +2,9 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  UnauthorizedException,
 } from "@nestjs/common";
+import { UnauthorizedError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import crypto from "node:crypto";
 import { redis } from "../db/client";
 import { AuthRepository } from "./auth.repository";
@@ -18,7 +19,7 @@ export class AuthGuard implements CanActivate {
     const token = header?.startsWith("Bearer ")
       ? header.slice(7)
       : request.cookies?.tutorops_session;
-    if (!token) throw new UnauthorizedException();
+    if (!token) throw new UnauthorizedError(ErrorCodes.UNAUTHORIZED);
 
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const cached = await redis.get(`session:${tokenHash}`);
@@ -26,7 +27,7 @@ export class AuthGuard implements CanActivate {
       ? JSON.parse(cached)
       : await this.repository.findActiveSession(tokenHash);
 
-    if (!user) throw new UnauthorizedException();
+    if (!user) throw new UnauthorizedError(ErrorCodes.UNAUTHORIZED);
     request.user = user;
     return true;
   }

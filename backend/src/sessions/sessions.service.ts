@@ -2,11 +2,12 @@ import type {
   TeachingSessionDto,
   UpdateTeachingSessionDto,
 } from "./sessions.dto";
+import { Injectable } from "@nestjs/common";
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+  BadRequestError,
+  NotFoundError,
+} from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { SessionsRepository } from "./sessions.repository";
 
 /** FR3.4: cho phép lệch clock 5 phút */
@@ -28,27 +29,28 @@ export class SessionsService {
     input: TeachingSessionDto,
   ) {
     await this.assertOwner(teacherId, studentId);
-    if (!input.taughtAt) throw new Error("invalid_teaching_session");
+    if (!input.taughtAt)
+      throw new BadRequestError(ErrorCodes.INVALID_TEACHING_SESSION);
     this.assertNotFuture(input.taughtAt);
     return this.repository.create(studentId, input);
   }
   async update(teacherId: string, id: string, input: UpdateTeachingSessionDto) {
     if (input.taughtAt) this.assertNotFuture(input.taughtAt);
     const session = await this.repository.update(teacherId, id, input);
-    if (!session) throw new NotFoundException("session_not_found");
+    if (!session) throw new NotFoundError(ErrorCodes.SESSION_NOT_FOUND);
     return session;
   }
   private assertNotFuture(taughtAt: string) {
     if (new Date(taughtAt).getTime() > Date.now() + MAX_CLOCK_SKEW_MS)
-      throw new BadRequestException("future_session_not_allowed");
+      throw new BadRequestError(ErrorCodes.FUTURE_SESSION_NOT_ALLOWED);
   }
   async remove(teacherId: string, id: string) {
     if (!(await this.repository.softDelete(teacherId, id)))
-      throw new NotFoundException("session_not_found");
+      throw new NotFoundError(ErrorCodes.SESSION_NOT_FOUND);
     return { ok: true };
   }
   private async assertOwner(teacherId: string, studentId: string) {
     if (!(await this.repository.studentOwned(teacherId, studentId)))
-      throw new NotFoundException("student_not_found");
+      throw new NotFoundError(ErrorCodes.STUDENT_NOT_FOUND);
   }
 }

@@ -13,7 +13,6 @@ import "./styles.css";
 import { LoginPage } from "./auth/LoginPage";
 import { SignupPage } from "./auth/SignupPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
-import { AssignmentsPage } from "./assignments/AssignmentsPage";
 import { AssignmentFormPage } from "./assignments/AssignmentFormPage";
 import { AssignmentSubmissionsPage } from "./assignments/AssignmentSubmissionsPage";
 import { StudentProfilePage } from "./students/StudentProfilePage";
@@ -139,13 +138,7 @@ function App() {
         />
         <Route
           path="/assignments"
-          element={
-            authenticated ? (
-              <AssignmentsPage />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={<Navigate to="/classes" replace />}
         />
         <Route
           path="/assignments/new"

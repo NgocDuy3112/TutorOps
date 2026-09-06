@@ -1,8 +1,9 @@
+import { Injectable } from "@nestjs/common";
 import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-} from "@nestjs/common";
+  ConflictError,
+  UnauthorizedError,
+} from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import argon2 from "argon2";
 import crypto from "node:crypto";
 import { redis } from "../db/client";
@@ -23,7 +24,7 @@ export class AuthService {
   }
   async register(email: string, password: string) {
     if (!email || !password || password.length < 8)
-      throw new UnauthorizedException("invalid_credentials");
+      throw new UnauthorizedError(ErrorCodes.INVALID_CREDENTIALS);
     try {
       const user = await this.repository.createUser(
         email.toLowerCase(),
@@ -32,7 +33,7 @@ export class AuthService {
       return this.createSession(user);
     } catch (error: unknown) {
       if (error instanceof Error && "code" in error && error.code === "23505")
-        throw new ConflictException("email_already_exists");
+        throw new ConflictError(ErrorCodes.EMAIL_ALREADY_EXISTS);
       throw error;
     }
   }
@@ -52,18 +53,18 @@ export class AuthService {
   async googleCallback(code: string, state: string) {
     const stateKey = `oauth:google:state:${state}`;
     if (!state || !(await redis.get(stateKey)))
-      throw new UnauthorizedException("invalid_oauth_state");
+      throw new UnauthorizedError(ErrorCodes.INVALID_OAUTH_STATE);
     await redis.del(stateKey);
     const { tokens } = await this.google.getToken(code);
     if (!tokens.id_token)
-      throw new UnauthorizedException("missing_google_id_token");
+      throw new UnauthorizedError(ErrorCodes.MISSING_GOOGLE_ID_TOKEN);
     const ticket = await this.google.verifyIdToken({
       idToken: tokens.id_token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
     if (!payload?.sub || !payload.email || payload.email_verified !== true)
-      throw new UnauthorizedException("invalid_google_identity");
+      throw new UnauthorizedError(ErrorCodes.INVALID_GOOGLE_IDENTITY);
     const user = await this.repository.findOrCreateGoogleUser(
       payload.email.toLowerCase(),
       payload.sub,
@@ -90,7 +91,7 @@ export class AuthService {
       !record?.passwordHash ||
       !(await argon2.verify(record.passwordHash, input.currentPassword))
     )
-      throw new UnauthorizedException("invalid_password");
+      throw new UnauthorizedError(ErrorCodes.INVALID_PASSWORD);
     await this.repository.updatePassword(
       userId,
       await argon2.hash(input.newPassword),
@@ -111,7 +112,7 @@ export class AuthService {
       !user?.password_hash ||
       !(await argon2.verify(user.password_hash, password))
     )
-      throw new UnauthorizedException("invalid_credentials");
+      throw new UnauthorizedError(ErrorCodes.INVALID_CREDENTIALS);
     return this.createSession(user);
   }
   private async createSession(user: AuthUser) {

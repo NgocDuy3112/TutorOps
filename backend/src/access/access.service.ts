@@ -1,4 +1,6 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { UnauthorizedError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import crypto from "node:crypto";
 import { pool } from "../db/client";
 import { StorageService } from "../storage/storage.service";
@@ -44,7 +46,7 @@ export class AccessService {
       [this.hash(token)],
     );
     if (!result.rowCount)
-      throw new UnauthorizedException("invalid_access_token");
+      throw new UnauthorizedError(ErrorCodes.INVALID_ACCESS_TOKEN);
     const assignment = result.rows[0];
     const files = await pool.query(
       `SELECT f.id, f.original_name AS name, f.mime_type AS "mimeType", f.storage_key AS "storageKey" FROM assignment_files af JOIN files f ON f.id = af.file_id WHERE af.assignment_id = $1 AND f.deleted_at IS NULL ORDER BY f.created_at`,
@@ -75,7 +77,7 @@ export class AccessService {
       [this.hash(token), tokenType],
     );
     const access = result.rows[0];
-    if (!access) throw new UnauthorizedException("invalid_access_token");
+    if (!access) throw new UnauthorizedError(ErrorCodes.INVALID_ACCESS_TOKEN);
     await pool.query(
       `UPDATE access_tokens SET last_used_at = now() WHERE token_hash = $1`,
       [this.hash(token)],

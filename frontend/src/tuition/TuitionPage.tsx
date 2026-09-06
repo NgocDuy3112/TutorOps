@@ -390,7 +390,7 @@ function TuitionRowCard({
           <h3 className="truncate font-bold">{row.name}</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {noActivity
-              ? "Chưa có buổi dạy trong tháng"
+              ? "Chưa có buổi dạy"
               : `Đã dạy ${row.sessionCount} buổi`}
           </p>
         </div>

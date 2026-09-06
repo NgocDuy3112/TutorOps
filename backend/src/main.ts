@@ -4,11 +4,14 @@ import cookieParser from "cookie-parser";
 import { ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
+import { AppLogger } from "./common/app-logger";
+import { HttpExceptionFilter } from "./common/http-exception.filter";
 import { redis } from "./db/client";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
+  app.useGlobalFilters(new HttpExceptionFilter(app.get(AppLogger)));
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

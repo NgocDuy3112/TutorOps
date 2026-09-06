@@ -57,14 +57,15 @@ export class ClassesRepository {
     ).rows[0];
   }
 
+
   async update(teacherId: string, id: string, input: UpdateClassDto) {
     const query = `
       UPDATE classes
       SET
-        name = COALESCE($1, name),
+        name = $1,
         subject = COALESCE($2, subject),
-        default_price_vnd = COALESCE($3, default_price_vnd),
-        note = COALESCE($4, note),
+        default_price_vnd = $3,
+        note = $4,
         updated_at = now()
       WHERE id = $5
         AND teacher_id = $6
@@ -80,10 +81,10 @@ export class ClassesRepository {
     `;
     return (
       await pool.query(query, [
-        input.name?.trim(),
+        input.name.trim(),
         input.subject?.trim(),
-        input.defaultPriceVnd,
-        input.note,
+        input.defaultPriceVnd ?? null,
+        input.note ?? null,
         id,
         teacherId,
       ])

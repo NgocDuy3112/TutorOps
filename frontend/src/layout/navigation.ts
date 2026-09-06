@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  ClipboardList,
   Home,
   Users,
   Wallet,
@@ -14,9 +13,8 @@ export type NavigationItem = {
 };
 
 export const navigationItems: NavigationItem[] = [
+  { href: "/", label: "Tổng quan", icon: Home },
   { href: "/students", label: "Học sinh", icon: Users },
   { href: "/classes", label: "Lớp học", icon: BookOpen },
-  { href: "/", label: "Tổng quan", icon: Home },
-  { href: "/assignments", label: "Bài tập", icon: ClipboardList },
   { href: "/tuition", label: "Học phí", icon: Wallet },
 ];
