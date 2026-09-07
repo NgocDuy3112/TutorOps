@@ -7,18 +7,13 @@ import {
   Filter,
   Loader2,
   Plus,
+  Search,
   User,
   BookOpenCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { Fab } from "@/components/Fab";
 import { formatVnd } from "../lib/format";
@@ -52,6 +47,7 @@ export function ClassesPage() {
   const [error, setError] = useState("");
   const [venueFilter, setVenueFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [search, setSearch] = useState("");
   async function load() {
     setLoading(true);
     setError("");
@@ -87,12 +83,16 @@ export function ClassesPage() {
       : []),
   ].filter((option) => option.value === "all" || (option.count ?? 0) > 0);
 
-  const filteredClasses =
-    venueFilter === "all"
-      ? classes
-      : classes.filter(
-          (item) => (item.venue ?? "none") === venueFilter,
-        );
+  const filteredClasses = classes.filter((item) => {
+    const matchesVenue =
+      venueFilter === "all" || (item.venue ?? "none") === venueFilter;
+    const term = search.trim().toLocaleLowerCase("vi");
+    const matchesSearch =
+      !term ||
+      item.name.toLocaleLowerCase("vi").includes(term) ||
+      (item.note ?? "").toLocaleLowerCase("vi").includes(term);
+    return matchesVenue && matchesSearch;
+  });
   const activeFilterLabel =
     venueFilterOptions.find((option) => option.value === venueFilter)?.label ?? "";
 
@@ -102,18 +102,33 @@ export function ClassesPage() {
       <Fab onClick={() => navigate("/classes/new")} label="Tạo lớp" />
       <main className="mx-auto max-w-6xl px-4 py-6">
         {classes.length > 0 && (
-          <div className="mb-4 flex justify-end">
+          <div className="mb-4 flex items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Tìm lớp"
+                aria-label="Tìm lớp"
+                className="min-h-11 rounded-2xl bg-white pl-9"
+              />
+            </div>
             <Button
               type="button"
               variant="outline"
               size="icon"
               aria-label="Lọc theo nơi dạy"
+              aria-expanded={filterOpen}
               className={cn(
-                "relative min-h-11 min-w-11 rounded-2xl",
+                "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
                 venueFilter !== "all" &&
                   "border-primary bg-primary/10 text-primary",
+                filterOpen && "border-primary text-primary",
               )}
-              onClick={() => setFilterOpen(true)}
+              onClick={() => setFilterOpen((open) => !open)}
             >
               <Filter size={17} />
               {venueFilter !== "all" && (
@@ -123,6 +138,40 @@ export function ClassesPage() {
                 />
               )}
             </Button>
+          </div>
+        )}
+        {filterOpen && classes.length > 0 && (
+          <div
+            role="listbox"
+            aria-label="Lọc theo nơi dạy"
+            className="mb-4 space-y-1.5 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm"
+          >
+            {venueFilterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={venueFilter === option.value}
+                onClick={() => {
+                  setVenueFilter(option.value);
+                  setFilterOpen(false);
+                }}
+                className={cn(
+                  "flex min-h-11 w-full items-center gap-3 rounded-xl p-2.5 text-left text-sm font-semibold transition-colors",
+                  venueFilter === option.value
+                    ? "bg-primary/10 text-primary"
+                    : "text-slate-700 hover:bg-slate-50",
+                )}
+              >
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                {option.count != null && (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {option.count}
+                  </span>
+                )}
+                {venueFilter === option.value && <Check size={16} />}
+              </button>
+            ))}
           </div>
         )}
         {venueFilter !== "all" && (
@@ -174,41 +223,6 @@ export function ClassesPage() {
           </div>
         )}
       </main>
-      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Lọc theo nơi dạy</SheetTitle>
-            <SheetDescription>Chọn nơi dạy để xem các lớp tương ứng.</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-2">
-            {venueFilterOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  setVenueFilter(option.value);
-                  setFilterOpen(false);
-                }}
-                aria-pressed={venueFilter === option.value}
-                className={cn(
-                  "flex min-h-12 w-full items-center gap-3 rounded-2xl border p-3 text-left text-sm font-semibold transition-colors",
-                  venueFilter === option.value
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-slate-200 bg-white text-slate-700",
-                )}
-              >
-                <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                {option.count != null && (
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {option.count}
-                  </span>
-                )}
-                {venueFilter === option.value && <Check size={16} />}
-              </button>
-            ))}
-          </div>
-        </SheetContent>
-      </Sheet>
     </MobileShell>
   );
 }
