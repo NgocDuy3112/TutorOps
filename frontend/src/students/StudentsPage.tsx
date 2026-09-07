@@ -111,7 +111,7 @@ export function StudentsPage() {
       <PageHeader title="Học sinh" action={<UserAvatar />} />
       <Fab onClick={() => navigate("/students/new")} label="Thêm học sinh" />
       <main className="mx-auto max-w-6xl px-4 py-6">
-        <div className="mb-4 flex items-center gap-2">
+        <div className="relative mb-4 flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -149,38 +149,46 @@ export function StudentsPage() {
           </Button>
         </div>
         {filterOpen && students.length > 0 && (
-          <div
-            role="listbox"
-            aria-label="Lọc theo lớp"
-            className="mb-4 space-y-1.5 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm"
-          >
-            {classFilterOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                role="option"
-                aria-selected={classFilter === option.value}
-                onClick={() => {
-                  setClassFilter(option.value);
-                  setFilterOpen(false);
-                }}
-                className={cn(
-                  "flex min-h-11 w-full items-center gap-3 rounded-xl p-2.5 text-left text-sm font-semibold transition-colors",
-                  classFilter === option.value
-                    ? "bg-primary/10 text-primary"
-                    : "text-slate-700 hover:bg-slate-50",
-                )}
-              >
-                <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                {option.count != null && (
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {option.count}
-                  </span>
-                )}
-                {classFilter === option.value && <Check size={16} />}
-              </button>
-            ))}
-          </div>
+          <>
+            {/* Click-away layer: transparent, below the panel */}
+            <div
+              aria-hidden
+              className="fixed inset-0 z-20"
+              onClick={() => setFilterOpen(false)}
+            />
+            <div
+              role="listbox"
+              aria-label="Lọc theo lớp"
+              className="absolute right-4 top-full z-30 -mt-3 w-48 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
+            >
+              {classFilterOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={classFilter === option.value}
+                  onClick={() => {
+                    setClassFilter(option.value);
+                    setFilterOpen(false);
+                  }}
+                  className={cn(
+                    "flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-[13px] font-semibold transition-colors",
+                    classFilter === option.value
+                      ? "bg-primary/10 text-primary"
+                      : "text-slate-700 hover:bg-slate-50",
+                  )}
+                >
+                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                  {option.count != null && (
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {option.count}
+                    </span>
+                  )}
+                  {classFilter === option.value && <Check size={14} />}
+                </button>
+              ))}
+            </div>
+          </>
         )}
         {classFilter !== "all" && (
           <button

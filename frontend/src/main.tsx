@@ -105,6 +105,10 @@ function App() {
         />
         <Route
           path="/"
+          element={<Navigate to="/overview" replace />}
+        />
+        <Route
+          path="/overview"
           element={
             authenticated ? <OverviewPage /> : <Navigate to="/login" replace />
           }
