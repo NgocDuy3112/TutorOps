@@ -187,11 +187,13 @@ export function TuitionPage() {
             <KpiBlock
               label="Phải thu"
               value={formatVnd(totals?.totalDue ?? 0)}
+              sub={`${rows.length} học sinh`}
               tone="slate"
             />
             <KpiBlock
               label="Đã thu"
               value={formatVnd(totals?.totalPaid ?? 0)}
+              sub={`${paidCount} học sinh`}
               tone="emerald"
             />
             <KpiBlock
@@ -279,7 +281,7 @@ export function TuitionPage() {
                     <div
                       role="listbox"
                       aria-label="Lọc tình trạng học phí"
-                      className="absolute right-4 top-44 z-30 w-48 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
+                      className="absolute right-4 top-44 z-30 w-36 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
                     >
                       {filterOptions.map((option) => (
                         <button
@@ -496,11 +498,7 @@ function TuitionRowCard({
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-bold">{row.name}</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {noActivity
-              ? "Chưa có buổi dạy"
-              : settled
-                ? `Đã đủ · đã dạy ${row.sessionCount} buổi`
-                : `Còn nợ · đã dạy ${row.sessionCount} buổi`}
+            {noActivity ? "Chưa có buổi dạy" : `Đã dạy ${row.sessionCount} buổi`}
           </p>
         </div>
         <div className="shrink-0 text-right">

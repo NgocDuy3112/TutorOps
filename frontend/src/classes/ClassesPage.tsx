@@ -151,7 +151,7 @@ export function ClassesPage() {
             <div
               role="listbox"
               aria-label="Lọc theo nơi dạy"
-              className="absolute right-4 top-16 z-30 w-48 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
+              className="absolute right-4 top-16 z-30 w-36 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
             >
               {venueFilterOptions.map((option) => (
                 <button

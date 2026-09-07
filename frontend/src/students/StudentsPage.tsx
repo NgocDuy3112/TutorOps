@@ -159,7 +159,7 @@ export function StudentsPage() {
             <div
               role="listbox"
               aria-label="Lọc theo lớp"
-              className="absolute right-4 top-full z-30 -mt-3 w-48 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
+              className="absolute right-4 top-full z-30 -mt-3 w-36 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
             >
               {classFilterOptions.map((option) => (
                 <button
