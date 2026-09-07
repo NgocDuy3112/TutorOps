@@ -40,3 +40,38 @@ export type DashboardCalendarDto = {
   sessions: DashboardCalendarSessionDto[];
   assignments: DashboardCalendarAssignmentDto[];
 };
+
+export type OverviewTodaySessionDto = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  taughtAt: string;
+  endsAt: string | null;
+  priceVnd: number;
+};
+
+export type OverviewDeadlineDto = {
+  id: string;
+  title: string;
+  dueAt: string;
+  studentCount: number;
+};
+
+export type OverviewDebtorDto = {
+  id: string;
+  name: string;
+  balance: number;
+};
+
+export type DashboardOverviewDto = {
+  classCount: number;
+  sessionsThisMonth: number;
+  sessionsLastMonth: number;
+  paidThisMonth: number;
+  paidLastMonth: number;
+  outstanding: number;
+  debtCount: number;
+  todaySessions: OverviewTodaySessionDto[];
+  upcomingDeadlines: OverviewDeadlineDto[];
+  topDebtors: OverviewDebtorDto[];
+};
