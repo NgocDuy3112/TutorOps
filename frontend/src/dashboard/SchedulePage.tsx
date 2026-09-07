@@ -269,7 +269,7 @@ export function SchedulePage() {
                       key={key}
                       type="button"
                       onClick={() => openAgenda(day)}
-                      className={`min-h-12 rounded-2xl border p-1 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:min-h-14 ${
+                      className={`min-h-9 rounded-xl border p-1 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:min-h-10 ${
                         selected
                           ? "border-primary bg-primary text-primary-foreground shadow-md shadow-violet-200"
                           : "border-transparent hover:bg-slate-100"
@@ -310,7 +310,7 @@ export function SchedulePage() {
                 Không có buổi dạy nào hôm nay.
               </p>
             ) : (
-              <div className="space-y-1">
+              <div className="max-h-64 space-y-1 overflow-y-auto">
                 {todaySessions.map((session) => (
                   <div
                     key={session.id}
