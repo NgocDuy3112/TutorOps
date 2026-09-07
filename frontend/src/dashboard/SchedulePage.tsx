@@ -98,7 +98,7 @@ const deadlineTextColor = (dueAt: string) => {
   return "text-emerald-600";
 };
 
-export function DashboardPage() {
+export function SchedulePage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<TutorClass[]>([]);
   const [sessions, setSessions] = useState<TeachingSession[]>([]);

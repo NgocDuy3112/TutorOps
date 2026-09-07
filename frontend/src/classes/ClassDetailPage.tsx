@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
+import { cn } from "@/lib/utils";
 import { Fab } from "@/components/Fab";
 import { formatDeadline, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
@@ -101,6 +102,7 @@ export function ClassDetailPage() {
   );
   const [removing, setRemoving] = useState<Student | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
   const [tab, setTab] = useState<"assignments" | "students">("assignments");
 
   async function removeStudent() {
@@ -321,12 +323,7 @@ export function ClassDetailPage() {
                           >
                             {s.name.charAt(0).toUpperCase()}
                           </span>
-                          <span className="min-w-0">
-                            <strong className="block truncate">{s.name}</strong>
-                            <span className="mt-0.5 block text-xs text-muted-foreground">
-                              {s.parentPhone || "Chưa có SĐT"}
-                            </span>
-                          </span>
+                          <strong className="min-w-0 truncate">{s.name}</strong>
                         </Link>
                         <Button
                           type="button"
@@ -345,64 +342,90 @@ export function ClassDetailPage() {
                   <EmptyState
                     icon={<UserPlus size={24} />}
                     title="Lớp chưa có học sinh"
-                    description="Tìm học sinh bên dưới để thêm vào lớp."
+                    description="Thêm học sinh để bắt đầu quản lý buổi dạy và học phí của lớp."
+                    action={
+                      <Button
+                        className="min-h-11 rounded-2xl"
+                        onClick={() => setAddOpen(true)}
+                      >
+                        <UserPlus size={16} />
+                        Thêm học sinh
+                      </Button>
+                    }
                   />
                 )}
               </div>
-            </section>
-            <section>
-              <h2 className="mb-3 font-bold">Thêm học sinh</h2>
-              <div className="relative">
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden
-                />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Tìm học sinh"
-                  aria-label="Tìm học sinh"
-                  className="pl-9"
-                />
-              </div>
-              <div className="mt-3 space-y-2">
-                {available.map((s) => (
-                  <Card
-                    key={s.id}
-                    className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70"
-                  >
-                    <CardContent className="flex items-center gap-3 p-4">
-                      <span
-                        className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-bold text-slate-500"
-                        aria-hidden
-                      >
-                        {s.name.charAt(0).toUpperCase()}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <strong className="block truncate">{s.name}</strong>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {s.parentPhone || "Chưa có SĐT"}
-                        </span>
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="min-h-10 min-w-10 shrink-0 rounded-2xl text-primary hover:bg-primary/10 hover:text-primary"
-                        aria-label={`Thêm ${s.name} vào lớp`}
-                        disabled={adding === s.id}
-                        onClick={() => void addStudent(s)}
-                      >
-                        {adding === s.id ? (
-                          <Loader2 className="animate-spin" size={16} />
-                        ) : (
-                          <UserPlus size={16} />
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                aria-expanded={addOpen}
+                className={cn(
+                  "mt-3 min-h-11 w-full rounded-2xl",
+                  addOpen && "border-primary text-primary",
+                )}
+                onClick={() => setAddOpen((open) => !open)}
+              >
+                <UserPlus size={16} />
+                Thêm học sinh
+              </Button>
+              {addOpen && (
+                <div className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                  <div className="relative">
+                    <Search
+                      className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                      aria-hidden
+                    />
+                    <Input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Tìm học sinh"
+                      aria-label="Tìm học sinh"
+                      className="min-h-11 rounded-2xl pl-9"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    {available.length === 0 ? (
+                      <p className="p-3 text-center text-sm text-muted-foreground">
+                        {search.trim()
+                          ? "Không tìm thấy học sinh."
+                          : "Tất cả học sinh đã ở trong lớp này."}
+                      </p>
+                    ) : (
+                      available.map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex min-h-12 items-center gap-3 rounded-xl px-2 transition-colors hover:bg-slate-50"
+                        >
+                          <span
+                            className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-bold text-slate-500"
+                            aria-hidden
+                          >
+                            {s.name.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                            {s.name}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="min-h-9 min-w-9 shrink-0 rounded-xl text-primary hover:bg-primary/10 hover:text-primary"
+                            aria-label={`Thêm ${s.name} vào lớp`}
+                            disabled={adding === s.id}
+                            onClick={() => void addStudent(s)}
+                          >
+                            {adding === s.id ? (
+                              <Loader2 className="animate-spin" size={15} />
+                            ) : (
+                              <UserPlus size={15} />
+                            )}
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </section>
             </>
             )}
