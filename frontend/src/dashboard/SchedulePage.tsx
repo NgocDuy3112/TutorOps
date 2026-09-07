@@ -269,7 +269,7 @@ export function SchedulePage() {
                       key={key}
                       type="button"
                       onClick={() => openAgenda(day)}
-                      className={`min-h-9 rounded-xl border p-1 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:min-h-10 ${
+                      className={`relative min-h-9 rounded-xl border p-1 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:min-h-10 ${
                         selected
                           ? "border-primary bg-primary text-primary-foreground shadow-md shadow-violet-200"
                           : "border-transparent hover:bg-slate-100"
@@ -280,11 +280,10 @@ export function SchedulePage() {
                         {day.getDate()}
                       </span>
                       {hasSessions && (
-                        <span className="mt-1 flex justify-center">
-                          <span
-                            className={`block size-1.5 rounded-full ${selected ? "bg-white" : "bg-violet-600"}`}
-                          />
-                        </span>
+                        <span
+                          aria-hidden
+                          className={`absolute bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full ${selected ? "bg-white" : "bg-violet-600"}`}
+                        />
                       )}
                     </button>
                   );
