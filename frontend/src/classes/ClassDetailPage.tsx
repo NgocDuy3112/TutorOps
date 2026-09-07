@@ -382,6 +382,7 @@ export function ClassDetailPage() {
             </section>
             </>
             ) : (
+            <>
             <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
               <CardContent className="p-5">
                 <dl className="space-y-3 text-sm">
@@ -423,7 +424,9 @@ export function ClassDetailPage() {
             >
               <Pencil size={16} />
               Sửa lớp
-            </Button>            )}
+            </Button>
+            </>
+            )}
           </>
         )}
       </main>
