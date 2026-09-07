@@ -10,8 +10,13 @@ type MobileShellProps = {
 export function MobileShell({ children }: MobileShellProps) {
   return (
     <>
-      <div className="motion-page min-h-screen bg-slate-50 pb-20 text-slate-900 sm:hidden">
-        {children}
+      {/* Nav must be a sibling of the motion-page container: the page-in
+          animation leaves a transform on it, which would turn it into the
+          containing block for position:fixed and make the nav scroll away. */}
+      <div className="sm:hidden">
+        <div className="motion-page min-h-screen bg-slate-50 pb-20 text-slate-900">
+          {children}
+        </div>
         <TeacherBottomNavigation />
       </div>
       <DesktopShell>{children}</DesktopShell>
