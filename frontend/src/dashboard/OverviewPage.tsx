@@ -36,8 +36,6 @@ type Deadline = {
   studentCount: number;
 };
 
-type Debtor = { id: string; name: string; balance: number };
-
 type Overview = {
   classCount: number;
   sessionsThisMonth: number;
@@ -48,7 +46,6 @@ type Overview = {
   debtCount: number;
   todaySessions: TodaySession[];
   upcomingDeadlines: Deadline[];
-  topDebtors: Debtor[];
 };
 
 export function OverviewPage() {
@@ -120,20 +117,20 @@ export function OverviewPage() {
             >
               <KpiCard
                 icon={<BookOpen size={16} />}
-                label="Lớp đang dạy"
+                label="Lớp"
                 value={String(data.classCount)}
                 to="/classes"
               />
               <KpiCard
                 icon={<CalendarCheck size={16} />}
-                label="Buổi dạy tháng này"
+                label="Buổi dạy"
                 value={String(data.sessionsThisMonth)}
                 delta={delta(data.sessionsThisMonth, data.sessionsLastMonth)}
                 to="/schedule"
               />
               <KpiCard
                 icon={<Wallet size={16} />}
-                label="Đã thu tháng này"
+                label="Đã thu"
                 value={formatVnd(data.paidThisMonth)}
                 delta={delta(data.paidThisMonth, data.paidLastMonth)}
                 to="/tuition"
@@ -149,9 +146,10 @@ export function OverviewPage() {
 
             <OverviewSection title="Hôm nay" icon={<CalendarCheck size={18} />}>
               {data.todaySessions.length === 0 ? (
-                <p className="rounded-2xl bg-white p-4 text-sm text-muted-foreground">
-                  Không có buổi dạy nào hôm nay.
-                </p>
+                <SectionEmpty
+                  icon={<CalendarCheck size={20} />}
+                  text="Không có buổi dạy nào hôm nay"
+                />
               ) : (
                 data.todaySessions.map((session) => (
                   <Link
@@ -173,9 +171,10 @@ export function OverviewPage() {
 
             <OverviewSection title="Sắp đến hạn" icon={<ClipboardList size={18} />}>
               {data.upcomingDeadlines.length === 0 ? (
-                <p className="rounded-2xl bg-white p-4 text-sm text-muted-foreground">
-                  Không có bài tập nào đến hạn trong 3 ngày tới.
-                </p>
+                <SectionEmpty
+                  icon={<ClipboardList size={20} />}
+                  text="Không có bài tập đến hạn trong 3 ngày tới"
+                />
               ) : (
                 data.upcomingDeadlines.map((deadline) => (
                   <Link
@@ -198,41 +197,6 @@ export function OverviewPage() {
                     </span>
                   </Link>
                 ))
-              )}
-            </OverviewSection>
-
-            <OverviewSection title="Nợ phí nhiều nhất" icon={<Wallet size={18} />}>
-              {data.topDebtors.length === 0 ? (
-                <p className="rounded-2xl bg-white p-4 text-sm text-muted-foreground">
-                  Học sinh đều đã thanh toán tháng này.
-                </p>
-              ) : (
-                <>
-                  {data.topDebtors.map((debtor) => (
-                    <Link
-                      key={debtor.id}
-                      to="/tuition"
-                      className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm shadow-slate-100 transition-colors hover:bg-slate-50"
-                    >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-amber-50 text-xs font-bold text-amber-700">
-                        {debtor.name.charAt(0).toUpperCase()}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                        {debtor.name}
-                      </span>
-                      <span className="shrink-0 text-sm font-black text-amber-700">
-                        {formatVnd(debtor.balance)}
-                      </span>
-                    </Link>
-                  ))}
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="min-h-11 w-full rounded-2xl"
-                  >
-                    <Link to="/tuition">Xem học phí</Link>
-                  </Button>
-                </>
               )}
             </OverviewSection>
           </>
@@ -259,14 +223,16 @@ function KpiCard({
 }) {
   return (
     <Link to={to} className="block">
-      <Card className="h-full rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70 transition-colors hover:border-primary/40">
+      <Card className="h-full rounded-3xl border-slate-200 bg-white shadow-sm shadow-slate-200/70 transition-colors hover:border-primary/40">
         <CardContent className="p-4">
           <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-            <span className="text-primary">{icon}</span>
+            <span className="grid size-6 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+              {icon}
+            </span>
             {label}
           </p>
-          <p className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-xl font-black tracking-tight text-slate-950">
+          <p className="mt-2.5 flex items-baseline gap-1.5">
+            <span className="text-2xl font-black tracking-tight text-slate-950">
               {value}
             </span>
             {delta != null && <DeltaBadge delta={delta} />}
@@ -275,6 +241,23 @@ function KpiCard({
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+function SectionEmpty({
+  icon,
+  text,
+}: {
+  icon: React.ReactNode;
+  text: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-3xl border border-dashed border-slate-200 bg-white/60 px-6 py-8 text-center">
+      <span className="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-400">
+        {icon}
+      </span>
+      <p className="text-sm text-muted-foreground">{text}</p>
+    </div>
   );
 }
 
@@ -317,7 +300,10 @@ function OverviewSection({
 }
 
 function delta(current: number, previous: number): number | null {
-  if (previous <= 0) return null;
+  // Hide deltas that carry no signal: both months empty, or nothing to
+  // compare against (previous = 0 would show a misleading ±100%).
+  if (previous <= 0 || (current === 0 && previous === 0)) return null;
+  if (current === 0) return -100;
   return Math.round(((current - previous) / previous) * 100);
 }
 

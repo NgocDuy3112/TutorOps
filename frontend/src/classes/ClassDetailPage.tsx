@@ -11,7 +11,6 @@ import {
   Search,
   Trash2,
   UserMinus,
-  Users,
   UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
-import { cn } from "@/lib/utils";
 import { formatDeadline, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditAssignmentSheet } from "../assignments/EditAssignmentSheet";
@@ -153,17 +151,6 @@ export function ClassDetailPage() {
               <h1 className="truncate text-2xl font-bold">
                 {item?.name || "Lớp"}
               </h1>
-              {item?.defaultPriceVnd != null && (
-                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Coins size={13} className="shrink-0" />
-                  {formatVnd(item.defaultPriceVnd)}
-                  {item.pricingMode === "per_hour"
-                    ? "/giờ"
-                    : item.pricingMode === "per_month"
-                      ? "/tháng"
-                      : "/buổi"}
-                </p>
-              )}
               {(item?.schedules?.length ?? 0) > 0 && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Lịch: {formatSchedule(item!.schedules!)}
