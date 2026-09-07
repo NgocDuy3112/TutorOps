@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  BookOpenCheck,
   GraduationCap,
   Loader2,
   Pencil,
@@ -45,26 +44,15 @@ type TeachingSession = {
   priceVnd: number;
   note: string | null;
 };
-type AssignmentStudent = { id: string; name: string; status: string };
-type Assignment = {
-  id: string;
-  title: string;
-  description: string | null;
-  dueAt: string | null;
-  studentCount: number;
-  students: AssignmentStudent[];
-};
 type StudentDayGroup = {
   studentId: string;
   studentName: string;
   sessions: TeachingSession[];
-  assignments: Assignment[];
 };
 type DashboardCalendar = {
   teacher: Teacher;
   students: Student[];
   sessions: TeachingSession[];
-  assignments: Assignment[];
 };
 
 const dateKey = (date: Date) => {
@@ -78,31 +66,10 @@ const sameMonth = (left: Date, right: Date) =>
   left.getFullYear() === right.getFullYear() &&
   left.getMonth() === right.getMonth();
 
-const deadlineColor = (dueAt: string) => {
-  const due = new Date(dueAt).getTime();
-  const now = Date.now();
-  const oneDay = 24 * 60 * 60 * 1000;
-  if (due < now - oneDay) return "bg-red-500";
-  if (due < now) return "bg-orange-500";
-  if (due - now <= oneDay) return "bg-amber-400";
-  return "bg-emerald-500";
-};
-
-const deadlineTextColor = (dueAt: string) => {
-  const due = new Date(dueAt).getTime();
-  const now = Date.now();
-  const oneDay = 24 * 60 * 60 * 1000;
-  if (due < now - oneDay) return "text-red-600";
-  if (due < now) return "text-orange-600";
-  if (due - now <= oneDay) return "text-amber-600";
-  return "text-emerald-600";
-};
-
 export function SchedulePage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<TutorClass[]>([]);
   const [sessions, setSessions] = useState<TeachingSession[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [month, setMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [agendaOpen, setAgendaOpen] = useState(false);
@@ -129,7 +96,6 @@ export function SchedulePage() {
       const classesResponse = await fetch(`${API}/classes`, {
       });
       if (classesResponse.ok) setClasses(await classesResponse.json());
-      setAssignments(data.assignments);
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
@@ -152,16 +118,6 @@ export function SchedulePage() {
     return grouped;
   }, [sessions]);
 
-  const assignmentsByDate = useMemo(() => {
-    const grouped = new Map<string, Assignment[]>();
-    for (const assignment of assignments) {
-      if (!assignment.dueAt) continue;
-      const key = dateKey(new Date(assignment.dueAt));
-      grouped.set(key, [...(grouped.get(key) ?? []), assignment]);
-    }
-    return grouped;
-  }, [assignments]);
-
   const calendarDays = useMemo(() => {
     const first = new Date(month.getFullYear(), month.getMonth(), 1);
     const start = new Date(first);
@@ -174,15 +130,13 @@ export function SchedulePage() {
   }, [month]);
 
   const selectedSessions = sessionsByDate.get(dateKey(selectedDate)) ?? [];
-  const selectedAssignments =
-    assignmentsByDate.get(dateKey(selectedDate)) ?? [];
   const selectedTotal = selectedSessions.reduce(
     (sum, session) => sum + Number(session.priceVnd),
     0,
   );
   const selectedGroups = useMemo(
-    () => groupAgenda(selectedSessions, selectedAssignments),
-    [selectedAssignments, selectedSessions],
+    () => groupAgenda(selectedSessions),
+    [selectedSessions],
   );
   const selectedLabel = new Intl.DateTimeFormat("vi-VN", {
     weekday: "long",
@@ -256,7 +210,7 @@ export function SchedulePage() {
     <MobileShell>
       <header className="bg-white/90 shadow-sm shadow-slate-200/60 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <h1 className="text-2xl font-bold">Tổng quan</h1>
+          <h1 className="text-2xl font-bold">Lịch dạy</h1>
           <UserAvatar />
         </div>
       </header>
@@ -307,7 +261,6 @@ export function SchedulePage() {
                   const key = dateKey(day);
                   const hasSessions =
                     (sessionsByDate.get(key)?.length ?? 0) > 0;
-                  const dayAssignments = assignmentsByDate.get(key) ?? [];
                   const selected = key === dateKey(selectedDate);
                   return (
                     <button
@@ -324,19 +277,13 @@ export function SchedulePage() {
                       <span className="block font-semibold">
                         {day.getDate()}
                       </span>
-                      <span className="mt-1 flex justify-center gap-1">
-                        {hasSessions && (
+                      {hasSessions && (
+                        <span className="mt-1 flex justify-center">
                           <span
                             className={`block size-1.5 rounded-full ${selected ? "bg-white" : "bg-violet-600"}`}
                           />
-                        )}
-                        {dayAssignments.slice(0, 2).map((assignment) => (
-                          <span
-                            key={assignment.id}
-                            className={`block size-1.5 rounded-full ${deadlineColor(assignment.dueAt!)}`}
-                          />
-                        ))}
-                      </span>
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -484,36 +431,20 @@ export function SchedulePage() {
   );
 }
 
-function groupAgenda(sessions: TeachingSession[], assignments: Assignment[]) {
+function groupAgenda(sessions: TeachingSession[]) {
   const grouped = new Map<string, StudentDayGroup>();
-  const ensureGroup = (studentId: string, studentName: string) => {
-    const existing = grouped.get(studentId);
-    if (existing) return existing;
-    const created: StudentDayGroup = {
-      studentId,
-      studentName,
-      sessions: [],
-      assignments: [],
-    };
-    grouped.set(studentId, created);
-    return created;
-  };
-
   for (const session of sessions) {
-    ensureGroup(session.studentId, session.studentName).sessions.push(session);
-  }
-  for (const assignment of assignments) {
-    for (const student of assignment.students ?? []) {
-      ensureGroup(student.id, student.name).assignments.push(assignment);
+    const existing = grouped.get(session.studentId);
+    if (existing) {
+      existing.sessions.push(session);
+      continue;
     }
-    if ((assignment.students ?? []).length === 0) {
-      ensureGroup(
-        `assignment-${assignment.id}`,
-        "Chưa gán học sinh",
-      ).assignments.push(assignment);
-    }
+    grouped.set(session.studentId, {
+      studentId: session.studentId,
+      studentName: session.studentName,
+      sessions: [session],
+    });
   }
-
   return [...grouped.values()].sort((left, right) =>
     left.studentName.localeCompare(right.studentName, "vi"),
   );
@@ -576,8 +507,7 @@ function DayAgendaDialog({
                         {group.studentName}
                       </h4>
                       <p className="text-xs text-muted-foreground">
-                        {group.sessions.length} buổi dạy ·{" "}
-                        {group.assignments.length} deadline
+                        {group.sessions.length} buổi dạy
                       </p>
                     </div>
                     {groupTotal > 0 && (
@@ -629,45 +559,6 @@ function DayAgendaDialog({
                         {session.note && (
                           <p className="mt-3 rounded-xl bg-white/70 p-3 text-sm text-slate-700">
                             {session.note}
-                          </p>
-                        )}
-                      </article>
-                    ))}
-
-                    {group.assignments.map((assignment) => (
-                      <article
-                        key={assignment.id}
-                        className="rounded-2xl bg-slate-50 p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 gap-3">
-                            <span
-                              className={`grid size-9 shrink-0 place-items-center rounded-full text-white ${deadlineColor(assignment.dueAt!)}`}
-                            >
-                              <BookOpenCheck size={17} />
-                            </span>
-                            <div className="min-w-0">
-                              <h5 className="truncate text-sm font-semibold">
-                                {assignment.title}
-                              </h5>
-                              <p
-                                className={`text-xs font-medium ${deadlineTextColor(assignment.dueAt!)}`}
-                              >
-                                Deadline{" "}
-                                {new Intl.DateTimeFormat("vi-VN", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                }).format(new Date(assignment.dueAt!))}
-                              </p>
-                            </div>
-                          </div>
-                          <p className="shrink-0 rounded-full bg-white px-2 py-1 text-xs text-muted-foreground">
-                            Bài tập
-                          </p>
-                        </div>
-                        {assignment.description && (
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            {assignment.description}
                           </p>
                         )}
                       </article>
