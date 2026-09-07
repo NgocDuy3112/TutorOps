@@ -8,4 +8,8 @@ export class DashboardService {
   calendar(teacherId: string) {
     return this.repository.calendar(teacherId);
   }
+
+  overview(teacherId: string) {
+    return this.repository.overview(teacherId);
+  }
 }
