@@ -32,7 +32,6 @@ type Student = {
   parentName: string | null;
   parentPhone: string | null;
   defaultPriceVnd: number;
-  submissionMode: string;
   classes?: { pricingMode?: string }[];
 };
 type Session = {
@@ -192,10 +191,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             <dl className="space-y-3 text-sm">
               <Row label="Phụ huynh" value={student.parentName || "Chưa cập nhật"} />
               <Row label="Điện thoại" value={student.parentPhone || "Chưa cập nhật"} />
-              <Row
-                label="Nộp bài"
-                value={student.submissionMode === "self_submit" ? "Tự nộp" : "Giáo viên nhập"}
-              />
             </dl>
           </CardContent>
         </Card>

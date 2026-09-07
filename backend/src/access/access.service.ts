@@ -69,7 +69,7 @@ export class AccessService {
     const result = await pool.query(
       `
       SELECT at.student_id AS "studentId", s.teacher_id AS "teacherId", s.name,
-             s.submission_mode AS "submissionMode"
+             s.default_price_vnd AS "defaultPriceVnd"
       FROM access_tokens at JOIN students s ON s.id = at.student_id
       WHERE at.token_hash = $1 AND at.token_type = $2 AND at.revoked_at IS NULL
         AND (at.expires_at IS NULL OR at.expires_at > now()) AND s.deleted_at IS NULL

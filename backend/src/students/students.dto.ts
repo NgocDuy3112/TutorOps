@@ -20,10 +20,6 @@ export class CreateStudentDto {
   @Min(0)
   @Max(10_000_000_000)
   defaultPriceVnd?: number;
-  @ApiPropertyOptional({ enum: ["teacher_managed", "self_submit"] })
-  @IsOptional()
-  @IsEnum(["teacher_managed", "self_submit"])
-  submissionMode?: "teacher_managed" | "self_submit";
 }
 
 export class UpdateStudentDto extends CreateStudentDto {}

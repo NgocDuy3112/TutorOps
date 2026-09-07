@@ -33,7 +33,6 @@ describe("DTO validation", () => {
 
   it("rejects student with negative price or invalid mode", async () => {
     await expect(validate(CreateStudentDto, { name: "Student", defaultPriceVnd: -1 })).rejects.toBeInstanceOf(BadRequestException);
-    await expect(validate(CreateStudentDto, { name: "Student", submissionMode: "invalid" })).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it("rejects session with invalid date or negative price", async () => {
