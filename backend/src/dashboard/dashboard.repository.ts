@@ -235,7 +235,7 @@ export class DashboardRepository {
         WHERE s.teacher_id = $1
           AND s.deleted_at IS NULL
           AND ts.deleted_at IS NULL
-          AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM-DD') = $4
+          AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM-DD') = $3
         ORDER BY ts.taught_at
       `;
       const deadlinesQuery = `
@@ -269,7 +269,7 @@ export class DashboardRepository {
         client.query(paidQuery, [teacherId, thisMonth, lastMonth]),
         client.query(debtQuery, [teacherId, APP_TIMEZONE, thisMonth]),
         client.query(topDebtorsQuery, [teacherId, APP_TIMEZONE, thisMonth]),
-        client.query(todaySessionsQuery, [teacherId, APP_TIMEZONE, thisMonth, today]),
+        client.query(todaySessionsQuery, [teacherId, APP_TIMEZONE, today]),
         client.query(deadlinesQuery, [teacherId]),
       ]);
       return {
