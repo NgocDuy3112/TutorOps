@@ -62,7 +62,14 @@ export function OverviewPage() {
     setError("");
     try {
       const response = await fetch(`${API}/dashboard/overview`);
-      if (!response.ok) throw new Error("Không thể tải tổng quan.");
+      if (!response.ok) {
+        // Surface the server's error message (e.g. SQL/code errors from the
+        // exception filter) so failures are diagnosable from the UI.
+        const body = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        throw new Error(body?.message || "Không thể tải tổng quan.");
+      }
       setData(await response.json());
     } catch (requestError) {
       setError(
