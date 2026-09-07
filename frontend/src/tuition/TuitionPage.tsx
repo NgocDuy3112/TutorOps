@@ -4,8 +4,10 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Filter,
   Loader2,
   Pencil,
+  Search,
   SearchX,
   Trash2,
 } from "lucide-react";
@@ -18,7 +20,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
+import { cn } from "@/lib/utils";
 import { formatMonthLabel, formatVnd, monthKey } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
@@ -59,6 +63,8 @@ export function TuitionPage() {
   const [deleting, setDeleting] = useState<TuitionStudent | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   async function load(target: Date) {
     setLoading(true);
@@ -129,12 +135,23 @@ export function TuitionPage() {
   const totals = data?.totals;
   const paidCount = rows.length - (totals?.debtCount ?? 0);
 
+  const filterOptions = [
+    { value: "all", label: "Tất cả", count: rows.length },
+    { value: "debt", label: "Còn nợ", count: totals?.debtCount ?? 0 },
+    { value: "paid", label: "Đã đủ", count: paidCount },
+  ];
+  const activeFilterLabel =
+    filterOptions.find((option) => option.value === filter)?.label ?? "";
+
   const filteredRows = useMemo(() => {
-    return rows.filter((row) =>
-      filter === "all" ||
-      (filter === "debt" ? row.balance > 0 : row.balance <= 0),
+    const term = search.trim().toLocaleLowerCase("vi");
+    return rows.filter(
+      (row) =>
+        (filter === "all" ||
+          (filter === "debt" ? row.balance > 0 : row.balance <= 0)) &&
+        (!term || row.name.toLocaleLowerCase("vi").includes(term)),
     );
-  }, [rows, filter]);
+  }, [rows, filter, search]);
 
   return (
     <MobileShell>
@@ -166,13 +183,23 @@ export function TuitionPage() {
               <ChevronRight size={18} />
             </Button>
           </div>
-          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
-            <p className="text-sm font-semibold text-muted-foreground">
-              Tổng tiền
-            </p>
-            <p className="text-xl font-black tracking-tight text-slate-950">
-              {formatVnd(totals?.totalDue ?? 0)}
-            </p>
+          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
+            <KpiBlock
+              label="Phải thu"
+              value={formatVnd(totals?.totalDue ?? 0)}
+              tone="slate"
+            />
+            <KpiBlock
+              label="Đã thu"
+              value={formatVnd(totals?.totalPaid ?? 0)}
+              tone="emerald"
+            />
+            <KpiBlock
+              label="Còn nợ"
+              value={formatVnd(totals?.balance ?? 0)}
+              sub={`${totals?.debtCount ?? 0} học sinh`}
+              tone="amber"
+            />
           </div>
         </section>
 
@@ -203,26 +230,100 @@ export function TuitionPage() {
         {!loading && !error && data && (
           <div className="mt-4 space-y-4">
             {rows.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
-                <FilterButton
-                  active={filter === "all"}
-                  onClick={() => setFilter("all")}
-                  label="Tất cả"
-                  count={rows.length}
-                />
-                <FilterButton
-                  active={filter === "debt"}
-                  onClick={() => setFilter("debt")}
-                  label="Còn nợ"
-                  count={totals?.debtCount ?? 0}
-                />
-                <FilterButton
-                  active={filter === "paid"}
-                  onClick={() => setFilter("paid")}
-                  label="Đã đủ"
-                  count={paidCount}
-                />
-              </div>
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="relative min-w-0 flex-1">
+                    <Search
+                      className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                      aria-hidden
+                    />
+                    <Input
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      placeholder="Tìm học sinh"
+                      aria-label="Tìm học sinh"
+                      className="min-h-11 rounded-2xl bg-white pl-9"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Lọc tình trạng học phí"
+                    aria-expanded={filterOpen}
+                    className={cn(
+                      "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
+                      filter !== "all" &&
+                        "border-primary bg-primary/10 text-primary",
+                      filterOpen && "border-primary text-primary",
+                    )}
+                    onClick={() => setFilterOpen((open) => !open)}
+                  >
+                    <Filter size={17} />
+                    {filter !== "all" && (
+                      <span
+                        aria-hidden
+                        className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary"
+                      />
+                    )}
+                  </Button>
+                </div>
+                {filterOpen && (
+                  <>
+                    {/* Click-away layer: transparent, below the panel */}
+                    <div
+                      aria-hidden
+                      className="fixed inset-0 z-20"
+                      onClick={() => setFilterOpen(false)}
+                    />
+                    <div
+                      role="listbox"
+                      aria-label="Lọc tình trạng học phí"
+                      className="absolute right-4 top-44 z-30 w-48 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
+                    >
+                      {filterOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="option"
+                          aria-selected={filter === option.value}
+                          onClick={() => {
+                            setFilter(option.value as Filter);
+                            setFilterOpen(false);
+                          }}
+                          className={cn(
+                            "flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-[13px] font-semibold transition-colors",
+                            filter === option.value
+                              ? "bg-primary/10 text-primary"
+                              : "text-slate-700 hover:bg-slate-50",
+                          )}
+                        >
+                          <span className="min-w-0 flex-1 truncate">
+                            {option.label}
+                          </span>
+                          {option.count != null && (
+                            <span className="shrink-0 text-[11px] text-muted-foreground">
+                              {option.count}
+                            </span>
+                          )}
+                          {filter === option.value && <Check size={14} />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {filter !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => setFilter("all")}
+                    className="flex min-h-9 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
+                    aria-label="Bỏ bộ lọc"
+                  >
+                    {activeFilterLabel}
+                    <span aria-hidden>✕</span>
+                  </button>
+                )}
+              </>
             )}
 
             {rows.length === 0 ? (
@@ -329,32 +430,38 @@ function DeleteMonthPaymentsDialog({
   );
 }
 
-function FilterButton({
-  active,
-  onClick,
+function KpiBlock({
   label,
-  count,
+  value,
+  sub,
+  tone,
 }: {
-  active: boolean;
-  onClick: () => void;
   label: string;
-  count: number;
+  value: string;
+  sub?: string;
+  tone: "slate" | "emerald" | "amber";
 }) {
+  const valueColor =
+    tone === "emerald"
+      ? "text-emerald-700"
+      : tone === "amber"
+        ? "text-amber-700"
+        : "text-slate-950";
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`min-h-11 rounded-2xl border px-3 text-sm font-semibold transition-colors ${active ? "border-primary bg-primary text-primary-foreground" : "bg-white text-slate-700"}`}
-    >
-      {label}{" "}
-      <span
-        className={
-          active ? "text-primary-foreground/75" : "text-muted-foreground"
-        }
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-0.5 truncate text-sm font-black tracking-tight sm:text-base",
+          valueColor,
+        )}
       >
-        {count}
-      </span>
-    </button>
+        {value}
+      </p>
+      {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
+    </div>
   );
 }
 
@@ -391,7 +498,9 @@ function TuitionRowCard({
           <p className="mt-0.5 text-xs text-muted-foreground">
             {noActivity
               ? "Chưa có buổi dạy"
-              : `Đã dạy ${row.sessionCount} buổi`}
+              : settled
+                ? `Đã đủ · đã dạy ${row.sessionCount} buổi`
+                : `Còn nợ · đã dạy ${row.sessionCount} buổi`}
           </p>
         </div>
         <div className="shrink-0 text-right">
@@ -430,13 +539,11 @@ function TuitionRowCard({
           ) : (
             <Button
               type="button"
-              size="icon"
-              variant="outline"
               aria-label={`Ghi nhận thanh toán cho ${row.name}`}
-              className="min-h-10 min-w-10 rounded-2xl text-primary hover:bg-primary/10 hover:text-primary"
+              className="min-h-10 rounded-2xl px-3 text-xs font-bold"
               onClick={onPay}
             >
-              <Check size={15} />
+              Nhận tiền
             </Button>
           )}
         </div>

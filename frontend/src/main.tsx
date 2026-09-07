@@ -12,7 +12,7 @@ import {
 import "./styles.css";
 import { LoginPage } from "./auth/LoginPage";
 import { SignupPage } from "./auth/SignupPage";
-import { DashboardPage } from "./dashboard/DashboardPage";
+import { SchedulePage } from "./dashboard/SchedulePage";
 import { OverviewPage } from "./dashboard/OverviewPage";
 import { AssignmentFormPage } from "./assignments/AssignmentFormPage";
 import { AssignmentSubmissionsPage } from "./assignments/AssignmentSubmissionsPage";
@@ -116,7 +116,7 @@ function App() {
         <Route
           path="/schedule"
           element={
-            authenticated ? <DashboardPage /> : <Navigate to="/login" replace />
+            authenticated ? <SchedulePage /> : <Navigate to="/login" replace />
           }
         />
         <Route
