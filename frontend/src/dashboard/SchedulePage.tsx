@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  CalendarCheck,
   GraduationCap,
   Loader2,
   Pencil,
@@ -9,7 +10,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -130,6 +131,7 @@ export function SchedulePage() {
   }, [month]);
 
   const selectedSessions = sessionsByDate.get(dateKey(selectedDate)) ?? [];
+  const todaySessions = sessionsByDate.get(dateKey(new Date())) ?? [];
   const selectedTotal = selectedSessions.reduce(
     (sum, session) => sum + Number(session.priceVnd),
     0,
@@ -287,6 +289,56 @@ export function SchedulePage() {
                     </button>
                   );
                 })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="mt-4 rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
+          <CardHeader className="flex-row items-center justify-between border-b border-slate-100 p-4 pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CalendarCheck size={18} className="text-primary" />
+              Hôm nay
+            </CardTitle>
+            <span className="text-xs text-muted-foreground">
+              {todaySessions.length} buổi
+            </span>
+          </CardHeader>
+          <CardContent className="p-3">
+            {todaySessions.length === 0 ? (
+              <p className="p-2 text-center text-sm text-muted-foreground">
+                Không có buổi dạy nào hôm nay.
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {todaySessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex min-h-12 items-center gap-3 rounded-xl px-2 transition-colors hover:bg-slate-50"
+                  >
+                    <span className="w-14 shrink-0 text-sm font-black text-primary">
+                      {new Intl.DateTimeFormat("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }).format(new Date(session.taughtAt))}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                      {session.studentName}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="min-h-9"
+                      onClick={() =>
+                        startEditSession(session, session.studentName)
+                      }
+                    >
+                      <Pencil size={14} />
+                      Sửa
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
