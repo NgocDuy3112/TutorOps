@@ -12,13 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { EmptyState } from "@/components/EmptyState";
 import { Fab } from "@/components/Fab";
 import { cn } from "@/lib/utils";
@@ -137,12 +130,14 @@ export function StudentsPage() {
             variant="outline"
             size="icon"
             aria-label="Lọc theo lớp"
+            aria-expanded={filterOpen}
             className={cn(
               "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
               classFilter !== "all" &&
                 "border-primary bg-primary/10 text-primary",
+              filterOpen && "border-primary text-primary",
             )}
-            onClick={() => setFilterOpen(true)}
+            onClick={() => setFilterOpen((open) => !open)}
           >
             <Filter size={17} />
             {classFilter !== "all" && (
@@ -153,6 +148,40 @@ export function StudentsPage() {
             )}
           </Button>
         </div>
+        {filterOpen && students.length > 0 && (
+          <div
+            role="listbox"
+            aria-label="Lọc theo lớp"
+            className="mb-4 space-y-1.5 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm"
+          >
+            {classFilterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={classFilter === option.value}
+                onClick={() => {
+                  setClassFilter(option.value);
+                  setFilterOpen(false);
+                }}
+                className={cn(
+                  "flex min-h-11 w-full items-center gap-3 rounded-xl p-2.5 text-left text-sm font-semibold transition-colors",
+                  classFilter === option.value
+                    ? "bg-primary/10 text-primary"
+                    : "text-slate-700 hover:bg-slate-50",
+                )}
+              >
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                {option.count != null && (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {option.count}
+                  </span>
+                )}
+                {classFilter === option.value && <Check size={16} />}
+              </button>
+            ))}
+          </div>
+        )}
         {classFilter !== "all" && (
           <button
             type="button"
@@ -187,41 +216,6 @@ export function StudentsPage() {
           />
         )}
       </main>
-      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Lọc theo lớp</SheetTitle>
-            <SheetDescription>Chọn một lớp để xem học sinh của lớp đó.</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-2">
-            {classFilterOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  setClassFilter(option.value);
-                  setFilterOpen(false);
-                }}
-                aria-pressed={classFilter === option.value}
-                className={cn(
-                  "flex min-h-12 w-full items-center gap-3 rounded-2xl border p-3 text-left text-sm font-semibold transition-colors",
-                  classFilter === option.value
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-slate-200 bg-white text-slate-700",
-                )}
-              >
-                <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                {option.count != null && (
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {option.count}
-                  </span>
-                )}
-                {classFilter === option.value && <Check size={16} />}
-              </button>
-            ))}
-          </div>
-        </SheetContent>
-      </Sheet>
     </MobileShell>
   );
 }
