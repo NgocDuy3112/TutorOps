@@ -1,12 +1,27 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Plus, Search, UserRound, UserPlus } from "lucide-react";
+import {
+  Check,
+  Filter,
+  Loader2,
+  Plus,
+  Search,
+  UserRound,
+  UserPlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { EmptyState } from "@/components/EmptyState";
 import { Fab } from "@/components/Fab";
-import { FilterChips } from "@/components/FilterChips";
+import { cn } from "@/lib/utils";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
@@ -34,6 +49,7 @@ export function StudentsPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("all");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   async function loadData() {
     setLoading(true);
@@ -94,34 +110,59 @@ export function StudentsPage() {
       .includes(search.trim().toLocaleLowerCase("vi"));
     return matchesClass && matchesSearch;
   });
+  const activeFilterLabel =
+    classFilterOptions.find((option) => option.value === classFilter)?.label ?? "";
 
   return (
     <MobileShell>
       <PageHeader title="Học sinh" action={<UserAvatar />} />
       <Fab onClick={() => navigate("/students/new")} label="Thêm học sinh" />
       <main className="mx-auto max-w-6xl px-4 py-6">
-        <div className="relative mb-4">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Tìm học sinh"
-            aria-label="Tìm học sinh"
-            className="min-h-11 rounded-2xl bg-white pl-9"
-          />
-        </div>
-        {students.length > 0 && (
-          <div className="mb-4">
-            <FilterChips
-              ariaLabel="Lọc theo lớp"
-              options={classFilterOptions}
-              value={classFilter}
-              onChange={setClassFilter}
+        <div className="mb-4 flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Tìm học sinh"
+              aria-label="Tìm học sinh"
+              className="min-h-11 rounded-2xl bg-white pl-9"
             />
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Lọc theo lớp"
+            className={cn(
+              "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
+              classFilter !== "all" &&
+                "border-primary bg-primary/10 text-primary",
+            )}
+            onClick={() => setFilterOpen(true)}
+          >
+            <Filter size={17} />
+            {classFilter !== "all" && (
+              <span
+                aria-hidden
+                className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary"
+              />
+            )}
+          </Button>
+        </div>
+        {classFilter !== "all" && (
+          <button
+            type="button"
+            onClick={() => setClassFilter("all")}
+            className="mb-4 flex min-h-9 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
+            aria-label="Bỏ bộ lọc lớp"
+          >
+            Lớp: {activeFilterLabel}
+            <span aria-hidden>✕</span>
+          </button>
         )}
         {error && (
           <Card className="mb-4 border-amber-200 bg-amber-50">
@@ -146,6 +187,41 @@ export function StudentsPage() {
           />
         )}
       </main>
+      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Lọc theo lớp</SheetTitle>
+            <SheetDescription>Chọn một lớp để xem học sinh của lớp đó.</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-2">
+            {classFilterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  setClassFilter(option.value);
+                  setFilterOpen(false);
+                }}
+                aria-pressed={classFilter === option.value}
+                className={cn(
+                  "flex min-h-12 w-full items-center gap-3 rounded-2xl border p-3 text-left text-sm font-semibold transition-colors",
+                  classFilter === option.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-slate-200 bg-white text-slate-700",
+                )}
+              >
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                {option.count != null && (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {option.count}
+                  </span>
+                )}
+                {classFilter === option.value && <Check size={16} />}
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </MobileShell>
   );
 }
