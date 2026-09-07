@@ -12,7 +12,6 @@ export class StudentsRepository {
         parent_name AS "parentName",
         parent_phone AS "parentPhone",
         default_price_vnd AS "defaultPriceVnd",
-        submission_mode AS "submissionMode",
         created_at AS "createdAt",
         updated_at AS "updatedAt",
         COALESCE(
@@ -61,10 +60,9 @@ export class StudentsRepository {
         name,
         parent_name,
         parent_phone,
-        default_price_vnd,
-        submission_mode
+        default_price_vnd
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
     const result = await pool.query(query, [
@@ -73,7 +71,6 @@ export class StudentsRepository {
       input.parentName ?? null,
       input.parentPhone ?? null,
       input.defaultPriceVnd ?? 0,
-      input.submissionMode ?? "self_submit",
     ]);
     return result.rows[0];
   }
@@ -86,10 +83,9 @@ export class StudentsRepository {
         parent_name = COALESCE($2, parent_name),
         parent_phone = COALESCE($3, parent_phone),
         default_price_vnd = COALESCE($4, default_price_vnd),
-        submission_mode = COALESCE($5, submission_mode),
         updated_at = now()
-      WHERE id = $6
-        AND teacher_id = $7
+      WHERE id = $5
+        AND teacher_id = $6
         AND deleted_at IS NULL
       RETURNING *
     `;
@@ -98,7 +94,6 @@ export class StudentsRepository {
       input.parentName,
       input.parentPhone,
       input.defaultPriceVnd,
-      input.submissionMode,
       id,
       teacherId,
     ]);

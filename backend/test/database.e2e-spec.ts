@@ -61,7 +61,6 @@ describe("TutorOps database E2E", () => {
       .send({
         name: "Database Student",
         defaultPriceVnd: 150000,
-        submissionMode: "self_submit",
       })
       .expect(201);
     studentId = response.body.id;

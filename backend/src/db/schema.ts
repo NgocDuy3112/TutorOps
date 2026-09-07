@@ -31,10 +31,6 @@ const timestamps = {
 };
 
 export const userRole = pgEnum("user_role", ["teacher", "admin"]);
-export const submissionMode = pgEnum("submission_mode", [
-  "teacher_managed",
-  "self_submit",
-]);
 export const accessTokenType = pgEnum("access_token_type", [
   "student",
   "parent",
@@ -108,9 +104,6 @@ export const students = pgTable(
     parentPhone: text("parent_phone"),
     defaultPriceVnd: bigint("default_price_vnd", { mode: "number" })
       .default(0)
-      .notNull(),
-    submissionMode: submissionMode("submission_mode")
-      .default("self_submit")
       .notNull(),
     ...timestamps,
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
