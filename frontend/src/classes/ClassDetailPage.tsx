@@ -27,12 +27,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
-import { Fab } from "@/components/Fab";
 import { formatDeadline, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditAssignmentSheet } from "../assignments/EditAssignmentSheet";
 import { EditClassSheet } from "./EditClassSheet";
-import { venueLabel } from "./venue";
 import type { Student, TutorClass } from "./ClassesPage";
 import { API } from "../lib/api";
 
@@ -56,8 +54,6 @@ export function ClassDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editingClass, setEditingClass] = useState(false);
-  const [deletingClass, setDeletingClass] = useState(false);
-  const [deletingClassBusy, setDeletingClassBusy] = useState(false);
   const [editing, setEditing] = useState<Assignment | null>(null);
   const [deleting, setDeleting] = useState<Assignment | null>(null);
 
@@ -103,7 +99,9 @@ export function ClassDetailPage() {
   const [removing, setRemoving] = useState<Student | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [tab, setTab] = useState<"assignments" | "students">("assignments");
+  const [tab, setTab] = useState<"assignments" | "students" | "info">(
+    "assignments",
+  );
 
   async function removeStudent() {
     if (!removing) return;
@@ -127,26 +125,6 @@ export function ClassDetailPage() {
       setAdding(null);
     }
   }
-  async function deleteClass() {
-    if (!item) return;
-    setDeletingClassBusy(true);
-    try {
-      const response = await fetch(`${API}/classes/${classId}`, {
-        method: "DELETE",
-      });
-      if (!response.ok)
-        throw new Error("Không thể xóa lớp. Vui lòng thử lại.");
-      navigate("/classes");
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
-      );
-      setDeletingClass(false);
-    } finally {
-      setDeletingClassBusy(false);
-    }
-  }
-
   async function deleteAssignment() {
     if (!deleting) return;
     const response = await fetch(`${API}/assignments/${deleting.id}`, {
@@ -191,43 +169,28 @@ export function ClassDetailPage() {
                   Lịch: {formatSchedule(item!.schedules!)}
                 </p>
               )}
-              {venueLabel(item?.venue) && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Nơi dạy: {venueLabel(item?.venue)}
-                </p>
-              )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Button
                 type="button"
-                variant="outline"
-                size="icon"
-                className="min-h-10 min-w-10 rounded-2xl"
-                aria-label="Sửa lớp"
-                onClick={() => setEditingClass(true)}
+                size="sm"
+                className="min-h-10 rounded-2xl px-2.5 text-xs"
+                onClick={
+                  tab === "assignments"
+                    ? () => navigate(`/assignments/new?classId=${classId}`)
+                    : () => {
+                        setTab("students");
+                        setAddOpen(true);
+                      }
+                }
               >
-                <Pencil size={15} />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="min-h-10 min-w-10 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
-                aria-label="Xóa lớp"
-                onClick={() => setDeletingClass(true)}
-              >
-                <Trash2 size={15} />
+                <Plus size={14} />
+                {tab === "assignments" ? "Thêm bài tập" : "Thêm học sinh"}
               </Button>
             </div>
           </div>
         </div>
       </header>
-      {tab === "assignments" && (
-        <Fab
-          onClick={() => navigate(`/assignments/new?classId=${classId}`)}
-          label="Tạo bài tập"
-        />
-      )}
       <main className="mx-auto max-w-3xl space-y-6 px-4 py-6">
         {loading ? (
           <p className="flex gap-2 text-sm text-muted-foreground">
@@ -251,8 +214,11 @@ export function ClassDetailPage() {
             <div
               role="tablist"
               aria-label="Nội dung lớp"
-              className="grid grid-cols-2 gap-1 rounded-2xl bg-primary/10 p-1"
+              className="grid grid-cols-3 gap-1 rounded-2xl bg-primary/10 p-1"
             >
+              <TabButton active={tab === "info"} onClick={() => setTab("info")}>
+                Thông tin
+              </TabButton>
               <TabButton
                 active={tab === "assignments"}
                 onClick={() => setTab("assignments")}
@@ -301,7 +267,7 @@ export function ClassDetailPage() {
                 )}
               </div>
             </section>
-            ) : (
+            ) : tab === "students" ? (
             <>
             <section>
               <div className="space-y-2">
@@ -355,19 +321,6 @@ export function ClassDetailPage() {
                   />
                 )}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                aria-expanded={addOpen}
-                className={cn(
-                  "mt-3 min-h-11 w-full rounded-2xl",
-                  addOpen && "border-primary text-primary",
-                )}
-                onClick={() => setAddOpen((open) => !open)}
-              >
-                <UserPlus size={16} />
-                Thêm học sinh
-              </Button>
               {addOpen && (
                 <div className="mt-3 space-y-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
                   <div className="relative">
@@ -428,7 +381,49 @@ export function ClassDetailPage() {
               )}
             </section>
             </>
-            )}
+            ) : (
+            <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
+              <CardContent className="p-5">
+                <dl className="space-y-3 text-sm">
+                  <InfoRow label="Tên lớp" value={item.name} />
+                  <InfoRow
+                    label="Cách tính học phí"
+                    value={PRICING_MODE_LABELS[item.pricingMode ?? "per_session"]}
+                  />
+                  <InfoRow
+                    label="Giá"
+                    value={
+                      item.defaultPriceVnd != null
+                        ? `${formatVnd(item.defaultPriceVnd)}${
+                            item.pricingMode === "per_hour"
+                              ? "/giờ"
+                              : item.pricingMode === "per_month"
+                                ? "/tháng"
+                                : "/buổi"
+                          }`
+                        : "Chưa đặt"
+                    }
+                  />
+                  <InfoRow
+                    label="Lịch dạy cố định"
+                    value={
+                      item.schedules?.length
+                        ? formatSchedule(item.schedules)
+                        : "Chưa có"
+                    }
+                  />
+                  <InfoRow label="Ghi chú" value={item.note || "—"} />
+                </dl>
+              </CardContent>
+            </Card>            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 min-h-11 w-full rounded-2xl"
+              onClick={() => setEditingClass(true)}
+            >
+              <Pencil size={16} />
+              Sửa lớp
+            </Button>            )}
           </>
         )}
       </main>
@@ -471,39 +466,6 @@ export function ClassDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog
-        open={deletingClass}
-        onOpenChange={(open) => !open && !deletingClassBusy && setDeletingClass(false)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Xóa lớp?</DialogTitle>
-            <DialogDescription>
-              Lớp {item?.name} sẽ bị ẩn khỏi danh sách. Học sinh và dữ liệu liên
-              quan vẫn được giữ.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={deletingClassBusy}
-              onClick={() => setDeletingClass(false)}
-            >
-              Hủy
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={deletingClassBusy}
-              onClick={() => void deleteClass()}
-            >
-              {deletingClassBusy && <Loader2 className="animate-spin" size={16} />}
-              Xóa lớp
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       {editing && (
         <EditAssignmentSheet
           assignment={editing}
@@ -522,6 +484,7 @@ export function ClassDetailPage() {
             setEditingClass(false);
             void load();
           }}
+          onDeleted={() => navigate("/classes")}
         />
       )}
     </MobileShell>
@@ -635,6 +598,21 @@ const WEEKDAY_LABELS = [
   "T6",
   "T7",
 ];
+
+const PRICING_MODE_LABELS: Record<string, string> = {
+  per_session: "Theo buổi",
+  per_hour: "Theo giờ",
+  per_month: "Theo tháng",
+};
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <dt className="shrink-0 text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-right font-semibold">{value}</dd>
+    </div>
+  );
+}
 
 function formatSchedule(slots: { weekday: number; startTime: string; endTime: string }[]) {
   return slots
