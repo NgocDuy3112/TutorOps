@@ -137,7 +137,7 @@ export function TuitionPage() {
 
   const filterOptions = [
     { value: "all", label: "Tất cả", count: rows.length },
-    { value: "debt", label: "Còn nợ", count: totals?.debtCount ?? 0 },
+    { value: "debt", label: "Khoản chưa thu", count: totals?.debtCount ?? 0 },
     { value: "paid", label: "Đã đủ", count: paidCount },
   ];
   const activeFilterLabel =
@@ -197,7 +197,7 @@ export function TuitionPage() {
               tone="emerald"
             />
             <KpiBlock
-              label="Còn nợ"
+              label="Khoản chưa thu"
               value={formatVnd(totals?.balance ?? 0)}
               sub={`${totals?.debtCount ?? 0} học sinh`}
               tone="amber"
@@ -400,7 +400,7 @@ function DeleteMonthPaymentsDialog({
           <DialogTitle>Xoá khoản đã nhận?</DialogTitle>
           <DialogDescription>
             Xoá các khoản đã nhận của {student?.name} áp dụng cho tháng này. Học
-            sinh sẽ quay lại trạng thái còn nợ. Bạn có chắc muốn xoá?
+            sinh sẽ quay lại trạng thái Khoản chưa thu. Bạn có chắc muốn xoá?
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
