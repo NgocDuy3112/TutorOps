@@ -4,7 +4,16 @@ import type {
   UpdateClassDto,
 } from "./classes.dto";
 import { Injectable } from "@nestjs/common";
+import { ConflictError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { pool } from "../db/client";
+
+/** Postgres unique_violation — thrown when a class name is already taken. */
+const UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === UNIQUE_VIOLATION;
+}
 
 const CLASS_COLUMNS = `
   id,
@@ -98,6 +107,8 @@ export class ClassesRepository {
       return { ...created, schedules: input.schedules ?? [] };
     } catch (error) {
       await client.query("ROLLBACK");
+      if (isUniqueViolation(error))
+        throw new ConflictError(ErrorCodes.CLASS_NAME_EXISTS);
       throw error;
     } finally {
       client.release();
@@ -150,6 +161,8 @@ export class ClassesRepository {
       return { ...updated.rows[0], schedules: input.schedules ?? [] };
     } catch (error) {
       await client.query("ROLLBACK");
+      if (isUniqueViolation(error))
+        throw new ConflictError(ErrorCodes.CLASS_NAME_EXISTS);
       throw error;
     } finally {
       client.release();

@@ -16,6 +16,7 @@ export type DashboardCalendarSessionDto = {
   studentName: string;
   taughtAt: string;
   priceVnd: number;
+  status: string;
   note: string | null;
 };
 
@@ -48,6 +49,7 @@ export type OverviewTodaySessionDto = {
   taughtAt: string;
   endsAt: string | null;
   priceVnd: number;
+  status: string;
 };
 
 export type OverviewDeadlineDto = {

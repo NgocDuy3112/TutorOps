@@ -29,6 +29,7 @@ export class SessionsRepository {
         ts.taught_at AS "taughtAt",
         ts.ends_at AS "endsAt",
         ts.price_vnd AS "priceVnd",
+        ts.status,
         ts.note,
         ts.created_at AS "createdAt",
         ts.updated_at AS "updatedAt"
@@ -49,6 +50,7 @@ export class SessionsRepository {
         s.name AS "studentName",
         ts.taught_at AS "taughtAt",
         ts.price_vnd AS "priceVnd",
+        ts.status,
         ts.note,
         ts.created_at AS "createdAt",
         ts.updated_at AS "updatedAt"
@@ -136,9 +138,10 @@ export class SessionsRepository {
         taught_at,
         ends_at,
         price_vnd,
-        note
+        note,
+        status
       )
-      SELECT $1, $5, $2, $6, COALESCE($3, default_price_vnd), $4
+      SELECT $1, $5, $2, $6, COALESCE($3, default_price_vnd), $4, $7
       FROM students
       WHERE id = $1
       RETURNING *
@@ -151,6 +154,7 @@ export class SessionsRepository {
         input.note ?? null,
         input.classId ?? null,
         input.endsAt ?? null,
+        input.status ?? "unconfirmed",
       ])
     ).rows[0];
   }
@@ -163,6 +167,7 @@ export class SessionsRepository {
         ends_at = $6,
         price_vnd = COALESCE($2, ts.price_vnd),
         note = COALESCE($3, ts.note),
+        status = COALESCE($7, ts.status),
         updated_at = now()
       FROM students AS s
       WHERE ts.id = $4
@@ -180,6 +185,7 @@ export class SessionsRepository {
         id,
         teacherId,
         input.endsAt ?? null,
+        input.status ?? null,
       ])
     ).rows[0];
   }

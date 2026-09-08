@@ -30,6 +30,7 @@ export const ErrorCodes = {
 
   // Classes / students
   CLASS_NOT_FOUND: "class_not_found",
+  CLASS_NAME_EXISTS: "class_name_exists",
   CLASS_OR_STUDENT_NOT_FOUND: "class_or_student_not_found",
   CLASS_STUDENT_NOT_FOUND: "class_student_not_found",
   STUDENT_NOT_FOUND: "student_not_found",

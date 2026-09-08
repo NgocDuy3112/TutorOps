@@ -109,7 +109,11 @@ export function EditClassSheet({
       onSaved();
     } catch (requestError) {
       setError(
-        requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
+        requestError instanceof Error
+          ? requestError.message === "class_name_exists"
+            ? "Tên lớp đã tồn tại. Hãy chọn tên khác."
+            : requestError.message
+          : "Có lỗi xảy ra.",
       );
     } finally {
       setSaving(false);

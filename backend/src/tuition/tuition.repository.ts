@@ -31,6 +31,7 @@ export class TuitionRepository {
         FROM teaching_sessions AS ts
         LEFT JOIN classes AS c ON c.id = ts.class_id
         WHERE ts.deleted_at IS NULL
+          AND ts.status <> 'cancelled'
           AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $1
         GROUP BY ts.student_id
       ) AS t ON t.student_id = s.id
@@ -44,6 +45,7 @@ export class TuitionRepository {
           WHERE c.pricing_mode = 'per_month'
             AND c.deleted_at IS NULL
             AND ts.deleted_at IS NULL
+            AND ts.status <> 'cancelled'
             AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $1
         ) AS distinct_classes
         GROUP BY student_id

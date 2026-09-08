@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarCheck,
+  Check,
   GraduationCap,
   Loader2,
   Pencil,
@@ -8,6 +9,7 @@ import {
   CalendarOff,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,12 +39,14 @@ type TutorClass = {
   defaultPriceVnd: number | null;
   students: Student[];
 };
+type SessionStatus = "unconfirmed" | "taught" | "cancelled";
 type TeachingSession = {
   id: string;
   studentId: string;
   studentName: string;
   taughtAt: string;
   priceVnd: number;
+  status: SessionStatus;
   note: string | null;
 };
 type StudentDayGroup = {
@@ -132,10 +136,10 @@ export function SchedulePage() {
 
   const selectedSessions = sessionsByDate.get(dateKey(selectedDate)) ?? [];
   const todaySessions = sessionsByDate.get(dateKey(new Date())) ?? [];
-  const selectedTotal = selectedSessions.reduce(
-    (sum, session) => sum + Number(session.priceVnd),
-    0,
-  );
+  // Cancelled sessions are informational only — they never count toward pay.
+  const selectedTotal = selectedSessions
+    .filter((session) => session.status !== "cancelled")
+    .reduce((sum, session) => sum + Number(session.priceVnd), 0);
   const selectedGroups = useMemo(
     () => groupAgenda(selectedSessions),
     [selectedSessions],
@@ -195,6 +199,31 @@ export function SchedulePage() {
       setError("Không thể kết nối máy chủ. Vui lòng thử lại.");
     } finally {
       setCreatingSession(false);
+    }
+  }
+
+  async function setSessionStatus(
+    session: TeachingSession,
+    status: SessionStatus,
+  ) {
+    if (session.status === status) return;
+    // Optimistic update so the tick feels instant.
+    setSessions((current) =>
+      current.map((item) =>
+        item.id === session.id ? { ...item, status } : item,
+      ),
+    );
+    try {
+      const response = await fetch(`${API}/sessions/${session.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) throw new Error();
+    } catch {
+      setError("Không thể cập nhật trạng thái. Vui lòng thử lại.");
+    } finally {
+      void loadDashboard();
     }
   }
 
@@ -324,6 +353,13 @@ export function SchedulePage() {
                     <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                       {session.studentName}
                     </span>
+                    {session.status !== "unconfirmed" && (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[session.status].className}`}
+                      >
+                        {STATUS_BADGE[session.status].label}
+                      </span>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
@@ -369,6 +405,7 @@ export function SchedulePage() {
         groups={selectedGroups}
         onCreate={startCreateSession}
         onEdit={startEditSession}
+        onSetStatus={(session, status) => void setSessionStatus(session, status)}
       />
 
       <Dialog
@@ -501,6 +538,21 @@ function groupAgenda(sessions: TeachingSession[]) {
   );
 }
 
+const STATUS_BADGE: Record<SessionStatus, { label: string; className: string }> = {
+  unconfirmed: {
+    label: "Chưa xác nhận",
+    className: "bg-slate-100 text-slate-600",
+  },
+  taught: {
+    label: "Đã dạy",
+    className: "bg-emerald-100 text-emerald-700",
+  },
+  cancelled: {
+    label: "Không dạy",
+    className: "bg-rose-100 text-rose-700",
+  },
+};
+
 function DayAgendaDialog({
   open,
   onOpenChange,
@@ -509,6 +561,7 @@ function DayAgendaDialog({
   groups,
   onCreate,
   onEdit,
+  onSetStatus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -517,6 +570,7 @@ function DayAgendaDialog({
   groups: StudentDayGroup[];
   onCreate: () => void;
   onEdit: (session: TeachingSession, studentName: string) => void;
+  onSetStatus: (session: TeachingSession, status: SessionStatus) => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -570,49 +624,12 @@ function DayAgendaDialog({
 
                   <div className="space-y-2">
                     {group.sessions.map((session) => (
-                      <article
+                      <SessionCard
                         key={session.id}
-                        className="rounded-2xl bg-violet-50 p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 gap-3">
-                            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-violet-600 text-white">
-                              <GraduationCap size={17} />
-                            </span>
-                            <div className="min-w-0">
-                              <h5 className="text-sm font-semibold">
-                                Buổi dạy
-                              </h5>
-                              <p className="text-xs text-muted-foreground">
-                                {new Intl.DateTimeFormat("vi-VN", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                }).format(new Date(session.taughtAt))}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <p className="text-sm font-bold">
-                              {formatVnd(session.priceVnd)}
-                            </p>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="min-h-11"
-                              onClick={() => onEdit(session, group.studentName)}
-                            >
-                              <Pencil size={15} />
-                              Sửa
-                            </Button>
-                          </div>
-                        </div>
-                        {session.note && (
-                          <p className="mt-3 rounded-xl bg-white/70 p-3 text-sm text-slate-700">
-                            {session.note}
-                          </p>
-                        )}
-                      </article>
+                        session={session}
+                        onEdit={() => onEdit(session, group.studentName)}
+                        onSetStatus={onSetStatus}
+                      />
                     ))}
                   </div>
                 </section>
@@ -631,6 +648,110 @@ function DayAgendaDialog({
         </Button>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SessionCard({
+  session,
+  onEdit,
+  onSetStatus,
+}: {
+  session: TeachingSession;
+  onEdit: () => void;
+  onSetStatus: (session: TeachingSession, status: SessionStatus) => void;
+}) {
+  const cancelled = session.status === "cancelled";
+  const taught = session.status === "taught";
+  const badge = STATUS_BADGE[session.status];
+
+  return (
+    <article
+      className={`rounded-2xl border p-3 transition-colors ${
+        cancelled
+          ? "border-rose-100 bg-rose-50/60"
+          : taught
+            ? "border-emerald-100 bg-emerald-50/60"
+            : "border-slate-100 bg-violet-50"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 gap-3">
+          <span
+            className={`grid size-9 shrink-0 place-items-center rounded-full text-white ${
+              cancelled ? "bg-rose-500" : taught ? "bg-emerald-600" : "bg-violet-600"
+            }`}
+          >
+            {cancelled ? <X size={17} /> : taught ? <Check size={17} /> : <GraduationCap size={17} />}
+          </span>
+          <div className="min-w-0">
+            <h5 className={`text-sm font-semibold ${cancelled ? "text-slate-500 line-through" : ""}`}>
+              Buổi dạy
+            </h5>
+            <p className="text-xs text-muted-foreground">
+              {new Intl.DateTimeFormat("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }).format(new Date(session.taughtAt))}
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <p
+            className={`text-sm font-bold ${cancelled ? "text-slate-400 line-through" : ""}`}
+          >
+            {formatVnd(session.priceVnd)}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11"
+            onClick={onEdit}
+          >
+            <Pencil size={15} />
+            Sửa
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}
+        >
+          {badge.label}
+        </span>
+        <div className="ml-auto flex gap-2">
+          <Button
+            type="button"
+            variant={taught ? "default" : "outline"}
+            size="sm"
+            className={`min-h-11 rounded-xl ${taught ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}
+            aria-pressed={taught}
+            onClick={() => onSetStatus(session, "taught")}
+          >
+            <Check size={15} />
+            Đã dạy
+          </Button>
+          <Button
+            type="button"
+            variant={cancelled ? "destructive" : "outline"}
+            size="sm"
+            className="min-h-11 rounded-xl"
+            aria-pressed={cancelled}
+            onClick={() => onSetStatus(session, "cancelled")}
+          >
+            <X size={15} />
+            Không dạy
+          </Button>
+        </div>
+      </div>
+
+      {session.note && (
+        <p className="mt-3 rounded-xl bg-white/70 p-3 text-sm text-slate-700">
+          {session.note}
+        </p>
+      )}
+    </article>
   );
 }
 
