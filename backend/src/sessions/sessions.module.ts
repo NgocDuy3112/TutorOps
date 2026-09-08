@@ -6,6 +6,7 @@ import { SessionsRepository } from "./sessions.repository";
 
 @Module({
   imports: [AuthCoreModule],
+  controllers: [SessionsController],
   providers: [SessionsService, SessionsRepository],
 })
 export class SessionsModule {}

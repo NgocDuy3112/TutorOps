@@ -6,6 +6,7 @@ import { NotificationsRepository } from "./notifications.repository";
 
 @Module({
   imports: [AuthCoreModule],
+  controllers: [NotificationsController],
   providers: [NotificationsService, NotificationsRepository],
   exports: [NotificationsService],
 })
