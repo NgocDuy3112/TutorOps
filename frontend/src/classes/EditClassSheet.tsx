@@ -323,8 +323,7 @@ export function EditClassSheet({
                   <Trash2 size={16} />
                   Xoá lớp
                 </Button>
-              )}
-              )}
+              ))}
             </form>
           </div>
 
