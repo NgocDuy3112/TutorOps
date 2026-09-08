@@ -74,7 +74,7 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
   }
 
   async function exportPng() {
-    if (!slipRef.current) return;
+    if (!slipRef.current || !slip) return;
     setExporting(true);
     try {
       const dataUrl = await toPng(slipRef.current, { pixelRatio: 2 });
