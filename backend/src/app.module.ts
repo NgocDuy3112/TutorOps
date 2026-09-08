@@ -15,6 +15,7 @@ import { TuitionModule } from "./tuition/tuition.module";
 import { ClassesModule } from "./classes/classes.module";
 import { SchedulesModule } from "./schedules/schedules.module";
 import { OcrModule } from "./ocr/ocr.module";
+import { SlipsModule } from "./slips/slips.module";
 import { CommonModule } from "./common/common.module";
 import { VersionModule } from "./version/version.module";
 
@@ -37,6 +38,7 @@ import { VersionModule } from "./version/version.module";
     ClassesModule,
     SchedulesModule,
     OcrModule,
+    SlipsModule,
     VersionModule,
   ],
 })

@@ -7,8 +7,12 @@ import {
   Query,
   Req,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AuthGuard } from "./auth.guard";
 
 const SESSION_COOKIE = "tutorops_session";
@@ -73,6 +77,24 @@ export class AuthController {
     @Body() body: ChangePasswordDto,
   ) {
     return this.auth.changePassword(request.user.id, body);
+  }
+  @Post("payment-qr")
+  @UseGuards(AuthGuard)
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: { file: { type: "string", format: "binary" } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor("file", { limits: { fileSize: 20 * 1024 * 1024 } }),
+  )
+  uploadPaymentQr(
+    @Req() request: AuthenticatedRequest,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.auth.updatePaymentQr(request.user.id, file);
   }
   @Post("logout") async logout(
     @Req() request: AuthenticatedRequest,

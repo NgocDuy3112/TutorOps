@@ -95,27 +95,36 @@ export function ClassFormPage() {
     event.preventDefault();
     setSaving(true);
     setError("");
-    const response = await fetch(
-      editing ? `${API}/classes/${classId}` : `${API}/classes`,
-      {
-        method: editing ? "PATCH" : "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          defaultPriceVnd: form.defaultPriceVnd
-            ? parseVnd(form.defaultPriceVnd)
-            : null,
-          pricingMode,
-          autoSchedule: schedules.length > 0 ? autoSchedule : false,
-          schedules,
-          venue: venue || null,
-          note: form.note || null,
-        }),
-      },
-    );
-    setSaving(false);
-    if (response.ok) navigate("/classes");
-    else setError("Không thể lưu lớp.");
+    try {
+      const response = await fetch(
+        editing ? `${API}/classes/${classId}` : `${API}/classes`,
+        {
+          method: editing ? "PATCH" : "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            name: form.name,
+            defaultPriceVnd: form.defaultPriceVnd
+              ? parseVnd(form.defaultPriceVnd)
+              : null,
+            pricingMode,
+            autoSchedule: schedules.length > 0 ? autoSchedule : false,
+            schedules,
+            venue: venue || null,
+            note: form.note || null,
+          }),
+        },
+      );
+      if (!response.ok) throw new Error("Không thể lưu lớp.");
+      navigate("/classes");
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Có lỗi xảy ra.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
