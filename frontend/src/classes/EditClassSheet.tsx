@@ -64,7 +64,7 @@ export function EditClassSheet({
   onClose: () => void;
   onSaved: () => void;
   onDeleted: () => void;
-}) { {
+}) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
