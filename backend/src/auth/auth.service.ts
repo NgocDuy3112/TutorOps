@@ -8,12 +8,18 @@ import argon2 from "argon2";
 import crypto from "node:crypto";
 import { redis } from "../db/client";
 import { AuthRepository } from "./auth.repository";
+import { FilesService } from "../files/files.service";
+import { StorageService } from "../storage/storage.service";
 import type { AuthUser } from "./http.types";
 import { OAuth2Client } from "google-auth-library";
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly repository: AuthRepository) {}
+  constructor(
+    private readonly repository: AuthRepository,
+    private readonly files: FilesService,
+    private readonly storage: StorageService,
+  ) {}
   private google = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -74,13 +80,25 @@ export class AuthService {
   }
 
   async profile(userId: string) {
-    return this.repository.findProfile(userId);
+    const profile = await this.repository.findProfile(userId);
+    return {
+      ...profile,
+      paymentQrUrl: profile?.paymentQrKey
+        ? await this.storage.getDownloadUrl(profile.paymentQrKey)
+        : null,
+      paymentQrKey: undefined,
+    };
   }
   async updateProfile(
     userId: string,
     input: import("./profile.dto").UpdateProfileDto,
   ) {
     return this.repository.updateProfile(userId, input.fullName, input.phone);
+  }
+  async updatePaymentQr(userId: string, file: Express.Multer.File) {
+    const stored = await this.files.upload(userId, file, "payment-qr");
+    await this.repository.setPaymentQrFile(userId, stored.id);
+    return { paymentQrUrl: await this.storage.getDownloadUrl(stored.storageKey) };
   }
   async changePassword(
     userId: string,

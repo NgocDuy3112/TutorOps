@@ -91,22 +91,29 @@ export function EditClassSheet({
     if (!name.trim()) return setError("Nhập tên lớp.");
     setSaving(true);
     setError("");
-    const response = await fetch(`${API}/classes/${classItem.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        name,
-        defaultPriceVnd: defaultPriceVnd ? parseVnd(defaultPriceVnd) : null,
-        pricingMode,
-        autoSchedule: schedules.length > 0 ? autoSchedule : false,
-        schedules,
-        venue: venue || null,
-        note: note || null,
-      }),
-    });
-    setSaving(false);
-    if (response.ok) onSaved();
-    else setError("Không thể lưu lớp.");
+    try {
+      const response = await fetch(`${API}/classes/${classItem.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name,
+          defaultPriceVnd: defaultPriceVnd ? parseVnd(defaultPriceVnd) : null,
+          pricingMode,
+          autoSchedule: schedules.length > 0 ? autoSchedule : false,
+          schedules,
+          venue: venue || null,
+          note: note || null,
+        }),
+      });
+      if (!response.ok) throw new Error("Không thể lưu lớp.");
+      onSaved();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function remove() {

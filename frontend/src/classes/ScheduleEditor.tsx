@@ -49,13 +49,13 @@ export function ScheduleEditor({
       {slots.map((slot, index) => (
         <div
           key={index}
-          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2"
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5"
         >
           <Select
             value={String(slot.weekday)}
             onValueChange={(value) => update(index, { weekday: Number(value) })}
           >
-            <SelectTrigger className="min-h-11 w-30 shrink-0 rounded-xl">
+            <SelectTrigger className="min-h-9 w-18 shrink-0 rounded-lg px-2 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -71,9 +71,9 @@ export function ScheduleEditor({
             value={slot.startTime}
             onChange={(event) => update(index, { startTime: event.target.value })}
             aria-label="Giờ bắt đầu"
-            className="min-h-11 rounded-xl"
+            className="min-h-9 rounded-lg px-1.5 text-xs [&::-webkit-calendar-picker-indicator]:hidden"
           />
-          <span aria-hidden className="shrink-0 text-sm text-muted-foreground">
+          <span aria-hidden className="shrink-0 text-xs text-muted-foreground">
             –
           </span>
           <Input
@@ -81,27 +81,27 @@ export function ScheduleEditor({
             value={slot.endTime}
             onChange={(event) => update(index, { endTime: event.target.value })}
             aria-label="Giờ kết thúc"
-            className="min-h-11 rounded-xl"
+            className="min-h-9 rounded-lg px-1.5 text-xs [&::-webkit-calendar-picker-indicator]:hidden"
           />
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="min-h-10 min-w-10 shrink-0 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
+            className="min-h-9 min-w-9 shrink-0 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
             aria-label="Xoá khung giờ"
             onClick={() => remove(index)}
           >
-            <Trash2 size={15} />
+            <Trash2 size={14} />
           </Button>
         </div>
       ))}
       <Button
         type="button"
         variant="outline"
-        className="min-h-11 w-full rounded-2xl"
+        className="min-h-9 w-full rounded-xl text-sm"
         onClick={() => onChange([...slots, { weekday: 1, startTime: "18:00", endTime: "19:30" }])}
       >
-        <Plus size={16} />
+        <Plus size={14} />
         Thêm khung giờ
       </Button>
     </div>

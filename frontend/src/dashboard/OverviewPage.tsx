@@ -137,7 +137,7 @@ export function OverviewPage() {
               />
               <KpiCard
                 icon={<UserRound size={16} />}
-                label="Còn nợ"
+                label="Khoản chưa thu"
                 value={formatVnd(data.outstanding)}
                 sub={`${data.debtCount} học sinh`}
                 to="/tuition"

@@ -24,7 +24,6 @@ import { ClassFormPage } from "./classes/ClassFormPage";
 import { ClassDetailPage } from "./classes/ClassDetailPage";
 import { TuitionPage } from "./tuition/TuitionPage";
 import { StudentSubmissionPage } from "./public/StudentSubmissionPage";
-import { ParentReportPage } from "./public/ParentReportPage";
 import { AssignmentDropboxPage } from "./public/AssignmentDropboxPage";
 import { SettingsPage } from "./settings/SettingsPage";
 import { PersonalInfoPage } from "./settings/PersonalInfoPage";
@@ -37,7 +36,6 @@ function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const isPublicSubmission = window.location.pathname.startsWith("/submit/");
-  const isPublicParent = window.location.pathname.startsWith("/parent/");
   const isAssignmentDropbox = window.location.pathname.startsWith(
     "/assignment-submit/",
   );
@@ -55,17 +53,16 @@ function App() {
   }, [navigate]);
 
   useEffect(() => {
-    if (isPublicSubmission || isPublicParent || isAssignmentDropbox) return;
+    if (isPublicSubmission || isAssignmentDropbox) return;
     fetch(`${API}/auth/me`)
       .then((response) => setAuthenticated(response.ok))
       .catch(() => setAuthenticated(false));
   }, []);
 
-  if (isPublicSubmission || isPublicParent || isAssignmentDropbox) {
+  if (isPublicSubmission || isAssignmentDropbox) {
     return (
       <Routes>
         <Route path="/submit/:token" element={<StudentSubmissionPage />} />
-        <Route path="/parent/:token" element={<ParentReportPage />} />
         <Route
           path="/assignment-submit/:token"
           element={<AssignmentDropboxRoute />}

@@ -24,6 +24,7 @@ import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditStudentSheet } from "./EditStudentSheet";
 import { MarkTaughtSheet } from "./MarkTaughtSheet";
+import { MonthlySlipSection } from "./MonthlySlipSection";
 import { API } from "../lib/api";
 
 type Student = {
@@ -194,6 +195,8 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             </dl>
           </CardContent>
         </Card>
+
+        <MonthlySlipSection studentId={studentId} />
 
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">

@@ -57,6 +57,7 @@ export function DatePicker({
   const [hour, setHour] = useState(value?.getHours() ?? new Date().getHours());
   const [minute, setMinute] = useState(value?.getMinutes() ?? 0);
   const ref = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (value) {
@@ -111,11 +112,23 @@ export function DatePicker({
     }
   }
 
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next) {
+      // The popover is absolutely positioned inside scrollable sheet content;
+      // scroll it into view so it is not clipped by the sheet bottom.
+      requestAnimationFrame(() =>
+        popoverRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+      );
+    }
+  }
+
   return (
     <div ref={ref} className={cn("relative", className)}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={toggle}
         className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-input bg-background px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-ring"
       >
         <CalendarDays size={18} className="shrink-0 text-muted-foreground" />
@@ -125,7 +138,10 @@ export function DatePicker({
       </button>
 
       {open && (
-        <div className="absolute inset-x-0 top-full z-50 mt-2 rounded-2xl border bg-white p-4 shadow-lg sm:left-0 sm:right-auto sm:w-85">
+        <div
+          ref={popoverRef}
+          className="absolute inset-x-0 top-full z-50 mt-2 rounded-2xl border bg-white p-4 shadow-lg sm:left-0 sm:right-auto sm:w-85"
+        >
           <div className="mb-3 flex items-center justify-between">
             <button
               type="button"
