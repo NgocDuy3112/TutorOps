@@ -6,6 +6,7 @@ import { DashboardService } from "./dashboard.service";
 
 @Module({
   imports: [AuthCoreModule],
+  controllers: [DashboardController],
   providers: [DashboardService, DashboardRepository],
 })
 export class DashboardModule {}

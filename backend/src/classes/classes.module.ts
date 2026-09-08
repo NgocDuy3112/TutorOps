@@ -6,6 +6,7 @@ import { ClassesService } from "./classes.service";
 
 @Module({
   imports: [AuthCoreModule],
+  controllers: [ClassesController],
   providers: [ClassesService, ClassesRepository],
 })
 export class ClassesModule {}
