@@ -55,7 +55,7 @@ export function ScheduleEditor({
             value={String(slot.weekday)}
             onValueChange={(value) => update(index, { weekday: Number(value) })}
           >
-            <SelectTrigger className="min-h-9 w-18 shrink-0 rounded-lg px-2 text-xs">
+            <SelectTrigger className="min-h-9 w-24 shrink-0 rounded-lg px-2 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -71,7 +71,7 @@ export function ScheduleEditor({
             value={slot.startTime}
             onChange={(event) => update(index, { startTime: event.target.value })}
             aria-label="Giờ bắt đầu"
-            className="min-h-9 rounded-lg px-1.5 text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+            className="min-h-9 min-w-0 flex-1 rounded-lg px-2 text-xs [&::-webkit-calendar-picker-indicator]:hidden"
           />
           <span aria-hidden className="shrink-0 text-xs text-muted-foreground">
             –
@@ -81,7 +81,7 @@ export function ScheduleEditor({
             value={slot.endTime}
             onChange={(event) => update(index, { endTime: event.target.value })}
             aria-label="Giờ kết thúc"
-            className="min-h-9 rounded-lg px-1.5 text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+            className="min-h-9 min-w-0 flex-1 rounded-lg px-2 text-xs [&::-webkit-calendar-picker-indicator]:hidden"
           />
           <Button
             type="button"

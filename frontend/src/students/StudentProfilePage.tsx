@@ -139,33 +139,22 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
   return (
     <MobileShell>
       <header className="sticky top-0 z-30 border-b bg-white">
-        <div className="mx-auto max-w-3xl px-4 py-4">
+        <div className="mx-auto max-w-3xl px-4 pb-3 pt-4">
           <Button asChild variant="link" className="h-auto p-0 text-primary">
             <Link to="/students">
               <ArrowLeft size={16} />
               Học sinh
             </Link>
           </Button>
-          <h1 className="mt-3 text-2xl font-bold">{student.name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Hồ sơ học sinh</p>
+          <h1 className="mt-2 text-2xl font-bold">{student.name}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Hồ sơ học sinh</p>
         </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-5">
-        {error && (
-          <p
-            role="alert"
-            className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+        <div className="mx-auto max-w-3xl px-4 pb-3">
+          <div
+            role="tablist"
+            aria-label="Nội dung học sinh"
+            className="grid grid-cols-3 gap-1 rounded-2xl bg-primary/10 p-1"
           >
-            {error}
-          </p>
-        )}
-
-        <div
-          role="tablist"
-          aria-label="Nội dung học sinh"
-          className="grid grid-cols-4 gap-1 rounded-2xl bg-primary/10 p-1"
-        >
           <TabButton active={tab === "info"} onClick={() => setTab("info")}>
             Thông tin
           </TabButton>
@@ -178,7 +167,19 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           >
             Bài tập ({studentAssignments.length})
           </TabButton>
+          </div>
         </div>
+      </header>
+
+      <main className="mx-auto max-w-3xl space-y-4 px-4 py-5">
+        {error && (
+          <p
+            role="alert"
+            className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+          >
+            {error}
+          </p>
+        )}
 
         {tab === "info" && (
         <>
