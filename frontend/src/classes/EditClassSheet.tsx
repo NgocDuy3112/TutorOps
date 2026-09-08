@@ -274,6 +274,7 @@ export function EditClassSheet({
                   autoFocus={false}
                 />
               </div>
+              </>
               )}
               {error && (
                 <p
