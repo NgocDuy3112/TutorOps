@@ -54,6 +54,7 @@ export class DashboardRepository {
           s.name AS "studentName",
           ts.taught_at AS "taughtAt",
           ts.price_vnd AS "priceVnd",
+          ts.status,
           ts.note
         FROM teaching_sessions AS ts
         INNER JOIN students AS s ON s.id = ts.student_id
@@ -134,6 +135,7 @@ export class DashboardRepository {
         WHERE s.teacher_id = $1
           AND s.deleted_at IS NULL
           AND ts.deleted_at IS NULL
+          AND ts.status <> 'cancelled'
       `;
       const paidQuery = `
         SELECT
@@ -163,6 +165,7 @@ export class DashboardRepository {
                   WHERE c2.pricing_mode = 'per_month'
                     AND c2.deleted_at IS NULL
                     AND ts2.deleted_at IS NULL
+                    AND ts2.status <> 'cancelled'
                     AND ts2.student_id = ts.student_id
                     AND to_char(ts2.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
                 ) AS d
@@ -170,6 +173,7 @@ export class DashboardRepository {
           FROM teaching_sessions AS ts
           LEFT JOIN classes AS c ON c.id = ts.class_id
           WHERE ts.deleted_at IS NULL
+            AND ts.status <> 'cancelled'
             AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
           GROUP BY ts.student_id
         )
@@ -207,6 +211,7 @@ export class DashboardRepository {
           FROM teaching_sessions AS ts
           LEFT JOIN classes AS c ON c.id = ts.class_id
           WHERE ts.deleted_at IS NULL
+            AND ts.status <> 'cancelled'
             AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
           GROUP BY ts.student_id
         ) AS d ON d.student_id = s.id
@@ -229,7 +234,8 @@ export class DashboardRepository {
           s.name AS "studentName",
           ts.taught_at AS "taughtAt",
           ts.ends_at AS "endsAt",
-          ts.price_vnd AS "priceVnd"
+          ts.price_vnd AS "priceVnd",
+          ts.status
         FROM teaching_sessions AS ts
         INNER JOIN students AS s ON s.id = ts.student_id
         WHERE s.teacher_id = $1

@@ -28,6 +28,7 @@ import { AssignmentDropboxPage } from "./public/AssignmentDropboxPage";
 import { SettingsPage } from "./settings/SettingsPage";
 import { PersonalInfoPage } from "./settings/PersonalInfoPage";
 import { ChangePasswordPage } from "./settings/ChangePasswordPage";
+import { VersionBanner } from "./components/VersionBanner";
 import { OnboardingDialog } from "./onboarding/OnboardingDialog";
 import { IosInstallBanner } from "./notifications/IosInstallBanner";
 
@@ -241,6 +242,7 @@ function StudentProfileRoute() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
+      <VersionBanner />
       <App />
     </BrowserRouter>
   </StrictMode>,

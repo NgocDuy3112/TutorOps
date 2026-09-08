@@ -119,7 +119,9 @@ export function ClassFormPage() {
     } catch (requestError) {
       setError(
         requestError instanceof Error
-          ? requestError.message
+          ? requestError.message === "class_name_exists"
+            ? "Tên lớp đã tồn tại. Hãy chọn tên khác."
+            : requestError.message
           : "Có lỗi xảy ra.",
       );
     } finally {
