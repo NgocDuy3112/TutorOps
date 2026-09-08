@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
-import { AuthGuard } from "../auth/auth.guard";
-import { AuthRepository } from "../auth/auth.repository";
+import { AuthCoreModule } from "../auth/auth-core.module";
 import { OcrController } from "./ocr.controller";
 import { OcrRepository } from "./ocr.repository";
 import { OcrService } from "./ocr.service";
 
 @Module({
+  imports: [AuthCoreModule],
   controllers: [OcrController],
-  providers: [OcrService, OcrRepository, AuthGuard, AuthRepository],
+  providers: [OcrService, OcrRepository],
 })
 export class OcrModule {}
