@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -48,8 +48,11 @@ type Assignment = {
   students: { id: string; status: string }[];
 };
 
+type ProfileTab = "info" | "slip" | "sessions" | "assignments";
+
 export function StudentProfilePage({ studentId }: { studentId: string }) {
   const navigate = useNavigate();
+  const [tab, setTab] = useState<ProfileTab>("info");
   const [student, setStudent] = useState<Student | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -129,15 +132,13 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
   const studentAssignments = assignments.filter((assignment) =>
     assignment.students.some((item) => item.id === studentId),
   );
-  const recentSessions = sessions.slice(0, 5);
-  const recentAssignments = studentAssignments.slice(0, 5);
   const pendingCount = studentAssignments.filter((a) =>
     a.students.some((s) => s.id === studentId && s.status === "pending"),
   ).length;
 
   return (
     <MobileShell>
-      <header className="border-b bg-white">
+      <header className="sticky top-0 z-30 border-b bg-white">
         <div className="mx-auto max-w-3xl px-4 py-4">
           <Button asChild variant="link" className="h-auto p-0 text-primary">
             <Link to="/students">
@@ -160,6 +161,32 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           </p>
         )}
 
+        <div
+          role="tablist"
+          aria-label="Nội dung học sinh"
+          className="grid grid-cols-4 gap-1 rounded-2xl bg-primary/10 p-1"
+        >
+          <TabButton active={tab === "info"} onClick={() => setTab("info")}>
+            Thông tin
+          </TabButton>
+          <TabButton active={tab === "slip"} onClick={() => setTab("slip")}>
+            Phiếu tháng
+          </TabButton>
+          <TabButton
+            active={tab === "sessions"}
+            onClick={() => setTab("sessions")}
+          >
+            Buổi dạy ({sessions.length})
+          </TabButton>
+          <TabButton
+            active={tab === "assignments"}
+            onClick={() => setTab("assignments")}
+          >
+            Bài tập ({studentAssignments.length})
+          </TabButton>
+        </div>
+
+        {tab === "info" && (
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -195,19 +222,21 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             </dl>
           </CardContent>
         </Card>
+        )}
 
-        <MonthlySlipSection studentId={studentId} />
+        {tab === "slip" && <MonthlySlipSection studentId={studentId} />}
 
+        {tab === "sessions" && (
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="text-lg">Buổi đã dạy ({sessions.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 p-5">
-            {recentSessions.length === 0 ? (
+            {sessions.length === 0 ? (
               <p className="text-sm text-muted-foreground">Chưa có buổi dạy nào.</p>
             ) : (
               <div className="space-y-2">
-                {recentSessions.map((item) => (
+                {sessions.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center justify-between rounded-2xl bg-slate-50 p-3"
@@ -229,7 +258,9 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             )}
           </CardContent>
         </Card>
+        )}
 
+        {tab === "assignments" && (
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="text-lg">
@@ -242,7 +273,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5">
-            {recentAssignments.length === 0 ? (
+            {studentAssignments.length === 0 ? (
               <EmptyState
                 icon={<BookOpenCheck size={24} />}
                 title="Chưa có bài tập"
@@ -250,7 +281,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
               />
             ) : (
               <div className="space-y-2">
-                {recentAssignments.map((item) => {
+                {studentAssignments.map((item) => {
                   const studentStatus = item.students.find(
                     (s) => s.id === studentId,
                   )?.status;
@@ -287,6 +318,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             )}
           </CardContent>
         </Card>
+        )}
       </main>
 
       {showEditForm && (
@@ -352,5 +384,31 @@ function Row({ label, value }: { label: string; value: string }) {
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-medium">{value}</dd>
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`min-h-10 rounded-xl px-1 text-xs font-bold transition-colors sm:px-3 sm:text-sm ${
+        active
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-slate-700 hover:text-primary"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

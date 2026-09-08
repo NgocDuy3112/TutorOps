@@ -138,7 +138,7 @@ export function ClassDetailPage() {
 
   return (
     <MobileShell>
-      <header className="border-b bg-white">
+      <header className="sticky top-0 z-30 border-b bg-white">
         <div className="mx-auto max-w-3xl px-4 py-4">
           <Button asChild variant="link" className="h-auto p-0 text-primary">
             <Link to="/classes">
