@@ -21,7 +21,7 @@ export function PageHeader({
   maxWidth = "6xl",
 }: PageHeaderProps) {
   return (
-    <header className="bg-white/90 shadow-sm shadow-slate-200/60 backdrop-blur">
+    <header className="sticky top-0 z-30 bg-white/90 shadow-sm shadow-slate-200/60 backdrop-blur">
       <div
         className={`mx-auto flex ${maxWidthClass[maxWidth]} items-center justify-between gap-4 px-4 py-4`}
       >

@@ -239,7 +239,7 @@ export function SchedulePage() {
 
   return (
     <MobileShell>
-      <header className="bg-white/90 shadow-sm shadow-slate-200/60 backdrop-blur">
+      <header className="sticky top-0 z-30 bg-white/90 shadow-sm shadow-slate-200/60 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <h1 className="text-2xl font-bold">Lịch dạy</h1>
           <UserAvatar />

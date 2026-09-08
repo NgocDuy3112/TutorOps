@@ -139,7 +139,7 @@ export function AssignmentSubmissionsPage() {
 
   return (
     <MobileShell>
-      <header className="overflow-hidden border-b bg-white">
+      <header className="sticky top-0 z-30 overflow-hidden border-b bg-white">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <Button asChild variant="link" className="h-auto p-0 text-primary">
             <Link to="/assignments"><ArrowLeft size={16} />Bài tập</Link>
