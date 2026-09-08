@@ -432,7 +432,7 @@ export function ClassDetailPage() {
               <Pencil size={16} />
               Tên lớp & xoá lớp
             </Button>
-            >
+            </>
             )}
           </>
         )}

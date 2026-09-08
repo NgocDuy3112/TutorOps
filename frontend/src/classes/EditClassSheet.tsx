@@ -151,6 +151,11 @@ export function EditClassSheet({
     }
   }
 
+  const showName = !section;
+  const showPricing = !section || section === "pricing";
+  const showSchedule = !section || section === "schedule";
+  const showNote = !section || section === "note";
+
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent>
@@ -161,19 +166,20 @@ export function EditClassSheet({
         <div className="flex h-full flex-col">
           <div className="flex-1 space-y-6 overflow-y-auto pb-4">
             <form id="edit-class-info-form" onSubmit={submitInfo} className="space-y-4">
-              {!section && (
-              <div className="space-y-2">
-                <Label htmlFor="sheet-class-name">Tên lớp</Label>
-                <Input
-                  id="sheet-class-name"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoFocus={false}
-                />
-              </div>
+              {showName && (
+                <div className="space-y-2">
+                  <Label htmlFor="sheet-class-name">Tên lớp</Label>
+                  <Input
+                    id="sheet-class-name"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoFocus={false}
+                  />
+                </div>
               )}
-              {(section === "pricing" || !section) && (
+              {showPricing && (
+              <>
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-pricing">Cách tính học phí</Label>
                 <Select
@@ -215,8 +221,9 @@ export function EditClassSheet({
                   autoFocus={false}
                 />
               </div>
+              </>
               )}
-              {(section === "schedule" || !section) && (
+              {showSchedule && (
               <div className="space-y-2">
                 <Label>Lịch dạy cố định</Label>
                 <ScheduleEditor slots={schedules} onChange={setSchedules} />
@@ -240,7 +247,8 @@ export function EditClassSheet({
                 )}
               </div>
               )}
-              {(section === "note" || !section) && (
+              {showNote && (
+              <>
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-venue">Nơi dạy</Label>
                 <Select value={venue} onValueChange={setVenue}>
