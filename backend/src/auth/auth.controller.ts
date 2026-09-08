@@ -21,7 +21,6 @@ const SESSION_TTL_SECONDS = 86400;
 import { AuthService } from "./auth.service";
 import { CredentialsDto } from "./auth.dto";
 import { UpdateProfileDto, ChangePasswordDto } from "./profile.dto";
-import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
 @ApiTags("auth")
 @Controller("auth")
