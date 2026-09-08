@@ -150,15 +150,20 @@ export function ClassDetailPage() {
             </Link>
           </Button>
           <div className="mt-3 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-bold">
+            <div className="flex min-w-0 items-start gap-1.5">
+              <h1 className="min-w-0 truncate text-2xl font-bold">
                 {item?.name || "Lớp"}
               </h1>
-              {(item?.schedules?.length ?? 0) > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Lịch: {formatSchedule(item!.schedules!)}
-                </p>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 shrink-0 rounded-lg text-slate-400 hover:text-primary"
+                aria-label="Sửa tên lớp"
+                onClick={() => setEditSection("full")}
+              >
+                <Pencil size={15} />
+              </Button>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Button
@@ -401,14 +406,21 @@ export function ClassDetailPage() {
               title="Lịch dạy"
               onEdit={() => setEditSection("schedule")}
             >
-              <InfoRow
-                label="Lịch cố định"
-                value={
-                  item.schedules?.length
-                    ? formatSchedule(item.schedules)
-                    : "Chưa có"
-                }
-              />
+              {item.schedules?.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {item.schedules.map((slot, index) => (
+                    <span
+                      key={`${slot.weekday}-${slot.startTime}-${index}`}
+                      className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700"
+                    >
+                      {WEEKDAY_LABELS[slot.weekday] ?? "?"} {slot.startTime}–
+                      {slot.endTime}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <InfoRow label="Lịch cố định" value="Chưa có" />
+              )}
               <InfoRow
                 label="Tự động tạo buổi"
                 value={item.autoSchedule ? "Bật" : "Tắt"}
@@ -423,15 +435,6 @@ export function ClassDetailPage() {
               <InfoRow label="Nơi dạy" value={venueLabel(item.venue) ?? "—"} />
             </InfoCard>
 
-            <Button
-              type="button"
-              variant="ghost"
-              className="mt-3 min-h-11 w-full rounded-2xl text-slate-500 hover:text-primary"
-              onClick={() => setEditSection("full")}
-            >
-              <Pencil size={16} />
-              Tên lớp & xoá lớp
-            </Button>
             </>
             )}
           </>

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Download, Loader2, Save } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -90,9 +89,9 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
   }
 
   return (
-    <Card className="rounded-2xl">
-      <CardHeader className="flex-row items-center justify-between gap-3 p-5 pb-0">
-        <CardTitle className="text-lg">Phiếu tổng kết tháng</CardTitle>
+    <section className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">Phiếu tổng kết tháng</h2>
         <Select value={month} onValueChange={setMonth}>
           <SelectTrigger className="w-40" aria-label="Chọn tháng">
             <SelectValue />
@@ -105,8 +104,8 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
             ))}
           </SelectContent>
         </Select>
-      </CardHeader>
-      <CardContent className="space-y-4 p-5">
+      </div>
+      <div className="space-y-4">
         {error && <p className="text-sm text-destructive">{error}</p>}
         {loading ? (
           <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
@@ -151,7 +150,7 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
             </div>
           </>
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
