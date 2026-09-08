@@ -48,7 +48,7 @@ type Assignment = {
   students: { id: string; status: string }[];
 };
 
-type ProfileTab = "info" | "slip" | "sessions" | "assignments";
+type ProfileTab = "info" | "slip" | "assignments";
 
 export function StudentProfilePage({ studentId }: { studentId: string }) {
   const navigate = useNavigate();
@@ -173,12 +173,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             Phiếu tháng
           </TabButton>
           <TabButton
-            active={tab === "sessions"}
-            onClick={() => setTab("sessions")}
-          >
-            Buổi dạy ({sessions.length})
-          </TabButton>
-          <TabButton
             active={tab === "assignments"}
             onClick={() => setTab("assignments")}
           >
@@ -187,6 +181,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
         </div>
 
         {tab === "info" && (
+        <>
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -222,11 +217,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             </dl>
           </CardContent>
         </Card>
-        )}
 
-        {tab === "slip" && <MonthlySlipSection studentId={studentId} />}
-
-        {tab === "sessions" && (
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="text-lg">Buổi đã dạy ({sessions.length})</CardTitle>
@@ -258,7 +249,10 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             )}
           </CardContent>
         </Card>
+        </>
         )}
+
+        {tab === "slip" && <MonthlySlipSection studentId={studentId} />}
 
         {tab === "assignments" && (
         <Card className="rounded-3xl border-slate-200 shadow-sm">

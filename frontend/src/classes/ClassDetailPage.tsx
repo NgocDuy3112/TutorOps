@@ -28,7 +28,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { formatDeadline, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditAssignmentSheet } from "../assignments/EditAssignmentSheet";
-import { EditClassSheet } from "./EditClassSheet";
+import { EditClassSheet, type EditClassSection } from "./EditClassSheet";
+import { venueLabel } from "./venue";
 import type { Student, TutorClass } from "./ClassesPage";
 import { API } from "../lib/api";
 
@@ -51,7 +52,9 @@ export function ClassDetailPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [editingClass, setEditingClass] = useState(false);
+  const [editSection, setEditSection] = useState<EditClassSection | "full" | null>(
+    null,
+  );
   const [editing, setEditing] = useState<Assignment | null>(null);
   const [deleting, setDeleting] = useState<Assignment | null>(null);
 
@@ -370,49 +373,66 @@ export function ClassDetailPage() {
             </>
             ) : (
             <>
-            <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
-              <CardContent className="p-5">
-                <dl className="space-y-3 text-sm">
-                  <InfoRow label="Tên lớp" value={item.name} />
-                  <InfoRow
-                    label="Cách tính học phí"
-                    value={PRICING_MODE_LABELS[item.pricingMode ?? "per_session"]}
-                  />
-                  <InfoRow
-                    label="Giá"
-                    value={
-                      item.defaultPriceVnd != null
-                        ? `${formatVnd(item.defaultPriceVnd)}${
-                            item.pricingMode === "per_hour"
-                              ? "/giờ"
-                              : item.pricingMode === "per_month"
-                                ? "/tháng"
-                                : "/buổi"
-                          }`
-                        : "Chưa đặt"
-                    }
-                  />
-                  <InfoRow
-                    label="Lịch dạy cố định"
-                    value={
-                      item.schedules?.length
-                        ? formatSchedule(item.schedules)
-                        : "Chưa có"
-                    }
-                  />
-                  <InfoRow label="Ghi chú" value={item.note || "—"} />
-                </dl>
-              </CardContent>
-            </Card>            <Button
+            <InfoCard
+              title="Học phí"
+              onEdit={() => setEditSection("pricing")}
+            >
+              <InfoRow
+                label="Cách tính"
+                value={PRICING_MODE_LABELS[item.pricingMode ?? "per_session"]}
+              />
+              <InfoRow
+                label="Giá"
+                value={
+                  item.defaultPriceVnd != null
+                    ? `${formatVnd(item.defaultPriceVnd)}${
+                        item.pricingMode === "per_hour"
+                          ? "/giờ"
+                          : item.pricingMode === "per_month"
+                            ? "/tháng"
+                            : "/buổi"
+                      }`
+                    : "Chưa đặt"
+                }
+              />
+            </InfoCard>
+
+            <InfoCard
+              title="Lịch dạy"
+              onEdit={() => setEditSection("schedule")}
+            >
+              <InfoRow
+                label="Lịch cố định"
+                value={
+                  item.schedules?.length
+                    ? formatSchedule(item.schedules)
+                    : "Chưa có"
+                }
+              />
+              <InfoRow
+                label="Tự động tạo buổi"
+                value={item.autoSchedule ? "Bật" : "Tắt"}
+              />
+            </InfoCard>
+
+            <InfoCard
+              title="Ghi chú"
+              onEdit={() => setEditSection("note")}
+            >
+              <InfoRow label="Ghi chú" value={item.note || "—"} />
+              <InfoRow label="Nơi dạy" value={venueLabel(item.venue) ?? "—"} />
+            </InfoCard>
+
+            <Button
               type="button"
-              variant="outline"
-              className="mt-3 min-h-11 w-full rounded-2xl"
-              onClick={() => setEditingClass(true)}
+              variant="ghost"
+              className="mt-3 min-h-11 w-full rounded-2xl text-slate-500 hover:text-primary"
+              onClick={() => setEditSection("full")}
             >
               <Pencil size={16} />
-              Sửa lớp
+              Tên lớp & xoá lớp
             </Button>
-            </>
+            >
             )}
           </>
         )}
@@ -466,12 +486,13 @@ export function ClassDetailPage() {
           }}
         />
       )}
-      {item && editingClass && (
+      {item && editSection && (
         <EditClassSheet
           classItem={item}
-          onClose={() => setEditingClass(false)}
+          section={editSection === "full" ? undefined : editSection}
+          onClose={() => setEditSection(null)}
           onSaved={() => {
-            setEditingClass(false);
+            setEditSection(null);
             void load();
           }}
           onDeleted={() => navigate("/classes")}
@@ -594,6 +615,39 @@ const PRICING_MODE_LABELS: Record<string, string> = {
   per_hour: "Theo giờ",
   per_month: "Theo tháng",
 };
+
+function InfoCard({
+  title,
+  onEdit,
+  children,
+}: {
+  title: string;
+  onEdit: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
+      <CardContent className="p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+            {title}
+          </h3>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="min-h-9 min-w-9 rounded-xl"
+            aria-label={`Sửa ${title.toLowerCase()}`}
+            onClick={onEdit}
+          >
+            <Pencil size={14} />
+          </Button>
+        </div>
+        <dl className="space-y-3 text-sm">{children}</dl>
+      </CardContent>
+    </Card>
+  );
+}
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
