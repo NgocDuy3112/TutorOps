@@ -1,13 +1,12 @@
 import { Module } from "@nestjs/common";
 import { AccessService } from "./access.service";
 import { AccessController } from "./access.controller";
-import { AuthGuard } from "../auth/auth.guard";
-import { AuthRepository } from "../auth/auth.repository";
+import { AuthCoreModule } from "../auth/auth-core.module";
 import { StorageModule } from "../storage/storage.module";
 
 @Module({
-  imports: [StorageModule],
-  providers: [AccessService, AuthGuard, AuthRepository],
+  imports: [AuthCoreModule, StorageModule],
+  providers: [AccessService],
   controllers: [AccessController],
   exports: [AccessService],
 })
