@@ -43,17 +43,28 @@ type TutorClass = {
   students: Student[];
 };
 
+export type EditClassSection = "pricing" | "schedule" | "note";
+
+const SECTION_TITLES: Record<EditClassSection, string> = {
+  pricing: "Sửa học phí",
+  schedule: "Sửa lịch dạy",
+  note: "Sửa ghi chú",
+};
+
 export function EditClassSheet({
   classItem,
+  section,
   onClose,
   onSaved,
   onDeleted,
 }: {
   classItem: TutorClass;
+  /** Scoped edit: show only one field group. Undefined = full sheet. */
+  section?: EditClassSection;
   onClose: () => void;
   onSaved: () => void;
   onDeleted: () => void;
-}) {
+}) { {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -144,12 +155,13 @@ export function EditClassSheet({
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Sửa lớp</SheetTitle>
+          <SheetTitle>{section ? SECTION_TITLES[section] : "Sửa lớp"}</SheetTitle>
         </SheetHeader>
 
         <div className="flex h-full flex-col">
           <div className="flex-1 space-y-6 overflow-y-auto pb-4">
             <form id="edit-class-info-form" onSubmit={submitInfo} className="space-y-4">
+              {!section && (
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-name">Tên lớp</Label>
                 <Input
@@ -160,6 +172,8 @@ export function EditClassSheet({
                   autoFocus={false}
                 />
               </div>
+              )}
+              {(section === "pricing" || !section) && (
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-pricing">Cách tính học phí</Label>
                 <Select
@@ -201,6 +215,8 @@ export function EditClassSheet({
                   autoFocus={false}
                 />
               </div>
+              )}
+              {(section === "schedule" || !section) && (
               <div className="space-y-2">
                 <Label>Lịch dạy cố định</Label>
                 <ScheduleEditor slots={schedules} onChange={setSchedules} />
@@ -223,6 +239,8 @@ export function EditClassSheet({
                   </div>
                 )}
               </div>
+              )}
+              {(section === "note" || !section) && (
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-venue">Nơi dạy</Label>
                 <Select value={venue} onValueChange={setVenue}>
@@ -248,6 +266,7 @@ export function EditClassSheet({
                   autoFocus={false}
                 />
               </div>
+              )}
               {error && (
                 <p
                   role="alert"
@@ -256,7 +275,8 @@ export function EditClassSheet({
                   {error}
                 </p>
               )}
-              {confirmDelete ? (
+              {!section &&
+              (confirmDelete ? (
                 <div className="rounded-2xl bg-red-50 p-3">
                   <p className="text-sm font-semibold text-red-700">
                     Xoá lớp "{classItem.name}"? Học sinh và dữ liệu liên quan
@@ -294,6 +314,7 @@ export function EditClassSheet({
                   <Trash2 size={16} />
                   Xoá lớp
                 </Button>
+              )}
               )}
             </form>
           </div>
