@@ -3,6 +3,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   Min,
@@ -16,6 +17,12 @@ export class CreatePaymentDto {
   @ApiPropertyOptional({ pattern: MONTH_PATTERN.source })
   @IsOptional() @Matches(MONTH_PATTERN) appliesToMonth?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() note?: string;
+}
+
+export class AssignPaymentClassDto {
+  // One-time assignment: only legacy payments (class_id IS NULL) can be
+  // attached to a class; already-assigned payments are rejected server-side.
+  @ApiProperty({ format: "uuid" }) @IsUUID() classId!: string;
 }
 
 export class UpdatePaymentDto {

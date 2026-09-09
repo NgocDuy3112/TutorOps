@@ -1,6 +1,10 @@
-import type { CreatePaymentDto, UpdatePaymentDto } from "./payments.dto";
+import type {
+  AssignPaymentClassDto,
+  CreatePaymentDto,
+  UpdatePaymentDto,
+} from "./payments.dto";
 import { Injectable } from "@nestjs/common";
-import { NotFoundError } from "../common/app-exception";
+import { ConflictError, NotFoundError } from "../common/app-exception";
 import { ErrorCodes } from "../common/error-codes";
 import { pool } from "../db/client";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -8,6 +12,72 @@ import { NotificationsService } from "../notifications/notifications.service";
 @Injectable()
 export class PaymentsService {
   constructor(private readonly notifications: NotificationsService) {}
+
+  // Legacy payments (recorded before class-based tuition) have no class.
+  // Owned via their student so each tutor only sees their own money.
+  async legacyList(teacherId: string, month?: string) {
+    const result = await pool.query(
+      `SELECT p.id,
+              p.amount_vnd AS "amountVnd",
+              p.paid_at AS "paidAt",
+              p.applies_to_month AS "appliesToMonth",
+              p.note,
+              s.name AS "studentName"
+       FROM payments p
+       JOIN students s ON s.id = p.student_id AND s.teacher_id = $1
+       WHERE p.class_id IS NULL AND p.status = 'confirmed'
+         ${month ? "AND p.applies_to_month = $2" : ""}
+       ORDER BY p.paid_at DESC`,
+      month ? [teacherId, month] : [teacherId],
+    );
+    return { payments: result.rows };
+  }
+
+  // One-time move of a legacy payment into a class: student_id stays on the
+  // row as a trace, only class_id is set. Re-assignment is rejected.
+  async assignClass(
+    teacherId: string,
+    paymentId: string,
+    input: AssignPaymentClassDto,
+  ) {
+    const existing = await pool.query(
+      `SELECT p.class_id, p.amount_vnd, s.name AS "studentName"
+       FROM payments p
+       JOIN students s ON s.id = p.student_id AND s.teacher_id = $2
+       WHERE p.id = $1 AND p.status = 'confirmed'`,
+      [paymentId, teacherId],
+    );
+    if (existing.rowCount === 0)
+      throw new NotFoundError(ErrorCodes.PAYMENT_NOT_FOUND);
+    if (existing.rows[0].class_id != null)
+      throw new ConflictError(ErrorCodes.PAYMENT_ALREADY_ASSIGNED);
+
+    const result = await pool.query(
+      `UPDATE payments SET class_id = $3
+       WHERE id = $1 AND class_id IS NULL AND status = 'confirmed'
+         AND EXISTS (
+           SELECT 1 FROM classes
+           WHERE classes.id = $3 AND classes.teacher_id = $2
+             AND classes.deleted_at IS NULL
+         )
+       RETURNING id, class_id`,
+      [paymentId, teacherId, input.classId],
+    );
+    if (result.rowCount === 0)
+      throw new NotFoundError(ErrorCodes.CLASS_NOT_FOUND);
+
+    const classRow = await pool.query(
+      `SELECT name FROM classes WHERE id = $1`,
+      [input.classId],
+    );
+    void this.notifications.sendToUser(teacherId, {
+      title: "Đã gán khoản thu vào lớp",
+      body: `${Number(existing.rows[0].amount_vnd).toLocaleString("vi-VN")} ₫${existing.rows[0].studentName ? ` (${existing.rows[0].studentName})` : ""} → lớp ${classRow.rows[0]?.name ?? ""}`,
+      url: `/classes/${input.classId}`,
+    });
+    return result.rows[0];
+  }
+
   // Tuition is per class: due comes from the class's sessions (per_session /
   // per_hour) plus the per_month flat fee, paid from class-scoped payments.
   async list(teacherId: string, classId: string) {

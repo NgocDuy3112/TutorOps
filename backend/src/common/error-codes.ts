@@ -42,6 +42,7 @@ export const ErrorCodes = {
 
   // Payments / tuition
   PAYMENT_NOT_FOUND: "payment_not_found",
+  PAYMENT_ALREADY_ASSIGNED: "payment_already_assigned",
   MONTH_MUST_BE_YYYY_MM: "month_must_be_yyyy_mm",
 
   // Misc

@@ -7,9 +7,10 @@ import { VersionService } from "./version.service";
 export class VersionController {
   constructor(private readonly version: VersionService) {}
 
-  // Kept for API clients; browsers hit /version.json so the update banner
-  // works even when a front proxy routes that path to the backend instead
-  // of the frontend's nginx static file.
+  // Kept for API clients; browsers hit /version.json which nginx serves as
+  // a static file (this endpoint is the fallback when the proxy routes the
+  // path to the backend instead). The frontend no longer polls it — new
+  // versions are announced via push instead of the old update banner.
   @Get("version")
   getVersion() {
     return { version: this.version.get() };
