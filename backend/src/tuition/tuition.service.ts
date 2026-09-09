@@ -12,7 +12,9 @@ export class TuitionService {
       (acc, row) => ({
         totalDue: acc.totalDue + row.due,
         totalPaid: acc.totalPaid + row.paid,
-        balance: acc.balance + row.balance,
+        // Overpaid classes (e.g. a legacy payment assigned to a class with no
+        // sessions this month) must not pull the outstanding total negative.
+        balance: acc.balance + Math.max(row.balance, 0),
         debtCount: acc.debtCount + (row.balance > 0 ? 1 : 0),
         sessionCount: acc.sessionCount + row.sessionCount,
       }),

@@ -76,7 +76,13 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
     if (!slipRef.current || !slip) return;
     setExporting(true);
     try {
-      const dataUrl = await toPng(slipRef.current, { pixelRatio: 2 });
+      const dataUrl = await toPng(slipRef.current, {
+        pixelRatio: 2,
+        // Interactive controls (month filter, comment editor) live inside the
+        // card but must not appear in the exported image.
+        filter: (node) =>
+          !(node instanceof HTMLElement && node.dataset.noexport === "true"),
+      });
       const link = document.createElement("a");
       link.download = `phieu-tong-ket-${slip.student.name}-${month}.png`;
       link.href = dataUrl;
@@ -90,21 +96,6 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-bold">Phiếu tổng kết tháng</h2>
-        <Select value={month} onValueChange={setMonth}>
-          <SelectTrigger className="w-40" aria-label="Chọn tháng">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {recentMonthOptions(monthKey(new Date()), 12).map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
       <div className="space-y-4">
         {error && <p className="text-sm text-destructive">{error}</p>}
         {loading ? (
@@ -114,40 +105,73 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
           </div>
         ) : slip ? (
           <>
-            <MonthlySlipCard ref={slipRef} slip={{ ...slip, comment }} />
-            <div className="space-y-1.5">
-              <Label htmlFor="slip-comment">Nhận xét của giáo viên</Label>
-              <Textarea
-                id="slip-comment"
-                rows={3}
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-                placeholder="Nhận xét chung về tiến độ của học sinh trong tháng..."
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={saveComment} disabled={saving} className="min-h-11">
-                {saving ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <Save size={16} />
-                )}
-                Lưu nhận xét
-              </Button>
-              <Button
-                variant="outline"
-                onClick={exportPng}
-                disabled={exporting}
-                className="min-h-11"
-              >
-                {exporting ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <Download size={16} />
-                )}
-                Tải ảnh phiếu
-              </Button>
-            </div>
+            <MonthlySlipCard
+              ref={slipRef}
+              slip={{ ...slip, comment }}
+              headerAction={
+                <div data-noexport className="shrink-0">
+                  <Select value={month} onValueChange={setMonth}>
+                    <SelectTrigger
+                      className="w-36 rounded-xl border-primary-foreground/30 bg-white/15 text-primary-foreground hover:bg-white/25"
+                      aria-label="Chọn tháng"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {recentMonthOptions(monthKey(new Date()), 12).map(
+                        (option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              }
+              footer={
+                <div
+                  data-noexport
+                  className="space-y-1.5 border-t bg-slate-50/60 px-5 py-4"
+                >
+                  <Label htmlFor="slip-comment">Nhận xét của giáo viên</Label>
+                  <Textarea
+                    id="slip-comment"
+                    rows={3}
+                    value={comment}
+                    onChange={(event) => setComment(event.target.value)}
+                    placeholder="Nhận xét chung về tiến độ của học sinh trong tháng..."
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={saveComment}
+                      disabled={saving}
+                      className="min-h-11"
+                    >
+                      {saving ? (
+                        <Loader2 className="animate-spin" size={16} />
+                      ) : (
+                        <Save size={16} />
+                      )}
+                      Lưu nhận xét
+                    </Button>
+                  </div>
+                </div>
+              }
+            />
+            <Button
+              variant="outline"
+              onClick={exportPng}
+              disabled={exporting}
+              className="min-h-11"
+            >
+              {exporting ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
+                <Download size={16} />
+              )}
+              Tải ảnh phiếu
+            </Button>
           </>
         ) : null}
       </div>
