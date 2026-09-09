@@ -62,6 +62,7 @@ services:
       args:
         VITE_API_URL: /api
     restart: unless-stopped
+<<<<<<< HEAD:docker-compose-beta.yaml
     networks:
       default: {}
       edge-network:
@@ -70,6 +71,12 @@ services:
   
   backup:
     container_name: tutorops-backup-beta
+=======
+    ports:
+      - "${NGINX_HOST_PORT:-8080}:80"
+
+  backup:
+>>>>>>> origin/dev:docker-compose-dev.yaml
     build:
       context: .
       dockerfile: backup/Dockerfile
@@ -81,8 +88,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+<<<<<<< HEAD:docker-compose-beta.yaml
 
 networks:
   default: {}
   edge-network:
     external: true
+=======
+>>>>>>> origin/dev:docker-compose-dev.yaml
