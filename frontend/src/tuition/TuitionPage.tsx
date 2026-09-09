@@ -29,6 +29,7 @@ import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { PaymentDialog } from "../payments/PaymentDialog";
 import { EditPaymentDialog } from "../payments/EditPaymentDialog";
+import { AssignClassDialog } from "../payments/AssignClassDialog";
 import { API } from "../lib/api";
 
 type TuitionClass = {
@@ -61,6 +62,9 @@ export function TuitionPage() {
   const [paying, setPaying] = useState<TuitionClass | null>(null);
   const [editing, setEditing] = useState<TuitionClass | null>(null);
   const [deleting, setDeleting] = useState<TuitionClass | null>(null);
+  const [assigningLegacy, setAssigningLegacy] = useState<TuitionClass | null>(
+    null,
+  );
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -349,6 +353,7 @@ export function TuitionPage() {
                     onPay={() => setPaying(row)}
                     onEdit={() => setEditing(row)}
                     onDelete={() => setDeleting(row)}
+                    onAssign={() => setAssigningLegacy(row)}
                   />
                 ))}
               </div>
@@ -377,6 +382,12 @@ export function TuitionPage() {
           setPaying(null);
           void load(month);
         }}
+      />
+      <AssignClassDialog
+        legacy={assigningLegacy}
+        month={monthKey(month)}
+        onOpenChange={(open) => !open && setAssigningLegacy(null)}
+        onSaved={() => void load(month)}
       />
     </MobileShell>
   );
@@ -472,11 +483,13 @@ function TuitionRowCard({
   onPay,
   onEdit,
   onDelete,
+  onAssign,
 }: {
   row: TuitionClass;
   onPay: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onAssign: () => void;
 }) {
   // Legacy payments recorded before class-based tuition have no class —
   // shown read-only so the money stays visible but cannot be re-recorded.
@@ -521,6 +534,16 @@ function TuitionRowCard({
             </p>
           )}
         </div>
+        {legacy && (
+          <Button
+            type="button"
+            aria-label="Gán khoản thu cũ vào lớp"
+            className="min-h-10 shrink-0 rounded-2xl px-3 text-xs font-bold"
+            onClick={onAssign}
+          >
+            Gán lớp
+          </Button>
+        )}
         {!legacy && (
           <div className="flex shrink-0 items-center gap-2">
             <Button

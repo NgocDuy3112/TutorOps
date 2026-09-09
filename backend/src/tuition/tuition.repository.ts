@@ -80,15 +80,18 @@ export class TuitionRepository {
 
     // Legacy payments recorded before class-based tuition have no class.
     // Surface them as an uncategorized row so the money is never lost.
+    // Scoped to the tutor via the payment's student (legacy rows carry
+    // student_id as a trace).
     const legacy = await pool.query(
       `
-      SELECT COALESCE(SUM(amount_vnd), 0) AS paid
-      FROM payments
-      WHERE class_id IS NULL
-        AND status = 'confirmed'
-        AND applies_to_month = $1
+      SELECT COALESCE(SUM(p.amount_vnd), 0) AS paid
+      FROM payments p
+      JOIN students s ON s.id = p.student_id AND s.teacher_id = $2
+      WHERE p.class_id IS NULL
+        AND p.status = 'confirmed'
+        AND p.applies_to_month = $1
       `,
-      [month],
+      [month, teacherId],
     );
     const legacyPaid = Number(legacy.rows[0].paid);
     if (legacyPaid > 0) {
