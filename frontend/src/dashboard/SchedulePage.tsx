@@ -30,7 +30,6 @@ type Teacher = { id: string; email: string; fullName: string | null };
 type Student = {
   id: string;
   name: string;
-  defaultPriceVnd: number;
   classes?: { pricingMode?: string }[];
 };
 type TutorClass = {
@@ -233,7 +232,6 @@ export function SchedulePage() {
     setSelectedStudent({
       id: session.studentId,
       name: studentName,
-      defaultPriceVnd: session.priceVnd,
     });
   }
 

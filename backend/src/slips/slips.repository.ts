@@ -92,9 +92,16 @@ export class SlipsRepository {
         ),
         pool.query(
           `SELECT amount_vnd AS "amountVnd", paid_at AS "paidAt"
-           FROM payments
-           WHERE student_id = $1 AND status = 'confirmed'
-             AND applies_to_month = $2
+           FROM payments p
+           WHERE p.status = 'confirmed' AND p.applies_to_month = $2
+             AND (
+               p.student_id = $1
+               OR p.class_id IN (
+                 SELECT cs.class_id FROM class_students cs
+                 INNER JOIN classes c ON c.id = cs.class_id AND c.deleted_at IS NULL
+                 WHERE cs.student_id = $1
+               )
+             )
            ORDER BY paid_at`,
           [studentId, month],
         ),

@@ -39,8 +39,7 @@ export class DashboardRepository {
       const studentsQuery = `
         SELECT
           id,
-          name,
-          default_price_vnd AS "defaultPriceVnd"
+          name
         FROM students
         WHERE teacher_id = $1
           AND deleted_at IS NULL
@@ -142,87 +141,109 @@ export class DashboardRepository {
           COALESCE(SUM(amount_vnd) FILTER (WHERE applies_to_month = $2), 0) AS "thisMonth",
           COALESCE(SUM(amount_vnd) FILTER (WHERE applies_to_month = $3), 0) AS "lastMonth"
         FROM payments AS p
-        INNER JOIN students AS s ON s.id = p.student_id
-        WHERE s.teacher_id = $1
-          AND s.deleted_at IS NULL
-          AND p.status = 'confirmed'
+        LEFT JOIN classes AS c ON c.id = p.class_id
+        LEFT JOIN students AS s ON s.id = p.student_id
+        WHERE p.status = 'confirmed'
+          AND (
+            (c.teacher_id = $1 AND c.deleted_at IS NULL)
+            OR (p.class_id IS NULL AND s.teacher_id = $1 AND s.deleted_at IS NULL)
+          )
       `;
-      // Same due logic as the tuition report: session prices plus one flat fee
-      // per per_month class that had >= 1 session in the month.
+      // Same due logic as the tuition report, grouped per class: session
+      // prices plus one flat fee per per_month class that had >= 1 session in
+      // the month. Legacy payments without a class reduce the outstanding
+      // total so old money is never counted as debt.
       const debtQuery = `
         WITH due AS (
           SELECT
-            ts.student_id,
+            ts.class_id,
             COALESCE(SUM(ts.price_vnd) FILTER (
               WHERE c.pricing_mode IS DISTINCT FROM 'per_month'
             ), 0)
               + COALESCE((
                 SELECT SUM(fee)
                 FROM (
-                  SELECT DISTINCT ts2.student_id, c2.id, c2.default_price_vnd AS fee
+                  SELECT DISTINCT ts2.class_id, c2.default_price_vnd AS fee
                   FROM teaching_sessions AS ts2
                   INNER JOIN classes AS c2 ON c2.id = ts2.class_id
                   WHERE c2.pricing_mode = 'per_month'
                     AND c2.deleted_at IS NULL
                     AND ts2.deleted_at IS NULL
                     AND ts2.status <> 'cancelled'
-                    AND ts2.student_id = ts.student_id
+                    AND ts2.class_id = ts.class_id
                     AND to_char(ts2.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
                 ) AS d
               ), 0) AS due
           FROM teaching_sessions AS ts
-          LEFT JOIN classes AS c ON c.id = ts.class_id
-          WHERE ts.deleted_at IS NULL
+          INNER JOIN classes AS c ON c.id = ts.class_id
+          WHERE c.teacher_id = $1
+            AND c.deleted_at IS NULL
+            AND ts.deleted_at IS NULL
             AND ts.status <> 'cancelled'
             AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
-          GROUP BY ts.student_id
+          GROUP BY ts.class_id
         )
         SELECT
-          COALESCE(SUM(GREATEST(due - paid, 0)), 0) AS outstanding,
+          GREATEST(
+            COALESCE(SUM(GREATEST(due - paid, 0)), 0)
+              - COALESCE((
+                SELECT SUM(amount_vnd)
+                FROM payments AS p
+                LEFT JOIN students AS s ON s.id = p.student_id
+                WHERE p.class_id IS NULL
+                  AND p.status = 'confirmed'
+                  AND p.applies_to_month = $3
+                  AND s.teacher_id = $1
+                  AND s.deleted_at IS NULL
+              ), 0),
+            0
+          ) AS outstanding,
           COUNT(*) FILTER (WHERE due - paid > 0)::int AS "debtCount"
         FROM (
           SELECT
-            s.id,
+            c.id,
             COALESCE(d.due, 0) AS due,
             COALESCE(p.paid, 0) AS paid
-          FROM students AS s
-          LEFT JOIN due AS d ON d.student_id = s.id
+          FROM classes AS c
+          LEFT JOIN due AS d ON d.class_id = c.id
           LEFT JOIN (
-            SELECT student_id, SUM(amount_vnd) AS paid
+            SELECT class_id, SUM(amount_vnd) AS paid
             FROM payments
             WHERE status = 'confirmed' AND applies_to_month = $3
-            GROUP BY student_id
-          ) AS p ON p.student_id = s.id
-          WHERE s.teacher_id = $1 AND s.deleted_at IS NULL
-        ) AS per_student
+            GROUP BY class_id
+          ) AS p ON p.class_id = c.id
+          WHERE c.teacher_id = $1 AND c.deleted_at IS NULL
+        ) AS per_class
       `;
       const topDebtorsQuery = `
         SELECT
-          s.id,
-          s.name,
+          c.id,
+          c.name,
           GREATEST(COALESCE(d.due, 0) - COALESCE(p.paid, 0), 0) AS balance
-        FROM students AS s
+        FROM classes AS c
         LEFT JOIN (
           SELECT
-            ts.student_id,
+            ts.class_id,
             COALESCE(SUM(ts.price_vnd) FILTER (
-              WHERE c.pricing_mode IS DISTINCT FROM 'per_month'
+              WHERE c2.pricing_mode IS DISTINCT FROM 'per_month'
             ), 0) AS due
           FROM teaching_sessions AS ts
-          LEFT JOIN classes AS c ON c.id = ts.class_id
-          WHERE ts.deleted_at IS NULL
+          INNER JOIN classes AS c2 ON c2.id = ts.class_id
+          WHERE c2.teacher_id = $1
+            AND c2.deleted_at IS NULL
+            AND ts.deleted_at IS NULL
             AND ts.status <> 'cancelled'
             AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
-          GROUP BY ts.student_id
-        ) AS d ON d.student_id = s.id
+          GROUP BY ts.class_id
+        ) AS d ON d.class_id = c.id
         LEFT JOIN (
-          SELECT student_id, SUM(amount_vnd) AS paid
+          SELECT class_id, SUM(amount_vnd) AS paid
           FROM payments
           WHERE status = 'confirmed' AND applies_to_month = $3
-          GROUP BY student_id
-        ) AS p ON p.student_id = s.id
-        WHERE s.teacher_id = $1
-          AND s.deleted_at IS NULL
+          GROUP BY class_id
+        ) AS p ON p.class_id = c.id
+        WHERE c.teacher_id = $1
+          AND c.deleted_at IS NULL
           AND COALESCE(d.due, 0) - COALESCE(p.paid, 0) > 0
         ORDER BY balance DESC
         LIMIT 3

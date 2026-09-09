@@ -11,7 +11,6 @@ export class StudentsRepository {
         name,
         parent_name AS "parentName",
         parent_phone AS "parentPhone",
-        default_price_vnd AS "defaultPriceVnd",
         created_at AS "createdAt",
         updated_at AS "updatedAt",
         COALESCE(
@@ -59,10 +58,9 @@ export class StudentsRepository {
         teacher_id,
         name,
         parent_name,
-        parent_phone,
-        default_price_vnd
+        parent_phone
       )
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
     const result = await pool.query(query, [
@@ -70,7 +68,6 @@ export class StudentsRepository {
       input.name.trim(),
       input.parentName ?? null,
       input.parentPhone ?? null,
-      input.defaultPriceVnd ?? 0,
     ]);
     return result.rows[0];
   }
@@ -82,10 +79,9 @@ export class StudentsRepository {
         name = COALESCE($1, name),
         parent_name = COALESCE($2, parent_name),
         parent_phone = COALESCE($3, parent_phone),
-        default_price_vnd = COALESCE($4, default_price_vnd),
         updated_at = now()
-      WHERE id = $5
-        AND teacher_id = $6
+      WHERE id = $4
+        AND teacher_id = $5
         AND deleted_at IS NULL
       RETURNING *
     `;
@@ -93,7 +89,6 @@ export class StudentsRepository {
       input.name?.trim(),
       input.parentName,
       input.parentPhone,
-      input.defaultPriceVnd,
       id,
       teacherId,
     ]);

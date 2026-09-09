@@ -32,7 +32,6 @@ type Student = {
   name: string;
   parentName: string | null;
   parentPhone: string | null;
-  defaultPriceVnd: number;
   classes?: { pricingMode?: string }[];
 };
 type Session = {

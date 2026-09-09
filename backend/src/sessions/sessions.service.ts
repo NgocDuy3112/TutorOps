@@ -46,7 +46,7 @@ export class SessionsService {
   }
 
   // Price depends on the class pricing mode:
-  // - per_session: manual price, else class default, else student default
+  // - per_session: manual price, else class default, else 0
   // - per_hour: hourly rate x duration (needs endsAt), manual override wins
   // - per_month: fixed monthly fee charged by the tuition report; sessions cost 0
   private computePrice(
@@ -54,7 +54,6 @@ export class SessionsService {
       classId: string | null;
       pricingMode: "per_session" | "per_hour" | "per_month";
       classPrice: number | null;
-      studentDefaultPrice: number;
     },
     input: TeachingSessionDto,
   ): number {
@@ -67,7 +66,7 @@ export class SessionsService {
         3_600_000;
       return Math.round(pricing.classPrice * Math.max(hours, 0));
     }
-    return pricing.classPrice ?? pricing.studentDefaultPrice;
+    return pricing.classPrice ?? 0;
   }
   async update(teacherId: string, id: string, input: UpdateTeachingSessionDto) {
     if (input.taughtAt) this.assertNotFuture(input.taughtAt);

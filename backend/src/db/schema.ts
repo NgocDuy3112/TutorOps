@@ -102,9 +102,6 @@ export const students = pgTable(
     name: text("name").notNull(),
     parentName: text("parent_name"),
     parentPhone: text("parent_phone"),
-    defaultPriceVnd: bigint("default_price_vnd", { mode: "number" })
-      .default(0)
-      .notNull(),
     ...timestamps,
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
@@ -113,7 +110,6 @@ export const students = pgTable(
     index("students_teacher_active_idx")
       .on(table.teacherId)
       .where(sql`${table.deletedAt} IS NULL`),
-    check("students_price_non_negative", sql`${table.defaultPriceVnd} >= 0`),
   ],
 );
 
@@ -410,9 +406,14 @@ export const payments = pgTable(
   "payments",
   {
     id: id(),
-    studentId: uuid("student_id")
-      .notNull()
-      .references(() => students.id, { onDelete: "restrict" }),
+    // Legacy: payments recorded per student before class-based tuition.
+    // New payments set classId only.
+    studentId: uuid("student_id").references(() => students.id, {
+      onDelete: "restrict",
+    }),
+    classId: uuid("class_id").references(() => classes.id, {
+      onDelete: "set null",
+    }),
     amountVnd: bigint("amount_vnd", { mode: "number" }).notNull(),
     paidAt: timestamp("paid_at", { withTimezone: true }).notNull(),
     appliesToMonth: text("applies_to_month").notNull(),
@@ -432,6 +433,7 @@ export const payments = pgTable(
   (table) => [
     index().on(table.studentId, table.paidAt),
     index().on(table.studentId, table.appliesToMonth),
+    index("payments_class_month_idx").on(table.classId, table.appliesToMonth),
     check("payments_amount_positive", sql`${table.amountVnd} > 0`),
     check(
       "payments_applies_to_month_format",

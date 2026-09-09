@@ -31,7 +31,7 @@ type PaymentRecord = {
 };
 
 type EditPaymentDialogProps = {
-  student: { id: string; name: string } | null;
+  klass: { id: string; name: string } | null;
   /** Viewed tuition month ("YYYY-MM") so the month dropdown centres on it. */
   month: string;
   onOpenChange: (open: boolean) => void;
@@ -39,7 +39,7 @@ type EditPaymentDialogProps = {
 };
 
 export function EditPaymentDialog({
-  student,
+  klass,
   month,
   onOpenChange,
   onSaved,
@@ -56,11 +56,11 @@ export function EditPaymentDialog({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
 
-  const load = useCallback(async (studentId: string) => {
+  const load = useCallback(async (classId: string) => {
     setLoading(true);
     setListError("");
     try {
-      const response = await fetch(`${API}/students/${studentId}/payments`);
+      const response = await fetch(`${API}/classes/${classId}/payments`);
       if (!response.ok) throw new Error("Không thể tải khoản đã nhận.");
       const body = (await response.json()) as { payments: PaymentRecord[] };
       setPayments(body.payments);
@@ -76,12 +76,12 @@ export function EditPaymentDialog({
   }, []);
 
   useEffect(() => {
-    if (!student) {
+    if (!klass) {
       setSelected(null);
       return;
     }
-    void load(student.id);
-  }, [student, load]);
+    void load(klass.id);
+  }, [klass, load]);
 
   function pick(record: PaymentRecord) {
     setSelected(record);
@@ -93,18 +93,18 @@ export function EditPaymentDialog({
   }
 
   async function remove() {
-    if (!student || !selected) return;
+    if (!klass || !selected) return;
     setDeleting(true);
     setError("");
     try {
       const response = await fetch(
-        `${API}/students/${student.id}/payments/${selected.id}`,
+        `${API}/classes/${klass.id}/payments/${selected.id}`,
         { method: "DELETE" },
       );
       if (!response.ok)
         throw new Error("Không thể xoá khoản thu. Vui lòng thử lại.");
       setSelected(null);
-      await load(student.id);
+      await load(klass.id);
       onSaved();
     } catch (requestError) {
       setError(
@@ -118,12 +118,12 @@ export function EditPaymentDialog({
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!student || !selected) return;
+    if (!klass || !selected) return;
     setSaving(true);
     setError("");
     try {
       const response = await fetch(
-        `${API}/students/${student.id}/payments/${selected.id}`,
+        `${API}/classes/${klass.id}/payments/${selected.id}`,
         {
           method: "PATCH",
           headers: { "content-type": "application/json" },
@@ -137,7 +137,7 @@ export function EditPaymentDialog({
       if (!response.ok)
         throw new Error("Không thể cập nhật khoản thu. Vui lòng thử lại.");
       setSelected(null);
-      await load(student.id);
+      await load(klass.id);
       onSaved();
     } catch (requestError) {
       setError(
@@ -149,10 +149,10 @@ export function EditPaymentDialog({
   }
 
   return (
-    <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
+    <Dialog open={Boolean(klass)} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Khoản đã nhận từ {student?.name}</DialogTitle>
+          <DialogTitle>Khoản đã nhận cho lớp {klass?.name}</DialogTitle>
           <DialogDescription>
             Chọn khoản để sửa tháng học phí áp dụng, số tiền hoặc ghi chú.
           </DialogDescription>

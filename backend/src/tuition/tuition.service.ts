@@ -7,8 +7,8 @@ export class TuitionService {
   constructor(private readonly repository: TuitionRepository) {}
 
   async report(teacherId: string, month: string): Promise<TuitionReportDto> {
-    const students = await this.repository.listByMonth(teacherId, month);
-    const totals = students.reduce<TuitionTotals>(
+    const classes = await this.repository.listByMonth(teacherId, month);
+    const totals = classes.reduce<TuitionTotals>(
       (acc, row) => ({
         totalDue: acc.totalDue + row.due,
         totalPaid: acc.totalPaid + row.paid,
@@ -18,6 +18,6 @@ export class TuitionService {
       }),
       { totalDue: 0, totalPaid: 0, balance: 0, debtCount: 0, sessionCount: 0 },
     );
-    return { month, totals, students };
+    return { month, totals, classes };
   }
 }

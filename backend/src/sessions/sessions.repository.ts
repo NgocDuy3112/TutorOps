@@ -81,15 +81,11 @@ export class SessionsRepository {
       resolvedClassId = owned.rows.length === 1 ? owned.rows[0].id : null;
     }
     if (!resolvedClassId) {
-      const student = await pool.query(
-        `SELECT default_price_vnd FROM students WHERE id = $1`,
-        [studentId],
-      );
+      // No class context: price must be entered manually (per_session).
       return {
         classId: null,
         pricingMode: "per_session" as const,
         classPrice: null,
-        studentDefaultPrice: Number(student.rows[0]?.default_price_vnd ?? 0),
       };
     }
     const result = await pool.query(
@@ -97,28 +93,20 @@ export class SessionsRepository {
       SELECT
         c.id,
         c.pricing_mode AS "pricingMode",
-        c.default_price_vnd AS "classPrice",
-        s.default_price_vnd AS "studentDefaultPrice"
+        c.default_price_vnd AS "classPrice"
       FROM classes AS c
-      INNER JOIN students AS s ON s.id = $2
       INNER JOIN class_students AS cs ON cs.class_id = c.id AND cs.student_id = $2
       WHERE c.id = $1
         AND c.deleted_at IS NULL
-        AND s.deleted_at IS NULL
       `,
       [resolvedClassId, studentId],
     );
     if (result.rows.length === 0) {
-      // Class does not contain this student — fall back to student default.
-      const student = await pool.query(
-        `SELECT default_price_vnd FROM students WHERE id = $1`,
-        [studentId],
-      );
+      // Class does not contain this student — no pricing context.
       return {
         classId: null,
         pricingMode: "per_session" as const,
         classPrice: null,
-        studentDefaultPrice: Number(student.rows[0]?.default_price_vnd ?? 0),
       };
     }
     const row = result.rows[0];
@@ -126,7 +114,6 @@ export class SessionsRepository {
       classId: row.id,
       pricingMode: row.pricingMode,
       classPrice: row.classPrice == null ? null : Number(row.classPrice),
-      studentDefaultPrice: Number(row.studentDefaultPrice ?? 0),
     };
   }
 
@@ -141,7 +128,7 @@ export class SessionsRepository {
         note,
         status
       )
-      SELECT $1, $5, $2, $6, COALESCE($3, default_price_vnd), $4, $7
+      SELECT $1, $5, $2, $6, COALESCE($3, 0), $4, $7
       FROM students
       WHERE id = $1
       RETURNING *
