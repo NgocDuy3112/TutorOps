@@ -424,17 +424,7 @@ export function ClassDetailPage() {
                 }
               />
               {item.schedules?.length ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {item.schedules.map((slot, index) => (
-                    <span
-                      key={`${slot.weekday}-${slot.startTime}-${index}`}
-                      className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700"
-                    >
-                      {WEEKDAY_LABELS[slot.weekday] ?? "?"} {slot.startTime}–
-                      {slot.endTime}
-                    </span>
-                  ))}
-                </div>
+                <ScheduleWeekStrip slots={item.schedules} />
               ) : (
                 <InfoRow label="Lịch cố định" value="Chưa có" />
               )}
@@ -633,6 +623,76 @@ const WEEKDAY_LABELS = [
   "T6",
   "T7",
 ];
+
+/** Compact week strip: 7 day dots (T2→CN) + per-day detail lines below.
+ * Scales with many sessions per day — dots only carry a count badge, the
+ * detail list wraps freely instead of cramming times under each dot. */
+function ScheduleWeekStrip({
+  slots,
+}: {
+  slots: { weekday: number; startTime: string; endTime: string }[];
+}) {
+  const byDay = new Map<number, string[]>();
+  for (const slot of slots) {
+    const times = byDay.get(slot.weekday) ?? [];
+    times.push(`${slot.startTime}–${slot.endTime}`);
+    byDay.set(slot.weekday, times);
+  }
+  // Monday-first order reads more naturally for a VN school week.
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const activeDays = order.filter((day) => byDay.has(day));
+  return (
+    <div className="space-y-2.5">
+      <div
+        role="list"
+        aria-label="Các ngày có lịch dạy trong tuần"
+        className="grid grid-cols-7 gap-1"
+      >
+        {order.map((day) => {
+          const count = byDay.get(day)?.length ?? 0;
+          return (
+            <div
+              role="listitem"
+              key={day}
+              className="flex min-w-0 justify-center"
+            >
+              <span
+                className={`relative grid size-8 shrink-0 place-items-center rounded-full text-[11px] font-bold ${
+                  count
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-slate-100 text-slate-400"
+                }`}
+                aria-hidden
+              >
+                {WEEKDAY_LABELS[day]}
+                {count > 1 && (
+                  <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-slate-700 text-[9px] font-bold text-white">
+                    {count}
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <ul className="space-y-1 text-xs">
+        {activeDays.map((day) => (
+          <li key={day} className="flex min-w-0 items-baseline gap-2">
+            <span
+              className="shrink-0 font-bold text-slate-700"
+              aria-hidden
+            >
+              {WEEKDAY_LABELS[day]}
+            </span>
+            <span className="min-w-0 text-muted-foreground">
+              {byDay.get(day)!.join(" · ")}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function InfoCard({
   title,
