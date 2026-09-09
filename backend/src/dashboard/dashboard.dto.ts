@@ -7,7 +7,6 @@ export type DashboardCalendarTeacherDto = {
 export type DashboardCalendarStudentDto = {
   id: string;
   name: string;
-  defaultPriceVnd: number;
 };
 
 export type DashboardCalendarSessionDto = {

@@ -12,6 +12,7 @@ describe("TutorOps database E2E", () => {
   let agent: ReturnType<typeof request.agent>;
   let sessionCookie: string;
   let studentId: string;
+  let classId: string;
   let studentToken: string;
   let parentToken: string;
   let assignmentId: string;
@@ -60,7 +61,6 @@ describe("TutorOps database E2E", () => {
       .set("Cookie", [sessionCookie])
       .send({
         name: "Database Student",
-        defaultPriceVnd: 150000,
       })
       .expect(201);
     studentId = response.body.id;
@@ -97,18 +97,28 @@ describe("TutorOps database E2E", () => {
       .send({ title: "DB Assignment", studentIds: [studentId] })
       .expect(201);
     assignmentId = assignment.body.id;
+    const klass = await request(app.getHttpServer())
+      .post("/classes")
+      .set("Cookie", [sessionCookie])
+      .send({ name: "DB Class", pricingMode: "per_session" })
+      .expect(201);
+    classId = klass.body.id;
+    await request(app.getHttpServer())
+      .post(`/classes/${classId}/students/${studentId}`)
+      .set("Cookie", [sessionCookie])
+      .expect(201);
     await request(app.getHttpServer())
       .post(`/students/${studentId}/sessions`)
       .set("Cookie", [sessionCookie])
       .send({ taughtAt: new Date().toISOString(), priceVnd: 150000 })
       .expect(201);
     await request(app.getHttpServer())
-      .post(`/students/${studentId}/payments`)
+      .post(`/classes/${classId}/payments`)
       .set("Cookie", [sessionCookie])
       .send({ amountVnd: 50000 })
       .expect(201);
     await request(app.getHttpServer())
-      .get(`/students/${studentId}/payments`)
+      .get(`/classes/${classId}/payments`)
       .set("Cookie", [sessionCookie])
       .expect(200)
       .expect(({ body }) => {
@@ -129,10 +139,10 @@ describe("TutorOps database E2E", () => {
     await request(app.getHttpServer())
       .post("/students")
       .set("Cookie", [sessionCookie])
-      .send({ name: "", defaultPriceVnd: -1, unexpected: true })
+      .send({ name: "", unexpected: true })
       .expect(400);
     await request(app.getHttpServer())
-      .post(`/students/${studentId}/payments`)
+      .post(`/classes/${classId}/payments`)
       .set("Cookie", [sessionCookie])
       .send({ amountVnd: 0 })
       .expect(400);

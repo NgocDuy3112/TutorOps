@@ -31,8 +31,8 @@ import { PaymentDialog } from "../payments/PaymentDialog";
 import { EditPaymentDialog } from "../payments/EditPaymentDialog";
 import { API } from "../lib/api";
 
-type TuitionStudent = {
-  id: string;
+type TuitionClass = {
+  id: string | null;
   name: string;
   due: number;
   paid: number;
@@ -49,7 +49,7 @@ type TuitionTotals = {
 type TuitionResponse = {
   month: string;
   totals: TuitionTotals;
-  students: TuitionStudent[];
+  classes: TuitionClass[];
 };
 type Filter = "all" | "debt" | "paid";
 
@@ -58,9 +58,9 @@ export function TuitionPage() {
   const [data, setData] = useState<TuitionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [paying, setPaying] = useState<TuitionStudent | null>(null);
-  const [editing, setEditing] = useState<TuitionStudent | null>(null);
-  const [deleting, setDeleting] = useState<TuitionStudent | null>(null);
+  const [paying, setPaying] = useState<TuitionClass | null>(null);
+  const [editing, setEditing] = useState<TuitionClass | null>(null);
+  const [deleting, setDeleting] = useState<TuitionClass | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -96,11 +96,11 @@ export function TuitionPage() {
   }
 
   async function deleteMonthPayments() {
-    if (!deleting) return;
+    if (!deleting?.id) return;
     setDeletingBusy(true);
     try {
       const listResponse = await fetch(
-        `${API}/students/${deleting.id}/payments`,
+        `${API}/classes/${deleting.id}/payments`,
       );
       if (!listResponse.ok)
         throw new Error("Không thể tải khoản đã nhận.");
@@ -113,7 +113,7 @@ export function TuitionPage() {
         .map((record) => record.id);
       for (const id of ids) {
         const response = await fetch(
-          `${API}/students/${deleting.id}/payments/${id}`,
+          `${API}/classes/${deleting.id}/payments/${id}`,
           { method: "DELETE" },
         );
         if (!response.ok)
@@ -131,7 +131,7 @@ export function TuitionPage() {
     }
   }
 
-  const rows = data?.students ?? [];
+  const rows = data?.classes ?? [];
   const totals = data?.totals;
   const paidCount = rows.length - (totals?.debtCount ?? 0);
 
@@ -187,19 +187,19 @@ export function TuitionPage() {
             <KpiBlock
               label="Phải thu"
               value={formatVnd(totals?.totalDue ?? 0)}
-              sub={`${rows.length} học sinh`}
+              sub={`${rows.length} lớp`}
               tone="slate"
             />
             <KpiBlock
               label="Đã thu"
               value={formatVnd(totals?.totalPaid ?? 0)}
-              sub={`${paidCount} học sinh`}
+              sub={`${paidCount} lớp`}
               tone="emerald"
             />
             <KpiBlock
               label="Khoản chưa thu"
               value={formatVnd(totals?.balance ?? 0)}
-              sub={`${totals?.debtCount ?? 0} học sinh`}
+              sub={`${totals?.debtCount ?? 0} lớp`}
               tone="amber"
             />
           </div>
@@ -242,8 +242,8 @@ export function TuitionPage() {
                     <Input
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Tìm học sinh"
-                      aria-label="Tìm học sinh"
+                      placeholder="Tìm lớp"
+                      aria-label="Tìm lớp"
                       className="min-h-11 rounded-2xl bg-white pl-9"
                     />
                   </div>
@@ -344,7 +344,7 @@ export function TuitionPage() {
               <div className="space-y-2">
                 {filteredRows.map((row) => (
                   <TuitionRowCard
-                    key={row.id}
+                    key={row.id ?? "legacy"}
                     row={row}
                     onPay={() => setPaying(row)}
                     onEdit={() => setEditing(row)}
@@ -357,19 +357,19 @@ export function TuitionPage() {
         )}
       </main>
       <DeleteMonthPaymentsDialog
-        student={deleting}
+        klass={deleting}
         busy={deletingBusy}
         onOpenChange={(open) => !open && !deletingBusy && setDeleting(null)}
         onConfirm={() => void deleteMonthPayments()}
       />
       <EditPaymentDialog
-        student={editing ? { id: editing.id, name: editing.name } : null}
+        klass={editing?.id ? { id: editing.id, name: editing.name } : null}
         month={monthKey(month)}
         onOpenChange={(open) => !open && setEditing(null)}
         onSaved={() => void load(month)}
       />
       <PaymentDialog
-        student={paying ? { id: paying.id, name: paying.name } : null}
+        klass={paying?.id ? { id: paying.id, name: paying.name } : null}
         balance={paying?.balance ?? 0}
         month={monthKey(month)}
         onOpenChange={(open) => !open && setPaying(null)}
@@ -383,24 +383,24 @@ export function TuitionPage() {
 }
 
 function DeleteMonthPaymentsDialog({
-  student,
+  klass,
   busy,
   onOpenChange,
   onConfirm,
 }: {
-  student: TuitionStudent | null;
+  klass: TuitionClass | null;
   busy: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
 }) {
   return (
-    <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
+    <Dialog open={Boolean(klass)} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Xoá khoản đã nhận?</DialogTitle>
           <DialogDescription>
-            Xoá các khoản đã nhận của {student?.name} áp dụng cho tháng này. Học
-            sinh sẽ quay lại trạng thái Khoản chưa thu. Bạn có chắc muốn xoá?
+            Xoá các khoản đã nhận của lớp {klass?.name} áp dụng cho tháng này. Lớp
+            sẽ quay lại trạng thái Khoản chưa thu. Bạn có chắc muốn xoá?
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -473,23 +473,28 @@ function TuitionRowCard({
   onEdit,
   onDelete,
 }: {
-  row: TuitionStudent;
+  row: TuitionClass;
   onPay: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const noActivity = row.sessionCount === 0 && row.paid <= 0;
+  // Legacy payments recorded before class-based tuition have no class —
+  // shown read-only so the money stays visible but cannot be re-recorded.
+  const legacy = row.id == null;
+  const noActivity = !legacy && row.sessionCount === 0 && row.paid <= 0;
   const settled = !noActivity && row.balance <= 0;
   return (
     <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
       <CardContent className="flex items-center gap-3 p-4">
         <span
           className={`grid size-10 shrink-0 place-items-center rounded-full text-sm font-bold ${
-            noActivity
+            legacy
               ? "bg-slate-100 text-slate-500"
-              : settled
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-amber-50 text-amber-700"
+              : noActivity
+                ? "bg-slate-100 text-slate-500"
+                : settled
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
           }`}
           aria-hidden
         >
@@ -498,7 +503,11 @@ function TuitionRowCard({
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-bold">{row.name}</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {noActivity ? "Chưa có buổi dạy" : `Đã dạy ${row.sessionCount} buổi`}
+            {legacy
+              ? "Khoản thu cũ trước khi quy về lớp"
+              : noActivity
+                ? "Chưa có buổi dạy"
+                : `Đã dạy ${row.sessionCount} buổi`}
           </p>
         </div>
         <div className="shrink-0 text-right">
@@ -512,39 +521,41 @@ function TuitionRowCard({
             </p>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            type="button"
-            size="icon"
-            variant="outline"
-            aria-label={`Sửa khoản đã nhận của ${row.name}`}
-            className="min-h-10 min-w-10 rounded-2xl"
-            onClick={onEdit}
-          >
-            <Pencil size={15} />
-          </Button>
-          {settled ? (
+        {!legacy && (
+          <div className="flex shrink-0 items-center gap-2">
             <Button
               type="button"
               size="icon"
               variant="outline"
-              aria-label={`Xoá khoản đã nhận trong tháng của ${row.name}`}
-              className="min-h-10 min-w-10 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={onDelete}
+              aria-label={`Sửa khoản đã nhận của lớp ${row.name}`}
+              className="min-h-10 min-w-10 rounded-2xl"
+              onClick={onEdit}
             >
-              <Trash2 size={15} />
+              <Pencil size={15} />
             </Button>
-          ) : (
-            <Button
-              type="button"
-              aria-label={`Ghi nhận thanh toán cho ${row.name}`}
-              className="min-h-10 rounded-2xl px-3 text-xs font-bold"
-              onClick={onPay}
-            >
-              Nhận tiền
-            </Button>
-          )}
-        </div>
+            {settled ? (
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                aria-label={`Xoá khoản đã nhận trong tháng của lớp ${row.name}`}
+                className="min-h-10 min-w-10 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={onDelete}
+              >
+                <Trash2 size={15} />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                aria-label={`Ghi nhận thanh toán cho lớp ${row.name}`}
+                className="min-h-10 rounded-2xl px-3 text-xs font-bold"
+                onClick={onPay}
+              >
+                Nhận tiền
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -25,7 +25,7 @@ import type { Area } from "react-easy-crop";
 import { API } from "../lib/api";
 
 type PaymentDialogProps = {
-  student: { id: string; name: string } | null;
+  klass: { id: string; name: string } | null;
   balance: number;
   /** Month being viewed in tuition report ("YYYY-MM") — default for appliesToMonth. */
   month: string;
@@ -34,7 +34,7 @@ type PaymentDialogProps = {
 };
 
 export function PaymentDialog({
-  student,
+  klass,
   balance,
   month,
   onOpenChange,
@@ -51,7 +51,7 @@ export function PaymentDialog({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!student) return;
+    if (!klass) return;
     setAmountVnd(balance > 0 ? formatVnd(balance).replace(" ₫", "") : "");
     setAppliesToMonth(month);
     setNote("");
@@ -61,7 +61,7 @@ export function PaymentDialog({
       return null;
     });
     setError("");
-  }, [student, balance]);
+  }, [klass, balance]);
 
   async function readReceipt(file: File) {
     setOcrLoading(true);
@@ -106,11 +106,11 @@ export function PaymentDialog({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!student) return;
+    if (!klass) return;
     setSaving(true);
     setError("");
     try {
-      const response = await fetch(`${API}/students/${student.id}/payments`, {
+      const response = await fetch(`${API}/classes/${klass.id}/payments`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -133,12 +133,12 @@ export function PaymentDialog({
 
   return (
     <>
-      <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
+      <Dialog open={Boolean(klass)} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ghi nhận thanh toán</DialogTitle>
           <DialogDescription>
-            Ghi nhận khoản đã nhận từ {student?.name}. Hệ thống cập nhật công nợ
+            Ghi nhận khoản đã nhận cho lớp {klass?.name}. Hệ thống cập nhật công nợ
             ngay sau khi lưu.
           </DialogDescription>
         </DialogHeader>

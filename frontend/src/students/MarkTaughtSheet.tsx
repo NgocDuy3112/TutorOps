@@ -18,7 +18,6 @@ import { API } from "../lib/api";
 
 type Student = {
   id: string;
-  defaultPriceVnd: number;
   classes?: { pricingMode?: string }[];
 };
 type TeachingSession = {
@@ -191,7 +190,6 @@ export function MarkTaughtSheet({
                     value ? formatVnd(parseVnd(value)).replace(" ₫", "") : "",
                   );
                 }}
-                placeholder={formatVnd(student.defaultPriceVnd)}
               />
             </div>
           )}
