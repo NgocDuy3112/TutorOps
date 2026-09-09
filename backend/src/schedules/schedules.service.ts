@@ -79,7 +79,7 @@ export class SchedulesService implements OnModuleInit, OnModuleDestroy {
             FROM classes AS c
             WHERE c.id = $2
             ON CONFLICT (class_id, student_id, taught_at)
-              WHERE deleted_at IS NULL
+              WHERE class_id IS NOT NULL AND deleted_at IS NULL
             DO NOTHING
             `,
             [
