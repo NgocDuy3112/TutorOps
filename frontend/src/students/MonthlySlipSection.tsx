@@ -142,7 +142,20 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
                     onChange={(event) => setComment(event.target.value)}
                     placeholder="Nhận xét chung về tiến độ của học sinh trong tháng..."
                   />
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={exportPng}
+                      disabled={exporting}
+                      className="min-h-11"
+                    >
+                      {exporting ? (
+                        <Loader2 className="animate-spin" size={16} />
+                      ) : (
+                        <Download size={16} />
+                      )}
+                      Tải ảnh phiếu
+                    </Button>
                     <Button
                       onClick={saveComment}
                       disabled={saving}
@@ -159,19 +172,6 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
                 </div>
               }
             />
-            <Button
-              variant="outline"
-              onClick={exportPng}
-              disabled={exporting}
-              className="min-h-11"
-            >
-              {exporting ? (
-                <Loader2 className="animate-spin" size={16} />
-              ) : (
-                <Download size={16} />
-              )}
-              Tải ảnh phiếu
-            </Button>
           </>
         ) : null}
       </div>
