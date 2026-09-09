@@ -67,6 +67,20 @@ services:
       edge-network:
         aliases:
           - tutorops-frontend-beta
+  
+  backup:
+    container_name: tutorops-backup-beta
+    build:
+      context: .
+      dockerfile: backup/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./configs/.env
+    environment:
+      POSTGRES_DB_HOST: ${POSTGRES_DB_HOST}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 networks:
   default: {}
