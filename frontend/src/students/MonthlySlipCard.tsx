@@ -46,10 +46,7 @@ export const MonthlySlipCard = forwardRef<
     >
       <header className="flex items-start justify-between gap-3 bg-primary px-5 py-4 text-primary-foreground">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-foreground/70">
-            Phiếu tổng kết tháng
-          </p>
-          <h2 className="mt-1 text-xl font-bold">{slip.student.name}</h2>
+          <h2 className="text-xl font-bold">{slip.student.name}</h2>
           <p className="text-sm text-primary-foreground/80">
             {formatMonthLabel(new Date(`${slip.month}-01T00:00:00`))}
           </p>
