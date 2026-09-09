@@ -24,12 +24,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/EmptyState";
 import { formatDeadline, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditAssignmentSheet } from "../assignments/EditAssignmentSheet";
 import { EditClassSheet, type EditClassSection } from "./EditClassSheet";
-import { venueLabel } from "./venue";
 import type { Student, TutorClass } from "./ClassesPage";
 import { API } from "../lib/api";
 
@@ -57,6 +57,7 @@ export function ClassDetailPage() {
   );
   const [editing, setEditing] = useState<Assignment | null>(null);
   const [deleting, setDeleting] = useState<Assignment | null>(null);
+  const [togglingAuto, setTogglingAuto] = useState(false);
 
   const classAssignments = useMemo(
     () => assignments.filter((a) => (a.classIds ?? []).includes(classId)),
@@ -86,6 +87,35 @@ export function ClassDetailPage() {
   useEffect(() => {
     void load();
   }, [classId]);
+
+  // Toggle auto-schedule straight from the info card. PATCH replaces every
+  // field, so send the full payload built from the current item.
+  async function toggleAutoSchedule(checked: boolean) {
+    if (!item) return;
+    setTogglingAuto(true);
+    setItem({ ...item, autoSchedule: checked });
+    try {
+      const response = await fetch(`${API}/classes/${item.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: item.name,
+          defaultPriceVnd: item.defaultPriceVnd,
+          pricingMode: item.pricingMode ?? "per_session",
+          autoSchedule: item.schedules?.length ? checked : false,
+          schedules: item.schedules ?? [],
+          venue: item.venue ?? null,
+          note: item.note ?? null,
+        }),
+      });
+      if (!response.ok) throw new Error();
+    } catch {
+      setItem(item); // revert on failure
+      setError("Không thể đổi tự động tạo buổi. Vui lòng thử lại.");
+    } finally {
+      setTogglingAuto(false);
+    }
+  }
   const available = useMemo(
     () =>
       students.filter(
@@ -378,16 +408,9 @@ export function ClassDetailPage() {
             </>
             ) : (
             <>
-            <InfoCard
-              title="Học phí"
-              onEdit={() => setEditSection("pricing")}
-            >
+            <InfoCard title="Thông tin lớp" onEdit={() => setEditSection("full")}>
               <InfoRow
-                label="Cách tính"
-                value={PRICING_MODE_LABELS[item.pricingMode ?? "per_session"]}
-              />
-              <InfoRow
-                label="Giá"
+                label="Học phí"
                 value={
                   item.defaultPriceVnd != null
                     ? `${formatVnd(item.defaultPriceVnd)}${
@@ -400,12 +423,6 @@ export function ClassDetailPage() {
                     : "Chưa đặt"
                 }
               />
-            </InfoCard>
-
-            <InfoCard
-              title="Lịch dạy"
-              onEdit={() => setEditSection("schedule")}
-            >
               {item.schedules?.length ? (
                 <div className="flex flex-wrap gap-1.5">
                   {item.schedules.map((slot, index) => (
@@ -421,18 +438,22 @@ export function ClassDetailPage() {
               ) : (
                 <InfoRow label="Lịch cố định" value="Chưa có" />
               )}
-              <InfoRow
-                label="Tự động tạo buổi"
-                value={item.autoSchedule ? "Bật" : "Tắt"}
-              />
-            </InfoCard>
-
-            <InfoCard
-              title="Ghi chú"
-              onEdit={() => setEditSection("note")}
-            >
+              <div className="flex items-start justify-between gap-4">
+                <dt className="shrink-0 text-muted-foreground">
+                  Tự động tạo buổi
+                </dt>
+                <dd>
+                  <Switch
+                    checked={item.autoSchedule}
+                    disabled={togglingAuto}
+                    aria-label="Tự động tạo buổi dạy"
+                    onCheckedChange={(checked) =>
+                      void toggleAutoSchedule(checked)
+                    }
+                  />
+                </dd>
+              </div>
               <InfoRow label="Ghi chú" value={item.note || "—"} />
-              <InfoRow label="Nơi dạy" value={venueLabel(item.venue) ?? "—"} />
             </InfoCard>
 
             </>
@@ -612,12 +633,6 @@ const WEEKDAY_LABELS = [
   "T6",
   "T7",
 ];
-
-const PRICING_MODE_LABELS: Record<string, string> = {
-  per_session: "Theo buổi",
-  per_hour: "Theo giờ",
-  per_month: "Theo tháng",
-};
 
 function InfoCard({
   title,

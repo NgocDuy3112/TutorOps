@@ -23,9 +23,9 @@ import { ScheduleEditor, type ScheduleSlot } from "./ScheduleEditor";
 import { VENUE_OPTIONS } from "./venue";
 
 const PRICING_MODE_OPTIONS = [
-  { value: "per_session", label: "Theo buổi", priceLabel: "Giá mỗi buổi" },
-  { value: "per_hour", label: "Theo giờ", priceLabel: "Giá mỗi giờ" },
-  { value: "per_month", label: "Theo tháng", priceLabel: "Phí cố định / tháng" },
+  { value: "per_session", label: "Theo buổi", unit: "đ/buổi" },
+  { value: "per_hour", label: "Theo giờ", unit: "đ/giờ" },
+  { value: "per_month", label: "Theo tháng", unit: "đ/tháng" },
 ] as const;
 
 type PricingMode = (typeof PRICING_MODE_OPTIONS)[number]["value"];
@@ -180,46 +180,55 @@ export function EditClassSheet({
               )}
               {showPricing && (
               <>
-              <div className="space-y-2">
-                <Label htmlFor="sheet-class-pricing">Cách tính học phí</Label>
-                <Select
-                  value={pricingMode}
-                  onValueChange={(value) => setPricingMode(value as PricingMode)}
-                >
-                  <SelectTrigger id="sheet-class-pricing" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRICING_MODE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="sheet-class-pricing">Cách tính</Label>
+                  <Select
+                    value={pricingMode}
+                    onValueChange={(value) => setPricingMode(value as PricingMode)}
+                  >
+                    <SelectTrigger id="sheet-class-pricing" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRICING_MODE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sheet-class-price">Số tiền</Label>
+                  <div className="relative">
+                    <Input
+                      id="sheet-class-price"
+                      inputMode="numeric"
+                      max={10_000_000_000}
+                      className="pr-20"
+                      value={defaultPriceVnd}
+                      onChange={(e) =>
+                        setDefaultPriceVnd(
+                          e.target.value
+                            ? formatVnd(parseVnd(e.target.value)).replace(" ₫", "")
+                            : "",
+                        )
+                      }
+                      autoFocus={false}
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground"
+                    >
+                      {
+                        PRICING_MODE_OPTIONS.find(
+                          (option) => option.value === pricingMode,
+                        )?.unit
+                      }
+                    </span>
+                  </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="sheet-class-price">
-                  {
-                    PRICING_MODE_OPTIONS.find(
-                      (option) => option.value === pricingMode,
-                    )?.priceLabel
-                  }
-                </Label>
-                <Input
-                  id="sheet-class-price"
-                  inputMode="numeric"
-                  max={10_000_000_000}
-                  value={defaultPriceVnd}
-                  onChange={(e) =>
-                    setDefaultPriceVnd(
-                      e.target.value
-                        ? formatVnd(parseVnd(e.target.value)).replace(" ₫", "")
-                        : "",
-                    )
-                  }
-                  autoFocus={false}
-                />
               </div>
               </>
               )}

@@ -22,9 +22,9 @@ import { ScheduleEditor, type ScheduleSlot } from "./ScheduleEditor";
 import { venueLabel, VENUE_OPTIONS, type Venue } from "./venue";
 
 const PRICING_MODE_OPTIONS = [
-  { value: "per_session", label: "Theo buổi", priceLabel: "Giá mỗi buổi" },
-  { value: "per_hour", label: "Theo giờ", priceLabel: "Giá mỗi giờ" },
-  { value: "per_month", label: "Theo tháng", priceLabel: "Phí cố định / tháng" },
+  { value: "per_session", label: "Theo buổi", unit: "đ/buổi" },
+  { value: "per_hour", label: "Theo giờ", unit: "đ/giờ" },
+  { value: "per_month", label: "Theo tháng", unit: "đ/tháng" },
 ] as const;
 
 type PricingMode = (typeof PRICING_MODE_OPTIONS)[number]["value"];
@@ -167,49 +167,60 @@ export function ClassFormPage() {
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="class-pricing-mode">Cách tính học phí</Label>
-                  <Select
-                    value={pricingMode}
-                    onValueChange={(value) => setPricingMode(value as PricingMode)}
-                  >
-                    <SelectTrigger id="class-pricing-mode" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRICING_MODE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="class-price">
-                    {
-                      PRICING_MODE_OPTIONS.find(
-                        (option) => option.value === pricingMode,
-                      )?.priceLabel
-                    }
-                  </Label>
-                  <Input
-                    id="class-price"
-                    inputMode="numeric"
-                    max={10_000_000_000}
-                    value={form.defaultPriceVnd}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        defaultPriceVnd: e.target.value
-                          ? formatVnd(parseVnd(e.target.value)).replace(
-                              " ₫",
-                              "",
-                            )
-                          : "",
-                      })
-                    }
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="class-pricing-mode">Cách tính</Label>
+                    <Select
+                      value={pricingMode}
+                      onValueChange={(value) =>
+                        setPricingMode(value as PricingMode)
+                      }
+                    >
+                      <SelectTrigger id="class-pricing-mode" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRICING_MODE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="class-price">Số tiền</Label>
+                    <div className="relative">
+                      <Input
+                        id="class-price"
+                        inputMode="numeric"
+                        max={10_000_000_000}
+                        className="pr-20"
+                        value={form.defaultPriceVnd}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            defaultPriceVnd: e.target.value
+                              ? formatVnd(parseVnd(e.target.value)).replace(
+                                  " ₫",
+                                  "",
+                                )
+                              : "",
+                          })
+                        }
+                      />
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground"
+                      >
+                        {
+                          PRICING_MODE_OPTIONS.find(
+                            (option) => option.value === pricingMode,
+                          )?.unit
+                        }
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Lịch dạy cố định</Label>

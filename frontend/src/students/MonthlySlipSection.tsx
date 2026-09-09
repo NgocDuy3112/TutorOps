@@ -112,7 +112,7 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
                 <div data-noexport className="shrink-0">
                   <Select value={month} onValueChange={setMonth}>
                     <SelectTrigger
-                      className="w-36 rounded-xl border-primary-foreground/30 bg-white/15 text-primary-foreground hover:bg-white/25"
+                      className="min-h-10 w-fit gap-1 rounded-xl border-primary-foreground/30 bg-white/15 px-3 py-1.5 text-sm text-primary-foreground hover:bg-white/25 [&>span]:whitespace-nowrap"
                       aria-label="Chọn tháng"
                     >
                       <SelectValue />
