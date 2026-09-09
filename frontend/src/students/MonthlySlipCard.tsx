@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, type ReactNode } from "react";
 import { formatVnd, formatMonthLabel } from "../lib/format";
 
 export type SlipData = {
@@ -30,15 +30,22 @@ function formatDate(value: string | null) {
 /**
  * Phiếu tổng kết tháng — render tĩnh để xuất ảnh PNG (html-to-image).
  * Chỉ dùng token màu sẵn có, không style động.
+ *
+ * `headerAction` / `footer` host interactive controls (month filter, comment
+ * editor). They render inside the card but must be marked `data-noexport`
+ * by the caller — the PNG export filter strips them.
  */
-export const MonthlySlipCard = forwardRef<HTMLDivElement, { slip: SlipData }>(
-  function MonthlySlipCard({ slip }, ref) {
-    return (
-      <div
-        ref={ref}
-        className="overflow-hidden rounded-2xl border bg-white text-slate-900"
-      >
-        <header className="bg-primary px-5 py-4 text-primary-foreground">
+export const MonthlySlipCard = forwardRef<
+  HTMLDivElement,
+  { slip: SlipData; headerAction?: ReactNode; footer?: ReactNode }
+>(function MonthlySlipCard({ slip, headerAction, footer }, ref) {
+  return (
+    <div
+      ref={ref}
+      className="overflow-hidden rounded-2xl border bg-white text-slate-900"
+    >
+      <header className="flex items-start justify-between gap-3 bg-primary px-5 py-4 text-primary-foreground">
+        <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-foreground/70">
             Phiếu tổng kết tháng
           </p>
@@ -46,7 +53,9 @@ export const MonthlySlipCard = forwardRef<HTMLDivElement, { slip: SlipData }>(
           <p className="text-sm text-primary-foreground/80">
             {formatMonthLabel(new Date(`${slip.month}-01T00:00:00`))}
           </p>
-        </header>
+        </div>
+        {headerAction}
+      </header>
 
         <div className="space-y-4 px-5 py-4">
           <section>
@@ -116,6 +125,7 @@ export const MonthlySlipCard = forwardRef<HTMLDivElement, { slip: SlipData }>(
             </div>
           </section>
         </div>
+        {footer}
       </div>
     );
   },

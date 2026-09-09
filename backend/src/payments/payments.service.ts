@@ -106,7 +106,8 @@ export class PaymentsService {
       payments: payments.rows,
       totalDue,
       totalPaid,
-      balance: totalDue - totalPaid,
+      // Overpayment (paid beyond due) is not negative debt.
+      balance: Math.max(totalDue - totalPaid, 0),
       sessionCount,
     };
   }

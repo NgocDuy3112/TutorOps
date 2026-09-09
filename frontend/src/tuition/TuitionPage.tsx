@@ -496,6 +496,9 @@ function TuitionRowCard({
   const legacy = row.id == null;
   const noActivity = !legacy && row.sessionCount === 0 && row.paid <= 0;
   const settled = !noActivity && row.balance <= 0;
+  // Paid beyond due (e.g. money assigned to a class that did not teach this
+  // month) — the amount is real, but "settled" alone would look confusing.
+  const overpaid = !legacy && row.balance < 0;
   return (
     <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
       <CardContent className="flex items-center gap-3 p-4">
@@ -518,9 +521,11 @@ function TuitionRowCard({
           <p className="mt-0.5 text-xs text-muted-foreground">
             {legacy
               ? "Khoản thu cũ trước khi quy về lớp"
-              : noActivity
-                ? "Chưa có buổi dạy"
-                : `Đã dạy ${row.sessionCount} buổi`}
+              : overpaid
+                ? `Đã trả thừa ${formatVnd(row.paid - row.due)}`
+                : noActivity
+                  ? "Chưa có buổi dạy"
+                  : `Đã dạy ${row.sessionCount} buổi`}
           </p>
         </div>
         <div className="shrink-0 text-right">
