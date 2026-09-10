@@ -130,7 +130,7 @@ export function OverviewPage() {
               />
               <KpiCard
                 icon={<Wallet size={16} />}
-                label="Đã thu"
+                label="Khoản đã thu"
                 value={formatVnd(data.paidThisMonth)}
                 delta={delta(data.paidThisMonth, data.paidLastMonth)}
                 to="/tuition"

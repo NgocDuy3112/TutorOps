@@ -5,5 +5,6 @@ import { SchedulesService } from "./schedules.service";
 @Module({
   imports: [CommonModule],
   providers: [SchedulesService],
+  exports: [SchedulesService],
 })
 export class SchedulesModule {}

@@ -1,4 +1,5 @@
 import type {
+  ConfirmSlotDto,
   TeachingSessionDto,
   UpdateTeachingSessionDto,
 } from "./sessions.dto";
@@ -83,8 +84,62 @@ export class SessionsService {
       throw new NotFoundError(ErrorCodes.SESSION_NOT_FOUND);
     return { ok: true };
   }
+
+  // Confirms a fixed-schedule slot: materializes one taught session per
+  // enrolled student for every schedule slot matching that weekday. Slot
+  // times/prices come from the class (server-side source of truth).
+  async confirmSlot(teacherId: string, classId: string, input: ConfirmSlotDto) {
+    const pricing = await this.repository.classOwned(teacherId, classId);
+    if (!pricing) throw new NotFoundError(ErrorCodes.CLASS_NOT_FOUND);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date))
+      throw new BadRequestError(ErrorCodes.INVALID_TEACHING_SESSION);
+    const [year, month, day] = input.date.split("-").map(Number);
+    const dayUtcMs = Date.UTC(year, month - 1, day);
+    const weekday = new Date(dayUtcMs).getUTCDay();
+
+    const slots = await this.repository.classSlots(classId, weekday);
+    if (slots.length === 0)
+      throw new BadRequestError(ErrorCodes.SLOT_NOT_FOUND);
+
+    const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
+    const studentIds = await this.repository.classStudentIds(classId);
+    let created = 0;
+    for (const slot of slots) {
+      const startUtcMs = dayUtcMs + parseHm(slot.startTime) - VN_OFFSET_MS;
+      const endUtcMs = dayUtcMs + parseHm(slot.endTime) - VN_OFFSET_MS;
+      const taughtAt = new Date(startUtcMs).toISOString();
+      const endsAt = new Date(endUtcMs).toISOString();
+      this.assertNotFuture(taughtAt);
+      const priceVnd = this.computePrice(
+        { ...pricing, classId },
+        {
+          taughtAt,
+          endsAt,
+          priceVnd: undefined,
+        },
+      );
+      for (const studentId of studentIds) {
+        if (
+          await this.repository.insertConfirmed(
+            studentId,
+            classId,
+            taughtAt,
+            endsAt,
+            priceVnd,
+          )
+        )
+          created += 1;
+      }
+    }
+    return { created };
+  }
   private async assertOwner(teacherId: string, studentId: string) {
     if (!(await this.repository.studentOwned(teacherId, studentId)))
       throw new NotFoundError(ErrorCodes.STUDENT_NOT_FOUND);
   }
+}
+
+function parseHm(value: string): number {
+  const [hours, minutes] = value.split(":").map(Number);
+  return (hours * 60 + minutes) * 60_000;
 }

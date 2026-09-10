@@ -13,7 +13,6 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { TuitionModule } from "./tuition/tuition.module";
 import { ClassesModule } from "./classes/classes.module";
-import { SchedulesModule } from "./schedules/schedules.module";
 import { OcrModule } from "./ocr/ocr.module";
 import { SlipsModule } from "./slips/slips.module";
 import { CommonModule } from "./common/common.module";
@@ -36,7 +35,6 @@ import { VersionModule } from "./version/version.module";
     DashboardModule,
     TuitionModule,
     ClassesModule,
-    SchedulesModule,
     OcrModule,
     SlipsModule,
     VersionModule,
