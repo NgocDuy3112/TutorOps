@@ -16,7 +16,7 @@ export type ScheduleSlot = {
 };
 
 const WEEKDAYS = [
-  "Chủ nhật",
+  "C.Nhật",
   "Thứ 2",
   "Thứ 3",
   "Thứ 4",
@@ -74,7 +74,7 @@ export function ScheduleEditor({
             className="min-h-9 min-w-0 flex-1 rounded-lg px-2 text-xs [&::-webkit-calendar-picker-indicator]:hidden"
           />
           <span aria-hidden className="shrink-0 text-xs text-muted-foreground">
-            –
+            đến
           </span>
           <Input
             type="time"
