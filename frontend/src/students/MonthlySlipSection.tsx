@@ -76,17 +76,43 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
     if (!slipRef.current || !slip) return;
     setExporting(true);
     try {
-      const dataUrl = await toPng(slipRef.current, {
-        pixelRatio: 2,
-        // Interactive controls (month filter, comment editor) live inside the
-        // card but must not appear in the exported image.
-        filter: (node) =>
-          !(node instanceof HTMLElement && node.dataset.noexport === "true"),
-      });
-      const link = document.createElement("a");
-      link.download = `phieu-tong-ket-${slip.student.name}-${month}.png`;
-      link.href = dataUrl;
-      link.click();
+      // The QR is an auth-protected cross-origin image: <img> renders it fine
+      // but html-to-image re-fetches it without credentials and fails. Inline
+      // it as a data URL first, restore the original src afterwards.
+      const qr = slipRef.current.querySelector<HTMLImageElement>(
+        "img[alt='Mã QR chuyển khoản']",
+      );
+      let originalSrc: string | null = null;
+      if (qr && !qr.src.startsWith("data:")) {
+        const response = await fetch(qr.src, { credentials: "include" });
+        if (!response.ok) throw new Error("Không thể tải mã QR.");
+        originalSrc = qr.src;
+        const blob = await response.blob();
+        qr.src = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error("Không thể đọc mã QR."));
+          reader.readAsDataURL(blob);
+        });
+      }
+      try {
+        const dataUrl = await toPng(slipRef.current, {
+          pixelRatio: 2,
+          // Interactive controls (month filter, comment editor) live inside
+          // the card but must not appear in the exported image.
+          filter: (node) =>
+            !(node instanceof HTMLElement && node.dataset.noexport === "true"),
+          // Let the library inline any remaining resources with the session
+          // cookie instead of an anonymous fetch.
+          fetchRequestInit: { credentials: "include" },
+        });
+        const link = document.createElement("a");
+        link.download = `phieu-tong-ket-${slip.student.name}-${month}.png`;
+        link.href = dataUrl;
+        link.click();
+      } finally {
+        if (qr && originalSrc) qr.src = originalSrc;
+      }
     } catch {
       setError("Không thể xuất ảnh phiếu. Vui lòng thử lại.");
     } finally {
