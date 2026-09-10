@@ -20,7 +20,7 @@ const SESSION_COOKIE = "tutorops_session";
 // Session TTL in seconds; keep in sync with auth.service createSession.
 const SESSION_TTL_SECONDS = 86400;
 import { AuthService } from "./auth.service";
-import { CredentialsDto } from "./auth.dto";
+import { CredentialsDto, GoogleOneTapDto } from "./auth.dto";
 import { UpdateProfileDto, ChangePasswordDto } from "./profile.dto";
 import { GoogleCalendarService } from "../google-calendar/google-calendar.service";
 
@@ -44,6 +44,17 @@ export class AuthController {
   }
   @Get("google") async google() {
     return this.auth.getGoogleUrl();
+  }
+  @Post("google/onetap")
+  @ApiOperation({ summary: "Sign in with Google One Tap ID token" })
+  async googleOneTap(
+    @Body() body: GoogleOneTapDto,
+    @Res({ passthrough: true }) response: HttpResponse,
+  ) {
+    return this.setSession(
+      response,
+      this.auth.googleOneTap(body.credential),
+    );
   }
   @Get("google/callback") async googleCallback(
     @Query("code") code: string,
