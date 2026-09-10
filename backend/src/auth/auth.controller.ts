@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Post,
   Patch,
@@ -21,11 +22,15 @@ const SESSION_TTL_SECONDS = 86400;
 import { AuthService } from "./auth.service";
 import { CredentialsDto } from "./auth.dto";
 import { UpdateProfileDto, ChangePasswordDto } from "./profile.dto";
+import { GoogleCalendarService } from "../google-calendar/google-calendar.service";
 
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly googleCalendar: GoogleCalendarService,
+  ) {}
   @Post("register")
   @ApiOperation({ summary: "Register teacher" })
   async register(
@@ -46,10 +51,29 @@ export class AuthController {
     @Res() response: HttpResponse,
   ) {
     const result = await this.auth.googleCallback(code, state);
-    this.setCookie(response, result.token);
-    return response.redirect(
-      process.env.FRONTEND_URL ?? "http://localhost:5173",
-    );
+    const frontend = process.env.FRONTEND_URL ?? "http://localhost:5173";
+    if ("mode" in result && result.mode === "calendar") {
+      // Calendar connect: user was already logged in — just report back.
+      return response.redirect(`${frontend}/settings?gcal=connected`);
+    }
+    this.setCookie(response, (result as { token: string }).token);
+    return response.redirect(frontend);
+  }
+  @Get("google/calendar")
+  @UseGuards(AuthGuard)
+  async calendarConnect(@Req() request: AuthenticatedRequest) {
+    return this.auth.getCalendarConnectUrl(request.user.id);
+  }
+  @Get("google/calendar/status")
+  @UseGuards(AuthGuard)
+  async calendarStatus(@Req() request: AuthenticatedRequest) {
+    return { connected: await this.googleCalendar.isConnected(request.user.id) };
+  }
+  @Delete("google/calendar")
+  @UseGuards(AuthGuard)
+  async calendarDisconnect(@Req() request: AuthenticatedRequest) {
+    await this.googleCalendar.disconnect(request.user.id);
+    return { ok: true };
   }
   @Post("login") @ApiOperation({ summary: "Login teacher" }) async login(
     @Body() body: CredentialsDto,

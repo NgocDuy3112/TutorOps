@@ -10,6 +10,7 @@ import { redis } from "../db/client";
 import { AuthRepository } from "./auth.repository";
 import { FilesService } from "../files/files.service";
 import { StorageService } from "../storage/storage.service";
+import { GoogleCalendarRepository } from "../google-calendar/google-calendar.repository";
 import type { AuthUser } from "./http.types";
 import { OAuth2Client } from "google-auth-library";
 
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly repository: AuthRepository,
     private readonly files: FilesService,
     private readonly storage: StorageService,
+    private readonly calendarTokens: GoogleCalendarRepository,
   ) {}
   private google = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
@@ -56,7 +58,29 @@ export class AuthService {
     };
   }
 
+  /** Calendar connect: offline access + events scope so we can push
+   *  recurring schedule events. State is prefixed `cal:` so the shared
+   *  callback route can branch between login and calendar flows. */
+  async getCalendarConnectUrl(userId: string) {
+    const state = crypto.randomBytes(32).toString("base64url");
+    await redis.set(`oauth:cal:${state}`, userId, { EX: 600 });
+    return {
+      url: this.google.generateAuthUrl({
+        access_type: "offline",
+        scope: [
+          "openid",
+          "email",
+          "profile",
+          "https://www.googleapis.com/auth/calendar.events",
+        ],
+        state: `cal:${state}`,
+        prompt: "consent", // refresh_token is only issued on first consent
+      }),
+    };
+  }
+
   async googleCallback(code: string, state: string) {
+    if (state?.startsWith("cal:")) return this.calendarCallback(code, state);
     const stateKey = `oauth:google:state:${state}`;
     if (!state || !(await redis.get(stateKey)))
       throw new UnauthorizedError(ErrorCodes.INVALID_OAUTH_STATE);
@@ -77,6 +101,27 @@ export class AuthService {
       payload.name ?? payload.given_name ?? undefined,
     );
     return this.createSession(user);
+  }
+
+  /** Exchanges the calendar-flow code for tokens and stores them.
+   *  Returns connected=true on success so the redirect can inform the UI. */
+  private async calendarCallback(code: string, state: string) {
+    const stateKey = `oauth:cal:${state.slice("cal:".length)}`;
+    const userId = await redis.get(stateKey);
+    if (!userId) throw new UnauthorizedError(ErrorCodes.INVALID_OAUTH_STATE);
+    await redis.del(stateKey);
+    const { tokens } = await this.google.getToken(code);
+    if (!tokens.refresh_token)
+      throw new UnauthorizedError(ErrorCodes.INVALID_OAUTH_STATE);
+    await this.calendarTokens.upsertTokens(userId, {
+      refreshToken: tokens.refresh_token!,
+      accessToken: tokens.access_token ?? null,
+      tokenExpiry:
+        tokens.expiry_date != null
+          ? new Date(tokens.expiry_date)
+          : null,
+    });
+    return { mode: "calendar" as const, userId };
   }
 
   async profile(userId: string) {
