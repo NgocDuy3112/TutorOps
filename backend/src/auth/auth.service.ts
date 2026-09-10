@@ -90,19 +90,36 @@ export class AuthService {
     const { tokens } = await this.google.getToken(code);
     if (!tokens.id_token)
       throw new UnauthorizedError(ErrorCodes.MISSING_GOOGLE_ID_TOKEN);
-    const ticket = await this.google.verifyIdToken({
-      idToken: tokens.id_token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    if (!payload?.sub || !payload.email || payload.email_verified !== true)
-      throw new UnauthorizedError(ErrorCodes.INVALID_GOOGLE_IDENTITY);
+    const payload = await this.verifyGoogleIdentity(tokens.id_token);
     const user = await this.repository.findOrCreateGoogleUser(
       payload.email.toLowerCase(),
       payload.sub,
       payload.name ?? payload.given_name ?? undefined,
     );
     return this.createSession(user);
+  }
+
+  /** One Tap / GIS: the browser hands us a signed ID token directly —
+   *  no code exchange needed. Same identity checks as the redirect flow. */
+  async googleOneTap(credential: string) {
+    const payload = await this.verifyGoogleIdentity(credential);
+    const user = await this.repository.findOrCreateGoogleUser(
+      payload.email.toLowerCase(),
+      payload.sub,
+      payload.name ?? payload.given_name ?? undefined,
+    );
+    return this.createSession(user);
+  }
+
+  private async verifyGoogleIdentity(idToken: string) {
+    const ticket = await this.google.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload?.sub || !payload.email || payload.email_verified !== true)
+      throw new UnauthorizedError(ErrorCodes.INVALID_GOOGLE_IDENTITY);
+    return payload;
   }
 
   /** Exchanges the calendar-flow code for tokens and stores them.

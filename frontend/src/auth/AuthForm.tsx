@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GoogleButton } from "./AuthLayout";
+import { GoogleButton } from "./GoogleAuth";
 import { API } from "../lib/api";
 
 type AuthMode = "login" | "signup";
@@ -91,7 +91,7 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
               : "Tạo tài khoản"}
         </Button>
 
-        <GoogleButton />
+        <GoogleButton onSuccess={onSuccess} />
 
         <p className="text-center text-base text-muted-foreground">
           {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}{" "}

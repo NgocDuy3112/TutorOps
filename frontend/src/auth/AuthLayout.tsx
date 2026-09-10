@@ -1,6 +1,4 @@
 import { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { API } from "../lib/api";
 
 type AuthLayoutProps = {
   title: string;
@@ -26,30 +24,5 @@ export function AuthLayout({ title, description, children }: AuthLayoutProps) {
         {children}
       </div>
     </main>
-  );
-}
-
-export function GoogleButton() {
-  async function login() {
-    const response = await fetch(`${API}/auth/google`);
-    const { url } = await response.json();
-    window.location.href = url;
-  }
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      className="min-h-12 w-full rounded-2xl"
-      onClick={() => void login()}
-    >
-      <img
-        src="/google-icon.png"
-        alt=""
-        aria-hidden="true"
-        className="h-5 w-5"
-      />
-      <span>Tiếp tục với Google</span>
-    </Button>
   );
 }
