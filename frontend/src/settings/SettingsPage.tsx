@@ -116,9 +116,14 @@ export function SettingsPage() {
                 aria-label="Google Lịch"
                 onCheckedChange={(checked) => {
                   if (checked) {
-                    // Turning on redirects to Google consent; the switch
-                    // flips for real after returning to /settings.
-                    window.location.href = `${API}/auth/google/calendar`;
+                    // The connect endpoint returns JSON {url} (same shape as
+                    // the login flow) — fetch it, then go to Google consent.
+                    // The switch flips for real after returning to /settings.
+                    void fetch(`${API}/auth/google/calendar`)
+                      .then((response) => response.json())
+                      .then(({ url }) => {
+                        window.location.href = url;
+                      });
                     return;
                   }
                   setCalendarState("loading");
