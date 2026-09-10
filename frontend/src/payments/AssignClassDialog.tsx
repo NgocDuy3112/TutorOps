@@ -41,7 +41,7 @@ type AssignClassDialogProps = {
   /** Viewed tuition month ("YYYY-MM") — legacy payments are filtered to it. */
   month: string;
   onOpenChange: (open: boolean) => void;
-  onSaved: () => void;
+  onSaved: (className: string) => void;
 };
 
 export function AssignClassDialog({
@@ -110,7 +110,9 @@ export function AssignClassDialog({
       if (!response.ok)
         throw new Error("Không thể gán khoản thu. Vui lòng thử lại.");
       setPayments((current) => current.filter((item) => item.id !== payment.id));
-      onSaved();
+      onSaved(
+        classes.find((option) => option.id === classId)?.name ?? "",
+      );
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",

@@ -11,6 +11,7 @@ import { AuthRepository } from "./auth.repository";
 import { FilesService } from "../files/files.service";
 import { StorageService } from "../storage/storage.service";
 import { GoogleCalendarRepository } from "../google-calendar/google-calendar.repository";
+import { GoogleCalendarService } from "../google-calendar/google-calendar.service";
 import type { AuthUser } from "./http.types";
 import { OAuth2Client } from "google-auth-library";
 
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly files: FilesService,
     private readonly storage: StorageService,
     private readonly calendarTokens: GoogleCalendarRepository,
+    private readonly googleCalendar: GoogleCalendarService,
   ) {}
   private google = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
@@ -121,6 +123,9 @@ export class AuthService {
           ? new Date(tokens.expiry_date)
           : null,
     });
+    // Connected: push the teacher's existing schedules right away, so the
+    // toggle flipping on means the calendar is actually populated.
+    await this.googleCalendar.syncTeacher(userId).catch(() => undefined);
     return { mode: "calendar" as const, userId };
   }
 

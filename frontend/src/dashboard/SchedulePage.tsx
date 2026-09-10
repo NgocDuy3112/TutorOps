@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatMonthLabel, formatVnd } from "../lib/format";
+import { Toast } from "../components/Toast";
 import { MobileShell } from "../layout/MobileShell";
 import { UserAvatar } from "../layout/UserAvatar";
 import { MarkTaughtSheet } from "../students/MarkTaughtSheet";
@@ -97,6 +98,7 @@ export function SchedulePage() {
     null,
   );
   const [confirmingSlot, setConfirmingSlot] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -182,6 +184,7 @@ export function SchedulePage() {
         setError(friendlyError(detail, "Không thể xác nhận buổi dạy. Vui lòng thử lại."));
         return;
       }
+      setToast("Đã xác nhận buổi dạy — học phí đã được tính");
       await loadDashboard();
     } catch {
       setError("Không thể kết nối máy chủ. Vui lòng thử lại.");
@@ -539,13 +542,15 @@ export function SchedulePage() {
             setSelectedStudent(null);
             setEditingSession(null);
           }}
-          onSaved={() => {
+          onSaved={(message) => {
             setSelectedStudent(null);
             setEditingSession(null);
+            setToast(message);
             void loadDashboard();
           }}
         />
       )}
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }

@@ -12,6 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { monthKey, recentMonthOptions } from "../lib/format";
+import { Toast } from "../components/Toast";
 import { API } from "../lib/api";
 import { MonthlySlipCard, type SlipData } from "./MonthlySlipCard";
 
@@ -22,6 +23,7 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState("");
   const slipRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +65,7 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
       );
       if (!response.ok) throw new Error("Không thể lưu nhận xét.");
       await load();
+      setToast("Đã lưu nhận xét");
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
@@ -106,10 +109,9 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
           // cookie instead of an anonymous fetch.
           fetchRequestInit: { credentials: "include" },
         });
-        const link = document.createElement("a");
-        link.download = `phieu-tong-ket-${slip.student.name}-${month}.png`;
         link.href = dataUrl;
         link.click();
+        setToast("Đã tải ảnh phiếu tổng kết");
       } finally {
         if (qr && originalSrc) qr.src = originalSrc;
       }
@@ -201,6 +203,7 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
           </>
         ) : null}
       </div>
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </section>
   );
 }

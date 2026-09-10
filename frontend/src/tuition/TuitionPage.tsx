@@ -31,6 +31,7 @@ import { UserAvatar } from "../layout/UserAvatar";
 import { PaymentDialog } from "../payments/PaymentDialog";
 import { EditPaymentDialog } from "../payments/EditPaymentDialog";
 import { AssignClassDialog } from "../payments/AssignClassDialog";
+import { Toast } from "../components/Toast";
 import { API } from "../lib/api";
 
 type TuitionClass = {
@@ -70,6 +71,7 @@ export function TuitionPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
 
   async function load(target: Date) {
     setLoading(true);
@@ -126,6 +128,11 @@ export function TuitionPage() {
       }
       setDeleting(null);
       await load(month);
+      setToast(
+        ids.length > 0
+          ? `Đã xoá ${ids.length} khoản đã nhận tháng ${targetMonth}`
+          : "Không có khoản nào trong tháng để xoá",
+      );
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
@@ -388,8 +395,12 @@ export function TuitionPage() {
         legacy={assigningLegacy}
         month={monthKey(month)}
         onOpenChange={(open) => !open && setAssigningLegacy(null)}
-        onSaved={() => void load(month)}
+        onSaved={(className) => {
+          setToast(`Đã gán khoản thu vào lớp ${className}`);
+          void load(month);
+        }}
       />
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }

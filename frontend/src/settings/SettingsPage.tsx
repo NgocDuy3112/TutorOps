@@ -16,14 +16,24 @@ import { Card } from "@/components/ui/card";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { PushNotificationSetup } from "../notifications/PushNotificationSetup";
+import { Toast } from "../components/Toast";
 import { API } from "../lib/api";
 
 export function SettingsPage() {
   const [calendarState, setCalendarState] = useState<
     "loading" | "connected" | "disconnected"
   >("loading");
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const justConnected = searchParams.get("gcal") === "connected";
+  const [toast, setToast] = useState<string | null>(
+    justConnected ? "Đã kết nối Google Lịch — lịch dạy đã được đẩy lên." : null,
+  );
+
+  useEffect(() => {
+    if (!justConnected) return;
+    // Clear the ?gcal flag so a refresh never re-triggers the toast.
+    setSearchParams({}, { replace: true });
+  }, [justConnected, setSearchParams]);
 
   useEffect(() => {
     if (!justConnected) return;
@@ -51,7 +61,10 @@ export function SettingsPage() {
     const response = await fetch(`${API}/auth/google/calendar`, {
       method: "DELETE",
     });
-    if (response.ok) setCalendarState("disconnected");
+    if (response.ok) {
+      setCalendarState("disconnected");
+      setToast("Đã ngắt kết nối Google Lịch.");
+    }
   }
 
   async function logout() {
@@ -144,6 +157,7 @@ export function SettingsPage() {
           Quản lý tài khoản TutorOps
         </p>
       </main>
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }

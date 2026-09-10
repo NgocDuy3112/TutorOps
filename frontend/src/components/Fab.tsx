@@ -2,12 +2,7 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Plus } from "lucide-react";
 
-/**
- * Floating action button, bottom-right. Sits above the mobile bottom nav
- * (bottom-24 clears nav + safe area); docks to the corner on desktop.
- * Rendered through a portal: page containers carry a transform from the
- * page-in animation, which would break position:fixed inside them.
- */
+
 export function Fab({
   onClick,
   label,

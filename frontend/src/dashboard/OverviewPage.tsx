@@ -144,7 +144,12 @@ export function OverviewPage() {
               />
             </section>
 
-            <OverviewSection title="Hôm nay" icon={<CalendarCheck size={18} />}>
+            <OverviewSection
+              title="Hôm nay"
+              icon={<CalendarCheck size={18} className="text-primary" />}
+              count={data.todaySessions.length}
+              countLabel="buổi"
+            >
               {data.todaySessions.length === 0 ? (
                 <SectionEmpty
                   icon={<CalendarCheck size={20} />}
@@ -155,7 +160,7 @@ export function OverviewPage() {
                   <Link
                     key={session.id}
                     to={`/students/${session.studentId}`}
-                    className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm shadow-slate-100 transition-colors hover:bg-slate-50"
+                    className="flex min-h-12 items-center gap-3 rounded-xl px-2 transition-colors hover:bg-slate-50"
                   >
                     <span className="w-14 shrink-0 text-sm font-black text-primary">
                       {formatTime(session.taughtAt)}
@@ -169,7 +174,12 @@ export function OverviewPage() {
               )}
             </OverviewSection>
 
-            <OverviewSection title="Sắp đến hạn" icon={<ClipboardList size={18} />}>
+            <OverviewSection
+              title="Sắp đến hạn"
+              icon={<ClipboardList size={18} className="text-primary" />}
+              count={data.upcomingDeadlines.length}
+              countLabel="bài tập"
+            >
               {data.upcomingDeadlines.length === 0 ? (
                 <SectionEmpty
                   icon={<ClipboardList size={20} />}
@@ -180,7 +190,7 @@ export function OverviewPage() {
                   <Link
                     key={deadline.id}
                     to={`/assignments/${deadline.id}/submissions`}
-                    className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm shadow-slate-100 transition-colors hover:bg-slate-50"
+                    className="flex min-h-12 items-center gap-3 rounded-xl px-2 transition-colors hover:bg-slate-50"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold">
@@ -282,20 +292,31 @@ function DeltaBadge({ delta }: { delta: number }) {
 function OverviewSection({
   title,
   icon,
+  count,
+  countLabel,
   children,
 }: {
   title: string;
   icon: React.ReactNode;
+  count: number;
+  countLabel: string;
   children: React.ReactNode;
 }) {
   return (
-    <section>
-      <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-bold text-slate-800">
-        <span className="text-primary">{icon}</span>
-        {title}
-      </h2>
-      <div className="space-y-2">{children}</div>
-    </section>
+    <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
+      <CardHeader className="flex-row items-center justify-between border-b border-slate-100 p-4 pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          {icon}
+          {title}
+        </CardTitle>
+        <span className="text-xs text-muted-foreground">
+          {count} {countLabel}
+        </span>
+      </CardHeader>
+      <CardContent className="p-3">
+        <div className="space-y-1">{children}</div>
+      </CardContent>
+    </Card>
   );
 }
 
