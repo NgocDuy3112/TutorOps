@@ -19,6 +19,18 @@ type GoogleAccountId = {
     callback: (response: GoogleCredentialResponse) => void;
   }) => void;
   prompt: () => void;
+  renderButton: (
+    parent: HTMLElement,
+    options: {
+      type?: string;
+      theme?: string;
+      size?: string;
+      text?: string;
+      shape?: string;
+      logo_alignment?: string;
+      width?: number;
+    },
+  ) => void;
 };
 
 declare global {
@@ -120,6 +132,7 @@ function GoogleAuthSheet({
 }: GoogleAuthSheetProps) {
   const [error, setError] = useState("");
   const [prompted, setPrompted] = useState(false);
+  const buttonRef = useRef<HTMLDivElement>(null);
   const onSuccessRef = useRef(onSuccess);
   onSuccessRef.current = onSuccess;
 
@@ -136,14 +149,16 @@ function GoogleAuthSheet({
         onSuccessRef.current();
         return;
       }
-      setError("Không đăng nhập được bằng Google. Thử lại hoặc dùng nút bên dưới.");
+      setError("Không đăng nhập được bằng Google. Thử lại nhé.");
     },
     [onOpenChange],
   );
 
-  // One Tap can only be triggered by the browser — calling prompt() when
-  // the sheet opens is best-effort; the redirect button below is the
-  // guaranteed fallback when the prompt is suppressed or dismissed.
+  // One Tap prompt() is browser-controlled and may be suppressed
+  // (cooldown / FedCM rules), so the sheet also renders Google's official
+  // button. Clicking it opens the native account chooser (FedCM on Chrome
+  // slides up from the bottom on mobile) and returns the ID token straight
+  // to our callback — no full-page redirect involved.
   useEffect(() => {
     if (!open) {
       setPrompted(false);
@@ -159,6 +174,17 @@ function GoogleAuthSheet({
           client_id: GOOGLE_CLIENT_ID,
           callback: (response) => void handleCredential(response),
         });
+        if (buttonRef.current) {
+          window.google.accounts.id.renderButton(buttonRef.current, {
+            type: "standard",
+            theme: "outline",
+            size: "large",
+            text: "continue_with",
+            shape: "pill",
+            logo_alignment: "center",
+            width: buttonRef.current.clientWidth,
+          });
+        }
         window.google.accounts.id.prompt();
         setPrompted(true);
       })
@@ -175,8 +201,8 @@ function GoogleAuthSheet({
           <SheetTitle>Đăng nhập với Google</SheetTitle>
           <SheetDescription>
             {prompted
-              ? "Chọn tài khoản Google trong cửa sổ vừa hiện. Nếu không thấy, bấm nút bên dưới."
-              : "Tiếp tục bằng tài khoản Google của bạn."}
+              ? "Chọn tài khoản Google trong cửa sổ vừa hiện."
+              : "Chọn tài khoản Google để tiếp tục."}
           </SheetDescription>
         </SheetHeader>
 
@@ -186,15 +212,9 @@ function GoogleAuthSheet({
           </p>
         )}
 
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-4 min-h-12 w-full rounded-2xl"
-          onClick={redirectToGoogle}
-        >
-          <GoogleIcon />
-          <span>Tiếp tục với Google</span>
-        </Button>
+        {/* Google renders its own button here — full width via the width
+            option measured from this container. */}
+        <div ref={buttonRef} className="mt-4 min-h-12 w-full" />
       </SheetContent>
     </Sheet>
   );
