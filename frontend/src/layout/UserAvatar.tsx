@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { API } from "../lib/api";
-import { SettingsSheet } from "../settings/SettingsSheet";
 
 type Profile = { email: string; fullName: string | null };
 
@@ -16,7 +16,7 @@ const initials = (profile: Profile | null) => {
 
 export function UserAvatar() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${API}/auth/me`)
@@ -29,15 +29,13 @@ export function UserAvatar() {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => navigate("/settings")}
         className="grid size-11 place-items-center rounded-full bg-violet-100 text-sm font-bold text-primary shadow-sm transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-        aria-label="Mở menu cá nhân"
-        aria-haspopup="dialog"
+        aria-label="Mở cài đặt"
         title={profile?.fullName || profile?.email || "Cá nhân"}
       >
         {initials(profile)}
       </button>
-      <SettingsSheet open={open} onOpenChange={setOpen} />
     </>
   );
 }
