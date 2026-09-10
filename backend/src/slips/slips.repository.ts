@@ -61,6 +61,7 @@ export class SlipsRepository {
            FROM teaching_sessions ts
            LEFT JOIN classes c ON c.id = ts.class_id
            WHERE ts.student_id = $1 AND ts.deleted_at IS NULL
+             AND ts.status = 'taught'
              AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
            ORDER BY ts.taught_at`,
           [studentId, APP_TIMEZONE, month],
@@ -75,6 +76,7 @@ export class SlipsRepository {
            FROM teaching_sessions ts
            LEFT JOIN classes c ON c.id = ts.class_id
            WHERE ts.student_id = $1 AND ts.deleted_at IS NULL
+             AND ts.status = 'taught'
              AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3`,
           [studentId, APP_TIMEZONE, month],
         ),
@@ -86,6 +88,7 @@ export class SlipsRepository {
              INNER JOIN classes c ON c.id = ts.class_id
              WHERE c.pricing_mode = 'per_month' AND c.deleted_at IS NULL
                AND ts.deleted_at IS NULL AND ts.student_id = $1
+               AND ts.status = 'taught'
                AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
            ) AS distinct_classes`,
           [studentId, APP_TIMEZONE, month],

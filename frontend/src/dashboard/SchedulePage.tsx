@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarCheck,
-  Check,
-  GraduationCap,
   Loader2,
   Pencil,
   Plus,
   CalendarOff,
   ChevronLeft,
   ChevronRight,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +33,7 @@ type TutorClass = {
   id: string;
   name: string;
   defaultPriceVnd: number | null;
+  schedules?: { weekday: number; startTime: string }[];
   students: Student[];
 };
 type SessionStatus = "unconfirmed" | "taught" | "cancelled";
@@ -135,10 +133,6 @@ export function SchedulePage() {
 
   const selectedSessions = sessionsByDate.get(dateKey(selectedDate)) ?? [];
   const todaySessions = sessionsByDate.get(dateKey(new Date())) ?? [];
-  // Cancelled sessions are informational only — they never count toward pay.
-  const selectedTotal = selectedSessions
-    .filter((session) => session.status !== "cancelled")
-    .reduce((sum, session) => sum + Number(session.priceVnd), 0);
   const selectedGroups = useMemo(
     () => groupAgenda(selectedSessions),
     [selectedSessions],
@@ -172,7 +166,17 @@ export function SchedulePage() {
     if (!selectedClass) return;
     setCreatingSession(true);
     const taughtAt = new Date(selectedDate);
-    taughtAt.setHours(new Date().getHours(), new Date().getMinutes(), 0, 0);
+    // Default to the class's fixed slot for this weekday; fall back to the
+    // current clock time only for classes without a matching schedule.
+    const slot = selectedClass.schedules?.find(
+      (item) => item.weekday === selectedDate.getDay(),
+    );
+    if (slot) {
+      const [hour, minute] = slot.startTime.split(":").map(Number);
+      taughtAt.setHours(hour, minute, 0, 0);
+    } else {
+      taughtAt.setHours(new Date().getHours(), new Date().getMinutes(), 0, 0);
+    }
     try {
       const response = await fetch(`${API}/students/${student.id}/sessions`, {
         method: "POST",
@@ -198,31 +202,6 @@ export function SchedulePage() {
       setError("Không thể kết nối máy chủ. Vui lòng thử lại.");
     } finally {
       setCreatingSession(false);
-    }
-  }
-
-  async function setSessionStatus(
-    session: TeachingSession,
-    status: SessionStatus,
-  ) {
-    if (session.status === status) return;
-    // Optimistic update so the tick feels instant.
-    setSessions((current) =>
-      current.map((item) =>
-        item.id === session.id ? { ...item, status } : item,
-      ),
-    );
-    try {
-      const response = await fetch(`${API}/sessions/${session.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (!response.ok) throw new Error();
-    } catch {
-      setError("Không thể cập nhật trạng thái. Vui lòng thử lại.");
-    } finally {
-      void loadDashboard();
     }
   }
 
@@ -399,11 +378,9 @@ export function SchedulePage() {
         open={agendaOpen}
         onOpenChange={setAgendaOpen}
         selectedLabel={selectedLabel}
-        selectedTotal={selectedTotal}
         groups={selectedGroups}
         onCreate={startCreateSession}
         onEdit={startEditSession}
-        onSetStatus={(session, status) => void setSessionStatus(session, status)}
       />
 
       <Dialog
@@ -555,29 +532,22 @@ function DayAgendaDialog({
   open,
   onOpenChange,
   selectedLabel,
-  selectedTotal,
   groups,
   onCreate,
   onEdit,
-  onSetStatus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedLabel: string;
-  selectedTotal: number;
   groups: StudentDayGroup[];
   onCreate: () => void;
   onEdit: (session: TeachingSession, studentName: string) => void;
-  onSetStatus: (session: TeachingSession, status: SessionStatus) => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="capitalize">{selectedLabel}</DialogTitle>
-          <DialogDescription>
-            Tổng tiền: {formatVnd(selectedTotal)}
-          </DialogDescription>
         </DialogHeader>
 
         <div className="max-h-[65dvh] space-y-3 overflow-y-auto pr-1">
@@ -626,7 +596,6 @@ function DayAgendaDialog({
                         key={session.id}
                         session={session}
                         onEdit={() => onEdit(session, group.studentName)}
-                        onSetStatus={onSetStatus}
                       />
                     ))}
                   </div>
@@ -652,15 +621,12 @@ function DayAgendaDialog({
 function SessionCard({
   session,
   onEdit,
-  onSetStatus,
 }: {
   session: TeachingSession;
   onEdit: () => void;
-  onSetStatus: (session: TeachingSession, status: SessionStatus) => void;
 }) {
   const cancelled = session.status === "cancelled";
   const taught = session.status === "taught";
-  const badge = STATUS_BADGE[session.status];
 
   return (
     <article
@@ -672,26 +638,19 @@ function SessionCard({
             : "border-slate-100 bg-violet-50"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 gap-3">
-          <span
-            className={`grid size-9 shrink-0 place-items-center rounded-full text-white ${
-              cancelled ? "bg-rose-500" : taught ? "bg-emerald-600" : "bg-violet-600"
-            }`}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p
+            className={`text-sm font-bold ${cancelled ? "text-slate-500 line-through" : ""}`}
           >
-            {cancelled ? <X size={17} /> : taught ? <Check size={17} /> : <GraduationCap size={17} />}
-          </span>
-          <div className="min-w-0">
-            <h5 className={`text-sm font-semibold ${cancelled ? "text-slate-500 line-through" : ""}`}>
-              Buổi dạy
-            </h5>
-            <p className="text-xs text-muted-foreground">
-              {new Intl.DateTimeFormat("vi-VN", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }).format(new Date(session.taughtAt))}
-            </p>
-          </div>
+            {new Intl.DateTimeFormat("vi-VN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }).format(new Date(session.taughtAt))}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {STATUS_BADGE[session.status].label}
+          </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <p
@@ -712,40 +671,8 @@ function SessionCard({
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className}`}
-        >
-          {badge.label}
-        </span>
-        <div className="ml-auto flex gap-2">
-          <Button
-            type="button"
-            variant={taught ? "default" : "outline"}
-            size="sm"
-            className={`min-h-11 rounded-xl ${taught ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}
-            aria-pressed={taught}
-            onClick={() => onSetStatus(session, "taught")}
-          >
-            <Check size={15} />
-            Đã dạy
-          </Button>
-          <Button
-            type="button"
-            variant={cancelled ? "destructive" : "outline"}
-            size="sm"
-            className="min-h-11 rounded-xl"
-            aria-pressed={cancelled}
-            onClick={() => onSetStatus(session, "cancelled")}
-          >
-            <X size={15} />
-            Không dạy
-          </Button>
-        </div>
-      </div>
-
       {session.note && (
-        <p className="mt-3 rounded-xl bg-white/70 p-3 text-sm text-slate-700">
+        <p className="mt-2 rounded-xl bg-white/70 p-2.5 text-sm text-slate-700">
           {session.note}
         </p>
       )}

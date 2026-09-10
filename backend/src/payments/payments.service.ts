@@ -93,6 +93,7 @@ export class PaymentsService {
           COALESCE((SELECT SUM(ts.price_vnd) FROM teaching_sessions ts
             LEFT JOIN classes c ON c.id = ts.class_id
             WHERE ts.class_id = $1 AND ts.deleted_at IS NULL
+              AND ts.status = 'taught'
               AND c.pricing_mode IS DISTINCT FROM 'per_month'), 0) AS "totalDue",
           COALESCE((SELECT SUM(amount_vnd) FROM payments WHERE class_id = $1 AND status = 'confirmed'), 0) AS "totalPaid",
           (SELECT COUNT(*)::int FROM teaching_sessions WHERE class_id = $1 AND deleted_at IS NULL) AS "sessionCount"`,

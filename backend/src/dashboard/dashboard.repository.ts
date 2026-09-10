@@ -169,7 +169,7 @@ export class DashboardRepository {
                   WHERE c2.pricing_mode = 'per_month'
                     AND c2.deleted_at IS NULL
                     AND ts2.deleted_at IS NULL
-                    AND ts2.status <> 'cancelled'
+                    AND ts2.status = 'taught'
                     AND ts2.class_id = ts.class_id
                     AND to_char(ts2.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
                 ) AS d
@@ -179,7 +179,7 @@ export class DashboardRepository {
           WHERE c.teacher_id = $1
             AND c.deleted_at IS NULL
             AND ts.deleted_at IS NULL
-            AND ts.status <> 'cancelled'
+            AND ts.status = 'taught'
             AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
           GROUP BY ts.class_id
         )
@@ -232,7 +232,7 @@ export class DashboardRepository {
           WHERE c2.teacher_id = $1
             AND c2.deleted_at IS NULL
             AND ts.deleted_at IS NULL
-            AND ts.status <> 'cancelled'
+            AND ts.status = 'taught'
             AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
           GROUP BY ts.class_id
         ) AS d ON d.class_id = c.id

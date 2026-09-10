@@ -110,7 +110,8 @@ describe("TutorOps database E2E", () => {
     await request(app.getHttpServer())
       .post(`/students/${studentId}/sessions`)
       .set("Cookie", [sessionCookie])
-      .send({ taughtAt: new Date().toISOString(), priceVnd: 150000 })
+      // Due now only counts taught sessions — mark it so the totals assert.
+      .send({ taughtAt: new Date().toISOString(), priceVnd: 150000, status: "taught" })
       .expect(201);
     await request(app.getHttpServer())
       .post(`/classes/${classId}/payments`)
