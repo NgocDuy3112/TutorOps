@@ -12,7 +12,11 @@ import {
 } from "@nestjs/common";
 import { AuthGuard } from "../auth/auth.guard";
 import { SessionsService } from "./sessions.service";
-import { TeachingSessionDto, UpdateTeachingSessionDto } from "./sessions.dto";
+import {
+  ConfirmSlotDto,
+  TeachingSessionDto,
+  UpdateTeachingSessionDto,
+} from "./sessions.dto";
 
 @Controller()
 @UseGuards(AuthGuard)
@@ -39,6 +43,15 @@ export class SessionsController {
     @Body() body: TeachingSessionDto,
   ) {
     return this.sessions.create(request.user.id, studentId, body);
+  }
+
+  @Post("classes/:classId/sessions/confirm-slot")
+  confirmSlot(
+    @Req() request: AuthenticatedRequest,
+    @Param("classId", new ParseUUIDPipe()) classId: string,
+    @Body() body: ConfirmSlotDto,
+  ) {
+    return this.sessions.confirmSlot(request.user.id, classId, body);
   }
 
   @Patch("sessions/:id")

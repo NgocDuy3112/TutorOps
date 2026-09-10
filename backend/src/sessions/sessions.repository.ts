@@ -48,6 +48,8 @@ export class SessionsRepository {
         ts.id,
         ts.student_id AS "studentId",
         s.name AS "studentName",
+        ts.class_id AS "classId",
+        c.name AS "className",
         ts.taught_at AS "taughtAt",
         ts.price_vnd AS "priceVnd",
         ts.status,
@@ -56,6 +58,7 @@ export class SessionsRepository {
         ts.updated_at AS "updatedAt"
       FROM teaching_sessions AS ts
       INNER JOIN students AS s ON s.id = ts.student_id
+      LEFT JOIN classes AS c ON c.id = ts.class_id
       WHERE s.teacher_id = $1
         AND s.deleted_at IS NULL
         AND ts.deleted_at IS NULL
@@ -189,6 +192,60 @@ export class SessionsRepository {
         AND s.deleted_at IS NULL
     `;
     const result = await pool.query(query, [id, teacherId]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // --- Fixed-schedule slot confirmation (calendar draws future slots as
+  // virtual; confirming materializes one taught session per student). ---
+  async classOwned(teacherId: string, classId: string) {
+    const result = await pool.query(
+      `SELECT id, pricing_mode AS "pricingMode",
+              default_price_vnd AS "classPrice"
+       FROM classes
+       WHERE id = $1 AND teacher_id = $2 AND deleted_at IS NULL`,
+      [classId, teacherId],
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+    return {
+      pricingMode: row.pricingMode as "per_session" | "per_hour" | "per_month",
+      classPrice: row.classPrice == null ? null : Number(row.classPrice),
+    };
+  }
+  async classSlots(classId: string, weekday: number) {
+    const result = await pool.query(
+      `SELECT to_char(start_time, 'HH24:MI') AS "startTime",
+              to_char(end_time, 'HH24:MI') AS "endTime"
+       FROM class_schedules
+       WHERE class_id = $1 AND weekday = $2
+       ORDER BY start_time`,
+      [classId, weekday],
+    );
+    return result.rows as { startTime: string; endTime: string }[];
+  }
+  async classStudentIds(classId: string) {
+    const result = await pool.query(
+      `SELECT student_id FROM class_students WHERE class_id = $1`,
+      [classId],
+    );
+    return result.rows.map((row) => row.student_id as string);
+  }
+  async insertConfirmed(
+    studentId: string,
+    classId: string,
+    taughtAt: string,
+    endsAt: string,
+    priceVnd: number,
+  ) {
+    // Partial unique index (class_id, student_id, taught_at) WHERE
+    // deleted_at IS NULL makes re-confirming the same slot a no-op.
+    const result = await pool.query(
+      `INSERT INTO teaching_sessions (student_id, class_id, taught_at, ends_at, price_vnd, status)
+       VALUES ($1, $2, $3, $4, $5, 'taught')
+       ON CONFLICT (class_id, student_id, taught_at) WHERE deleted_at IS NULL
+       DO NOTHING`,
+      [studentId, classId, taughtAt, endsAt, priceVnd],
+    );
     return (result.rowCount ?? 0) > 0;
   }
 }

@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   Max,
   Min,
 } from "class-validator";
@@ -32,6 +33,15 @@ export class TeachingSessionDto {
   @Max(10_000_000_000)
   priceVnd?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() note?: string;
+}
+
+// Confirms a fixed-schedule slot for a class: one taught session per
+// enrolled student, priced by the class pricing mode. Requested by date
+// (the slot times come from the class schedule server-side).
+export class ConfirmSlotDto {
+  @ApiProperty({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  date!: string;
 }
 export class UpdateTeachingSessionDto {
   @ApiPropertyOptional({ enum: SESSION_STATUSES })

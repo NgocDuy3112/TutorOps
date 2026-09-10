@@ -39,6 +39,7 @@ export const ErrorCodes = {
   INVALID_TEACHING_SESSION: "invalid_teaching_session",
   SESSION_NOT_FOUND: "session_not_found",
   FUTURE_SESSION_NOT_ALLOWED: "future_session_not_allowed",
+  SLOT_NOT_FOUND: "slot_not_found",
 
   // Payments / tuition
   PAYMENT_NOT_FOUND: "payment_not_found",

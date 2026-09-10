@@ -189,13 +189,13 @@ export function TuitionPage() {
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
             <KpiBlock
-              label="Phải thu"
+              label="Khoản cần thu"
               value={formatVnd(totals?.totalDue ?? 0)}
               sub={`${rows.length} lớp`}
               tone="slate"
             />
             <KpiBlock
-              label="Đã thu"
+              label="Khoản đã thu"
               value={formatVnd(totals?.totalPaid ?? 0)}
               sub={`${paidCount} lớp`}
               tone="emerald"

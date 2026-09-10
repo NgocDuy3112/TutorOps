@@ -28,7 +28,7 @@ export function AssignmentDropboxPage({ token }: { token: string }) {
     fetch(`${API}/public/assignment-dropbox?token=${encodeURIComponent(token)}`)
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then(setAssignment)
-      .catch(() => setError("Link không hợp lệ hoặc đã thu hồi."));
+      .catch(() => setError("Link không hợp lệ hoặc Khoản đã thu hồi."));
   }, [token]);
 
   async function submit(event: FormEvent) {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarCheck,
+  Check,
   Loader2,
   Pencil,
   Plus,
@@ -33,7 +34,8 @@ type TutorClass = {
   id: string;
   name: string;
   defaultPriceVnd: number | null;
-  schedules?: { weekday: number; startTime: string }[];
+  autoSchedule?: boolean;
+  schedules?: { weekday: number; startTime: string; endTime: string }[];
   students: Student[];
 };
 type SessionStatus = "unconfirmed" | "taught" | "cancelled";
@@ -41,6 +43,8 @@ type TeachingSession = {
   id: string;
   studentId: string;
   studentName: string;
+  classId: string | null;
+  className: string | null;
   taughtAt: string;
   priceVnd: number;
   status: SessionStatus;
@@ -50,6 +54,16 @@ type StudentDayGroup = {
   studentId: string;
   studentName: string;
   sessions: TeachingSession[];
+};
+// Fixed-schedule slot drawn on the calendar for a future date — not in the
+// DB until the teacher confirms it ("Xác nhận đã dạy" creates real sessions).
+type VirtualSlot = {
+  classId: string;
+  className: string;
+  startTime: string;
+  endTime: string;
+  priceVnd: number;
+  studentCount: number;
 };
 type DashboardCalendar = {
   teacher: Teacher;
@@ -82,6 +96,7 @@ export function SchedulePage() {
   const [editingSession, setEditingSession] = useState<TeachingSession | null>(
     null,
   );
+  const [confirmingSlot, setConfirmingSlot] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -137,12 +152,43 @@ export function SchedulePage() {
     () => groupAgenda(selectedSessions),
     [selectedSessions],
   );
+  const selectedVirtual = useMemo(
+    () => virtualSlotsForDate(selectedDate, classes, sessions),
+    [selectedDate, classes, sessions],
+  );
   const selectedLabel = new Intl.DateTimeFormat("vi-VN", {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   }).format(selectedDate);
+
+  // Confirms a fixed-schedule slot: backend creates one taught session per
+  // enrolled student at the slot time. The virtual dot disappears as soon as
+  // the day has a real session for that class.
+  async function confirmSlot(classId: string, date: Date) {
+    setConfirmingSlot(classId);
+    try {
+      const response = await fetch(
+        `${API}/classes/${classId}/sessions/confirm-slot`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ date: dateKey(date) }),
+        },
+      );
+      if (!response.ok) {
+        const detail = await response.text();
+        setError(detail || "Không thể xác nhận buổi dạy. Vui lòng thử lại.");
+        return;
+      }
+      await loadDashboard();
+    } catch {
+      setError("Không thể kết nối máy chủ. Vui lòng thử lại.");
+    } finally {
+      setConfirmingSlot(null);
+    }
+  }
 
   function shiftMonth(deltaMonths: number) {
     setMonth(
@@ -268,7 +314,8 @@ export function SchedulePage() {
                 {calendarDays.map((day) => {
                   const key = dateKey(day);
                   const hasSessions =
-                    (sessionsByDate.get(key)?.length ?? 0) > 0;
+                    (sessionsByDate.get(key)?.length ?? 0) > 0 ||
+                    virtualSlotsForDate(day, classes, sessions).length > 0;
                   const selected = key === dateKey(selectedDate);
                   return (
                     <button
@@ -379,6 +426,9 @@ export function SchedulePage() {
         onOpenChange={setAgendaOpen}
         selectedLabel={selectedLabel}
         groups={selectedGroups}
+        virtualSlots={selectedVirtual}
+        confirmingSlot={confirmingSlot}
+        onConfirmSlot={(classId) => void confirmSlot(classId, selectedDate)}
         onCreate={startCreateSession}
         onEdit={startEditSession}
       />
@@ -513,6 +563,48 @@ function groupAgenda(sessions: TeachingSession[]) {
   );
 }
 
+// Draws fixed-schedule slots as virtual agenda entries for a date. Only
+// future dates (and today) — past lessons are recorded manually if needed.
+// Hidden for a class that already has any real session that day (including
+// cancelled ones — recording a change replaces the virtual slot).
+function virtualSlotsForDate(
+  date: Date,
+  classes: TutorClass[],
+  sessions: TeachingSession[],
+): VirtualSlot[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date < today) return [];
+  const weekday = date.getDay();
+  const key = dateKey(date);
+  const classesWithSession = new Set(
+    sessions
+      .filter(
+        (session) =>
+          session.classId && dateKey(new Date(session.taughtAt)) === key,
+      )
+      .map((session) => session.classId as string),
+  );
+  const slots: VirtualSlot[] = [];
+  for (const klass of classes) {
+    if (!klass.autoSchedule || classesWithSession.has(klass.id)) continue;
+    for (const slot of klass.schedules ?? []) {
+      if (slot.weekday !== weekday) continue;
+      slots.push({
+        classId: klass.id,
+        className: klass.name,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        priceVnd: klass.defaultPriceVnd ?? 0,
+        studentCount: klass.students.length,
+      });
+    }
+  }
+  return slots.sort((left, right) =>
+    left.startTime.localeCompare(right.startTime),
+  );
+}
+
 const STATUS_BADGE: Record<SessionStatus, { label: string; className: string }> = {
   unconfirmed: {
     label: "Chưa xác nhận",
@@ -533,6 +625,9 @@ function DayAgendaDialog({
   onOpenChange,
   selectedLabel,
   groups,
+  virtualSlots,
+  confirmingSlot,
+  onConfirmSlot,
   onCreate,
   onEdit,
 }: {
@@ -540,6 +635,9 @@ function DayAgendaDialog({
   onOpenChange: (open: boolean) => void;
   selectedLabel: string;
   groups: StudentDayGroup[];
+  virtualSlots: VirtualSlot[];
+  confirmingSlot: string | null;
+  onConfirmSlot: (classId: string) => void;
   onCreate: () => void;
   onEdit: (session: TeachingSession, studentName: string) => void;
 }) {
@@ -551,7 +649,7 @@ function DayAgendaDialog({
         </DialogHeader>
 
         <div className="max-h-[65dvh] space-y-3 overflow-y-auto pr-1">
-          {groups.length === 0 ? (
+          {groups.length === 0 && virtualSlots.length === 0 ? (
             <div className="flex flex-col items-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-10 text-center">
               <span className="grid size-14 place-items-center rounded-2xl bg-violet-50 text-primary">
                 <CalendarOff size={24} />
@@ -564,7 +662,16 @@ function DayAgendaDialog({
               </p>
             </div>
           ) : (
-            groups.map((group) => {
+            <>
+              {virtualSlots.map((slot) => (
+                <VirtualSlotCard
+                  key={slot.classId}
+                  slot={slot}
+                  busy={confirmingSlot === slot.classId}
+                  onConfirm={() => onConfirmSlot(slot.classId)}
+                />
+              ))}
+              {groups.map((group) => {
               const groupTotal = group.sessions.reduce(
                 (sum, session) => sum + Number(session.priceVnd),
                 0,
@@ -601,7 +708,8 @@ function DayAgendaDialog({
                   </div>
                 </section>
               );
-            })
+            })}
+            </>
           )}
         </div>
 
@@ -615,6 +723,58 @@ function DayAgendaDialog({
         </Button>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function VirtualSlotCard({
+  slot,
+  busy,
+  onConfirm,
+}: {
+  slot: VirtualSlot;
+  busy: boolean;
+  onConfirm: () => void;
+}) {
+  return (
+    <article className="rounded-2xl border border-dashed border-violet-300 bg-violet-50/50 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-slate-800">
+            {slot.className}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {slot.startTime}–{slot.endTime} · {slot.studentCount} học sinh
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            aria-hidden
+            className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700"
+          >
+            Dự kiến
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            className="min-h-11 rounded-xl"
+            disabled={busy}
+            onClick={onConfirm}
+          >
+            {busy ? (
+              <Loader2 className="animate-spin" size={15} />
+            ) : (
+              <Check size={15} />
+            )}
+            Đã dạy
+          </Button>
+        </div>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {slot.priceVnd > 0
+          ? `Tự động tính ${formatVnd(slot.priceVnd)}/buổi cho từng học sinh khi xác nhận`
+          : "Chưa đặt giá lớp — xác nhận sẽ tạo buổi 0 ₫"}
+      </p>
+    </article>
   );
 }
 
