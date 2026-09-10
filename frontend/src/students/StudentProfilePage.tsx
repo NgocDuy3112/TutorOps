@@ -260,14 +260,14 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
               type="button"
               variant="outline"
               size="sm"
-              className="rounded-2xl"
+              className="rounded-xl text-xs"
               disabled={generatingLink}
               onClick={() => void regenerateLink()}
             >
               {generatingLink ? (
-                <Loader2 className="animate-spin" size={15} />
+                <Loader2 className="animate-spin" size={14} />
               ) : (
-                <RefreshCw size={15} />
+                <RefreshCw size={14} />
               )}
               Tạo link mới
             </Button>
@@ -275,24 +275,25 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           <CardContent className="p-5">
             {newLink ? (
               <div className="space-y-2">
-                <p
-                  className="truncate rounded-xl bg-slate-100 p-3 font-mono text-xs"
-                  title={newLink}
-                >
-                  {newLink}
-                </p>
                 <div className="flex items-center gap-2">
+                  <p
+                    className="min-w-0 flex-1 truncate rounded-xl bg-slate-100 px-3 py-2.5 font-mono text-xs"
+                    title={newLink}
+                  >
+                    {newLink}
+                  </p>
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-9 rounded-2xl text-xs"
+                    size="sm"
+                    className="shrink-0 rounded-xl text-xs"
                     onClick={() => {
                       void navigator.clipboard.writeText(newLink);
                       setCopied(true);
                     }}
                   >
                     <Copy size={14} />
-                    {copied ? "Đã sao chép" : "Sao chép link"}
+                    {copied ? "Đã sao chép" : "Sao chép"}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">

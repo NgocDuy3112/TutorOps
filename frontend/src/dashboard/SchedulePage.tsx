@@ -179,7 +179,7 @@ export function SchedulePage() {
       );
       if (!response.ok) {
         const detail = await response.text();
-        setError(detail || "Không thể xác nhận buổi dạy. Vui lòng thử lại.");
+        setError(friendlyError(detail, "Không thể xác nhận buổi dạy. Vui lòng thử lại."));
         return;
       }
       await loadDashboard();
@@ -233,11 +233,13 @@ export function SchedulePage() {
             selectedClass.defaultPriceVnd == null
               ? undefined
               : Number(selectedClass.defaultPriceVnd),
+          // Recording from the calendar = the lesson happened.
+          status: "taught",
         }),
       });
       if (!response.ok) {
         const detail = await response.text();
-        setError(detail || "Không thể ghi nhận buổi học. Vui lòng thử lại.");
+        setError(friendlyError(detail, "Không thể ghi nhận buổi học. Vui lòng thử lại."));
         return;
       }
       setChoosingStudent(false);
@@ -425,6 +427,7 @@ export function SchedulePage() {
         open={agendaOpen}
         onOpenChange={setAgendaOpen}
         selectedLabel={selectedLabel}
+        slotDate={selectedDate}
         groups={selectedGroups}
         virtualSlots={selectedVirtual}
         confirmingSlot={confirmingSlot}
@@ -544,6 +547,24 @@ export function SchedulePage() {
   );
 }
 
+// Backend errors arrive as `{statusCode, message: "<code>"}` JSON — turn
+// known codes into Vietnamese, fall back to the raw text otherwise.
+const FRIENDLY_ERRORS: Record<string, string> = {
+  future_session_not_allowed:
+    "Buổi này chưa đến giờ — quay lại xác nhận sau khi dạy xong nhé.",
+  slot_not_found: "Lớp không có lịch dạy trong ngày này.",
+};
+
+function friendlyError(detail: string, fallback: string) {
+  try {
+    const code = JSON.parse(detail).message as string | undefined;
+    if (code && FRIENDLY_ERRORS[code]) return FRIENDLY_ERRORS[code];
+  } catch {
+    // plain text error — keep as-is
+  }
+  return detail || fallback;
+}
+
 function groupAgenda(sessions: TeachingSession[]) {
   const grouped = new Map<string, StudentDayGroup>();
   for (const session of sessions) {
@@ -624,6 +645,7 @@ function DayAgendaDialog({
   open,
   onOpenChange,
   selectedLabel,
+  slotDate,
   groups,
   virtualSlots,
   confirmingSlot,
@@ -634,6 +656,7 @@ function DayAgendaDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedLabel: string;
+  slotDate: Date;
   groups: StudentDayGroup[];
   virtualSlots: VirtualSlot[];
   confirmingSlot: string | null;
@@ -667,6 +690,12 @@ function DayAgendaDialog({
                 <VirtualSlotCard
                   key={slot.classId}
                   slot={slot}
+                  // Confirm only allowed once the scheduled time has arrived
+                  // (same 5-minute clock-skew allowance as the backend).
+                  canConfirm={
+                    new Date(`${dateKey(slotDate)}T${slot.startTime}:00`) <=
+                    new Date(Date.now() + 5 * 60_000)
+                  }
                   busy={confirmingSlot === slot.classId}
                   onConfirm={() => onConfirmSlot(slot.classId)}
                 />
@@ -728,10 +757,12 @@ function DayAgendaDialog({
 
 function VirtualSlotCard({
   slot,
+  canConfirm,
   busy,
   onConfirm,
 }: {
   slot: VirtualSlot;
+  canConfirm: boolean;
   busy: boolean;
   onConfirm: () => void;
 }) {
@@ -757,7 +788,7 @@ function VirtualSlotCard({
             type="button"
             size="sm"
             className="min-h-11 rounded-xl"
-            disabled={busy}
+            disabled={busy || !canConfirm}
             onClick={onConfirm}
           >
             {busy ? (
@@ -765,7 +796,7 @@ function VirtualSlotCard({
             ) : (
               <Check size={15} />
             )}
-            Đã dạy
+            {canConfirm ? "Đã dạy" : "Chưa đến giờ"}
           </Button>
         </div>
       </div>

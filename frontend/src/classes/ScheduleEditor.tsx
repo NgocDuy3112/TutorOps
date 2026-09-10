@@ -55,7 +55,7 @@ export function ScheduleEditor({
             value={String(slot.weekday)}
             onValueChange={(value) => update(index, { weekday: Number(value) })}
           >
-            <SelectTrigger className="min-h-9 w-24 shrink-0 rounded-lg px-2 text-xs">
+            <SelectTrigger className="min-h-9 w-30 shrink-0 rounded-lg px-2 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -62,23 +62,6 @@ export const MonthlySlipCard = forwardRef<
       </header>
 
         <div className="space-y-4 px-5 py-4">
-          {/* Money first: total is the headline, calendar is the proof. */}
-          <div className="flex items-center justify-between rounded-xl bg-primary/10 px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-primary/70">
-                Tổng học phí
-              </p>
-              <p className="text-xs text-primary/70">
-                {slip.sessionCount > 0
-                  ? `Đã dạy ${slip.sessionCount} buổi`
-                  : "Chưa có buổi học"}
-              </p>
-            </div>
-            <p className="shrink-0 text-xl font-black text-primary">
-              {formatVnd(slip.due)}
-            </p>
-          </div>
-
           <div className="grid grid-cols-5 gap-3">
             {/* Mini month calendar — teaching days filled purple. */}
             <section
@@ -121,8 +104,8 @@ export const MonthlySlipCard = forwardRef<
               </div>
             </section>
 
-            {/* QR cell */}
-            <section className="col-span-2 flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed p-3 text-center">
+            {/* QR cell — QR first, then caption, then the headline amount */}
+            <section className="col-span-2 flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed p-3 text-center">
               {slip.paymentQrUrl ? (
                 <img
                   alt="Mã QR chuyển khoản"
@@ -136,19 +119,34 @@ export const MonthlySlipCard = forwardRef<
               )}
               <p className="text-[10px] leading-snug text-muted-foreground">
                 {slip.paymentQrUrl
-                  ? `Quét mã để chuyển khoản, điền ${formatVnd(slip.balance)}.`
+                  ? "Quét mã để chuyển khoản."
                   : "Chưa đặt mã QR — thêm trong Cài đặt."}
+              </p>
+              <p className="text-3xl font-black text-primary">
+                {formatVnd(slip.due)}
               </p>
             </section>
           </div>
 
           {slip.comment.trim() && (
-            <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <section className="rounded-2xl border border-primary/15 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary/70">
                 Nhận xét của giáo viên
-              </h3>
-              <p className="mt-2 whitespace-pre-wrap rounded-lg bg-muted px-3 py-2 text-sm">
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm italic leading-relaxed text-slate-800">
+                <span
+                  aria-hidden
+                  className="mr-1 align-top text-xl font-black leading-none text-primary/40"
+                >
+                  “
+                </span>
                 {slip.comment}
+                <span
+                  aria-hidden
+                  className="ml-0.5 align-top text-xl font-black leading-none text-primary/40"
+                >
+                  ”
+                </span>
               </p>
             </section>
           )}

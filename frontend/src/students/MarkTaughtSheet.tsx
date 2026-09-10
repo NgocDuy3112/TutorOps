@@ -113,6 +113,9 @@ export function MarkTaughtSheet({
           endsAt: endsAtIso,
           priceVnd: priceVnd ? parseVnd(priceVnd) : undefined,
           note,
+          // Recording a lesson = it happened. Due only counts 'taught'
+          // sessions, so never leave manual records as 'unconfirmed'.
+          status: "taught",
         }),
       },
     );

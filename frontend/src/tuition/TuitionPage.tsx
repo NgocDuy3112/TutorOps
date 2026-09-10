@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Book,
   CalendarX2,
   Check,
   ChevronLeft,
@@ -496,48 +497,37 @@ function TuitionRowCard({
   const legacy = row.id == null;
   const noActivity = !legacy && row.sessionCount === 0 && row.paid <= 0;
   const settled = !noActivity && row.balance <= 0;
-  // Paid beyond due (e.g. money assigned to a class that did not teach this
-  // month) — the amount is real, but "settled" alone would look confusing.
-  const overpaid = !legacy && row.balance < 0;
+  const amount = noActivity ? "—" : formatVnd(settled ? row.paid : row.balance);
   return (
     <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
       <CardContent className="flex items-center gap-3 p-4">
         <span
-          className={`grid size-10 shrink-0 place-items-center rounded-full text-sm font-bold ${
-            legacy
+          className={`grid size-10 shrink-0 place-items-center rounded-full ${
+            legacy || noActivity
               ? "bg-slate-100 text-slate-500"
-              : noActivity
-                ? "bg-slate-100 text-slate-500"
-                : settled
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-amber-50 text-amber-700"
+              : settled
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-amber-50 text-amber-700"
           }`}
           aria-hidden
         >
-          {row.name.charAt(0).toUpperCase()}
+          <Book size={18} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-bold">{row.name}</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {legacy
-              ? "Khoản thu cũ trước khi quy về lớp"
-              : overpaid
-                ? `Đã trả thừa ${formatVnd(row.paid - row.due)}`
-                : noActivity
-                  ? "Chưa có buổi dạy"
-                  : `Đã dạy ${row.sessionCount} buổi`}
+          <p
+            className={`truncate text-base font-black ${
+              noActivity
+                ? "text-muted-foreground"
+                : settled
+                  ? "text-emerald-700"
+                  : "text-amber-700"
+            }`}
+          >
+            {amount}
           </p>
-        </div>
-        <div className="shrink-0 text-right">
-          {noActivity ? (
-            <p className="text-sm font-semibold text-muted-foreground">—</p>
-          ) : (
-            <p
-              className={`text-base font-black ${settled ? "text-emerald-700" : "text-amber-700"}`}
-            >
-              {formatVnd(settled ? row.paid : row.balance)}
-            </p>
-          )}
+          <p className="truncate text-sm font-semibold text-slate-700">
+            {row.name}
+          </p>
         </div>
         {legacy && (
           <Button
