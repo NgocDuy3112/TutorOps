@@ -109,6 +109,8 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
           // cookie instead of an anonymous fetch.
           fetchRequestInit: { credentials: "include" },
         });
+        const link = document.createElement("a");
+        link.download = `phieu-tong-ket-${slip.student.name}-${month}.png`;
         link.href = dataUrl;
         link.click();
         setToast("Đã tải ảnh phiếu tổng kết");
