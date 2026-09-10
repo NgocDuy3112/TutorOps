@@ -61,6 +61,7 @@ services:
       context: ./frontend
       args:
         VITE_API_URL: /api
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     restart: unless-stopped
     ports:
       - "${NGINX_HOST_PORT:-8080}:80"
