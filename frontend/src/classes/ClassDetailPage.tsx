@@ -30,6 +30,7 @@ import { formatDeadline, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditAssignmentSheet } from "../assignments/EditAssignmentSheet";
 import { EditClassSheet, type EditClassSection } from "./EditClassSheet";
+import { Toast } from "../components/Toast";
 import type { Student, TutorClass } from "./ClassesPage";
 import { API } from "../lib/api";
 
@@ -58,6 +59,7 @@ export function ClassDetailPage() {
   const [editing, setEditing] = useState<Assignment | null>(null);
   const [deleting, setDeleting] = useState<Assignment | null>(null);
   const [togglingAuto, setTogglingAuto] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const classAssignments = useMemo(
     () => assignments.filter((a) => (a.classIds ?? []).includes(classId)),
@@ -140,7 +142,10 @@ export function ClassDetailPage() {
       `${API}/classes/${classId}/students/${removing.id}`,
       { method: "DELETE" },
     );
-    if (response.ok) void load();
+    if (response.ok) {
+      void load();
+      setToast(`Đã bỏ ${removing.name} khỏi lớp`);
+    }
     setRemoving(null);
   }
 
@@ -165,6 +170,7 @@ export function ClassDetailPage() {
       setError("Không thể xóa bài tập. Vui lòng thử lại.");
     } else {
       setAssignments((current) => current.filter((a) => a.id !== deleting.id));
+      setToast(`Đã xoá bài tập “${deleting.title}”`);
       setDeleting(null);
     }
   }
@@ -270,6 +276,7 @@ export function ClassDetailPage() {
                       }
                       onEdit={() => setEditing(assignment)}
                       onDelete={() => setDeleting(assignment)}
+                      onCopied={() => setToast("Đã sao chép link nộp bài")}
                     />
                   ))
                 ) : (
@@ -512,6 +519,7 @@ export function ClassDetailPage() {
           onDeleted={() => navigate("/classes")}
         />
       )}
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }
@@ -521,11 +529,13 @@ function ClassAssignmentCard({
   onInbox,
   onEdit,
   onDelete,
+  onCopied,
 }: {
   assignment: Assignment;
   onInbox: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onCopied: () => void;
 }) {
   const submitted = assignment.students.filter(
     (student) => student.status === "submitted",
@@ -541,7 +551,7 @@ function ClassAssignmentCard({
     const { token } = await response.json();
     const link = `${window.location.origin}/assignment-submit/${token}`;
     await navigator.clipboard.writeText(link);
-    alert("Đã sao chép link nộp bài chung.");
+    onCopied();
   }
 
   return (

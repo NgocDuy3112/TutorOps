@@ -101,7 +101,9 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
       });
       if (!response.ok)
         throw new Error("Không thể xóa học sinh. Vui lòng thử lại.");
-      navigate("/students");
+      navigate("/students", {
+        state: { toast: `Đã xoá học sinh ${student.name}` },
+      });
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",

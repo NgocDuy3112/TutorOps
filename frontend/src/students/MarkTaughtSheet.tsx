@@ -48,7 +48,7 @@ export function MarkTaughtSheet({
   session?: TeachingSession | null;
   initialDate?: Date;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (message: string) => void;
 }) {
   const [taughtAt, setTaughtAt] = useState(() =>
     toLocalDateTimeInput(
@@ -128,7 +128,12 @@ export function MarkTaughtSheet({
       },
     );
     setSaving(false);
-    if (response.ok) return onSaved();
+    if (response.ok) {
+      onSaved(
+        editing ? "Đã cập nhật buổi dạy" : "Đã ghi nhận buổi dạy",
+      );
+      return;
+    }
     setError(
       response.status === 400
         ? "Không thể ghi nhận buổi dạy cho ngày tương lai."
@@ -146,7 +151,7 @@ export function MarkTaughtSheet({
     });
     setDeleting(false);
     setConfirmDelete(false);
-    if (response.ok) onSaved();
+    if (response.ok) onSaved("Đã xoá buổi dạy");
   }
 
   return (

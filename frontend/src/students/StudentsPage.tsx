@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
+import { Toast } from "../components/Toast";
+import { useLocation } from "react-router-dom";
 import { API } from "../lib/api";
 
 type StudentClass = {
@@ -37,6 +39,10 @@ type Student = {
 export function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [toast, setToast] = useState<string | null>(
+    (location.state as { toast?: string } | null)?.toast ?? null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -223,6 +229,7 @@ export function StudentsPage() {
           />
         )}
       </main>
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }
