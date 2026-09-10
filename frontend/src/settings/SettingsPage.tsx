@@ -63,7 +63,7 @@ export function SettingsPage() {
 
   return (
     <MobileShell>
-      <PageHeader maxWidth="3xl" title="Cá nhân" />
+      <PageHeader maxWidth="3xl" title="Cá nhân" description="Cài đặt tài khoản và ứng dụng" />
       <main className="mx-auto max-w-3xl px-4 py-5">
         <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
           <SettingsLink
