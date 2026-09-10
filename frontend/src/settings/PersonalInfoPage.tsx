@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MobileShell } from "../layout/MobileShell";
-import { API } from "../lib/api";
+import { API, apiUrl } from "../lib/api";
 type Profile = {
   fullName: string;
   email: string;
@@ -175,7 +175,7 @@ export function PersonalInfoPage() {
                 <img
                   alt="Mã QR thanh toán"
                   className="h-24 w-24 rounded-lg border object-contain"
-                  src={profile.paymentQrUrl}
+                  src={apiUrl(profile.paymentQrUrl)}
                 />
               ) : (
                 <div className="grid h-24 w-24 place-items-center rounded-lg border border-dashed text-xs text-muted-foreground">

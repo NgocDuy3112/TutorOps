@@ -7,6 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
+import type { Readable } from "node:stream";
 
 @Injectable()
 export class StorageService {
@@ -53,6 +54,19 @@ export class StorageService {
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),
       { expiresIn },
     );
+  }
+
+  /** Stream the raw object through the backend so clients stay same-origin
+   *  (presigned URLs are cross-origin and blocked by S3 CORS on fetch). */
+  async download(key: string) {
+    const result = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
+    if (!result.Body) throw new Error("S3 object has no body");
+    return {
+      stream: result.Body as Readable,
+      contentType: result.ContentType ?? "application/octet-stream",
+    };
   }
 
   async delete(key: string) {

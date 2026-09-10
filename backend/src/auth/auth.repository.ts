@@ -7,7 +7,7 @@ export class AuthRepository {
     return (
       await pool.query(
         `SELECT u.id, u.email, u.role, u.full_name AS "fullName", u.phone,
-                f.storage_key AS "paymentQrKey"
+                f.id AS "paymentQrFileId"
          FROM users u
          LEFT JOIN files f ON f.id = u.payment_qr_file_id AND f.deleted_at IS NULL
          WHERE u.id = $1 AND u.deleted_at IS NULL`,

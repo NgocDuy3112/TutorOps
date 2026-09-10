@@ -1,5 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import { formatVnd, formatMonthLabel } from "../lib/format";
+import { apiUrl } from "../lib/api";
 
 export type SlipData = {
   student: { name: string };
@@ -126,7 +127,7 @@ export const MonthlySlipCard = forwardRef<
                 <img
                   alt="Mã QR chuyển khoản"
                   className="size-20 rounded-lg object-contain"
-                  src={slip.paymentQrUrl}
+                  src={apiUrl(slip.paymentQrUrl)}
                 />
               ) : (
                 <div className="grid size-20 place-items-center rounded-lg bg-muted text-[11px] text-muted-foreground">

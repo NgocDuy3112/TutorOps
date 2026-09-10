@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { BadRequestError } from "../common/app-exception";
+import { BadRequestError, NotFoundError } from "../common/app-exception";
 import { ErrorCodes } from "../common/error-codes";
 import { StorageService } from "../storage/storage.service";
 import { FilesRepository } from "./files.repository";
@@ -49,6 +49,32 @@ export class FilesService {
       sizeBytes: file.size,
       createdBy: userId,
     });
+  }
+
+  /** Raw object stream for same-origin serving. Only the uploader may read
+   *  their own file — everything else is indistinguishable from missing. */
+  async downloadRaw(userId: string, fileId: string) {
+    const file = await this.repository.findById(fileId);
+    if (!file || file.createdBy !== userId)
+      throw new NotFoundError(ErrorCodes.FILE_NOT_FOUND);
+    const object = await this.storage.download(file.storageKey);
+    return { ...object, originalName: file.originalName };
+  }
+
+  /** Deletes the uploader's file. Unreferenced files are removed for real
+   *  (row + S3 object); files still attached to assignments/submissions are
+   *  only hidden (soft delete) so past history keeps working. */
+  async softDelete(userId: string, fileId: string) {
+    const file = await this.repository.findById(fileId);
+    if (!file || file.createdBy !== userId)
+      throw new NotFoundError(ErrorCodes.FILE_NOT_FOUND);
+    if ((await this.repository.countReferences(fileId)) === 0) {
+      await this.repository.hardDelete(fileId);
+      await this.storage.delete(file.storageKey).catch(() => {});
+      return { ok: true, mode: "deleted" as const };
+    }
+    await this.repository.softDelete(fileId);
+    return { ok: true, mode: "hidden" as const };
   }
 
   private matchesContent(file: Express.Multer.File) {

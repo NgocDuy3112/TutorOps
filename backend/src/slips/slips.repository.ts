@@ -27,7 +27,7 @@ export type SlipRow = {
     reviewNote: string | null;
   }[];
   comment: string;
-  paymentQrKey: string | null;
+  paymentQrFileId: string | null;
 };
 
 @Injectable()
@@ -125,7 +125,7 @@ export class SlipsRepository {
           [studentId, month],
         ),
         pool.query(
-          `SELECT f.storage_key AS "storageKey"
+          `SELECT f.id AS "paymentQrFileId"
            FROM users u JOIN files f ON f.id = u.payment_qr_file_id
            WHERE u.id = $1 AND f.deleted_at IS NULL`,
           [teacherId],
@@ -144,7 +144,7 @@ export class SlipsRepository {
       paid: payments.rows.reduce((sum, row) => sum + Number(row.amountVnd), 0),
       assignments: assignments.rows,
       comment: note.rows[0]?.comment ?? "",
-      paymentQrKey: qr.rows[0]?.storageKey ?? null,
+      paymentQrFileId: qr.rows[0]?.paymentQrFileId ?? null,
     };
   }
 
