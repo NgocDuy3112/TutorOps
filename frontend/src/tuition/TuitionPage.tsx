@@ -474,7 +474,7 @@ function KpiBlock({
         : "text-slate-950";
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="text-[11px] font-semibold uppercase text-muted-foreground">
         {label}
       </p>
       <p

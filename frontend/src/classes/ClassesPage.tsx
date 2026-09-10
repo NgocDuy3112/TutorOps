@@ -2,9 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   BookOpen,
-  Check,
   Coins,
-  Filter,
   Loader2,
   Plus,
   Search,
@@ -20,7 +18,6 @@ import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
-import { venueLabel, VENUE_OPTIONS } from "./venue";
 import { API } from "../lib/api";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +31,6 @@ export type TutorClass = {
   pricingMode?: "per_session" | "per_hour" | "per_month";
   autoSchedule?: boolean;
   schedules?: ScheduleSlot[];
-  venue?: string | null;
   note: string | null;
   studentCount: number;
   students: Student[];
@@ -45,8 +41,6 @@ export function ClassesPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [venueFilter, setVenueFilter] = useState("all");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [search, setSearch] = useState("");
   async function load() {
     setLoading(true);
@@ -66,35 +60,14 @@ export function ClassesPage() {
     void load();
   }, []);
 
-  const venueCounts = new Map<string, number>();
-  for (const item of classes) {
-    const key = item.venue ?? "none";
-    venueCounts.set(key, (venueCounts.get(key) ?? 0) + 1);
-  }
-  const venueFilterOptions = [
-    { value: "all", label: "Tất cả", count: classes.length },
-    ...VENUE_OPTIONS.map((option) => ({
-      value: option.value,
-      label: option.label,
-      count: venueCounts.get(option.value) ?? 0,
-    })),
-    ...(venueCounts.get("none")
-      ? [{ value: "none", label: "Chưa phân loại", count: venueCounts.get("none")! }]
-      : []),
-  ].filter((option) => option.value === "all" || (option.count ?? 0) > 0);
-
   const filteredClasses = classes.filter((item) => {
-    const matchesVenue =
-      venueFilter === "all" || (item.venue ?? "none") === venueFilter;
     const term = search.trim().toLocaleLowerCase("vi");
     const matchesSearch =
       !term ||
       item.name.toLocaleLowerCase("vi").includes(term) ||
       (item.note ?? "").toLocaleLowerCase("vi").includes(term);
-    return matchesVenue && matchesSearch;
+    return matchesSearch;
   });
-  const activeFilterLabel =
-    venueFilterOptions.find((option) => option.value === venueFilter)?.label ?? "";
 
   return (
     <MobileShell>
@@ -116,82 +89,7 @@ export function ClassesPage() {
                 className="min-h-11 rounded-2xl bg-white pl-9"
               />
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label="Lọc theo nơi dạy"
-              aria-expanded={filterOpen}
-              className={cn(
-                "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
-                venueFilter !== "all" &&
-                  "border-primary bg-primary/10 text-primary",
-                filterOpen && "border-primary text-primary",
-              )}
-              onClick={() => setFilterOpen((open) => !open)}
-            >
-              <Filter size={17} />
-              {venueFilter !== "all" && (
-                <span
-                  aria-hidden
-                  className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary"
-                />
-              )}
-            </Button>
           </div>
-        )}
-        {filterOpen && classes.length > 0 && (
-          <>
-            {/* Click-away layer: transparent, below the panel */}
-            <div
-              aria-hidden
-              className="fixed inset-0 z-20"
-              onClick={() => setFilterOpen(false)}
-            />
-            <div
-              role="listbox"
-              aria-label="Lọc theo nơi dạy"
-              className="absolute right-4 top-16 z-30 w-36 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
-            >
-              {venueFilterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="option"
-                  aria-selected={venueFilter === option.value}
-                  onClick={() => {
-                    setVenueFilter(option.value);
-                    setFilterOpen(false);
-                  }}
-                  className={cn(
-                    "flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-[13px] font-semibold transition-colors",
-                    venueFilter === option.value
-                      ? "bg-primary/10 text-primary"
-                      : "text-slate-700 hover:bg-slate-50",
-                  )}
-                >
-                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  {option.count != null && (
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {option.count}
-                    </span>
-                  )}
-                  {venueFilter === option.value && <Check size={14} />}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        {venueFilter !== "all" && (
-          <button
-            type="button"
-            onClick={() => setVenueFilter("all")}
-            className="mb-4 flex min-h-9 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
-            aria-label="Bỏ bộ lọc nơi dạy"
-          >
-            Nơi dạy: {activeFilterLabel}
-            <span aria-hidden>✕</span>
-          </button>
         )}
         {error && (
           <Card className="mb-4 border-red-100 bg-red-50">
@@ -221,7 +119,7 @@ export function ClassesPage() {
           <EmptyState
             icon={<BookOpenCheck size={28} />}
             title="Không tìm thấy"
-            description="Thử chọn nhóm nơi dạy khác."
+            description="Thử từ khóa khác."
           />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -263,12 +161,7 @@ function ClassCard({ item }: { item: TutorClass }) {
                       : "/buổi"}
                 </>
               )}
-              {venueLabel(item.venue) && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  {venueLabel(item.venue)}
-                </>
-              )}
+
             </p>
           </div>
         </Link>

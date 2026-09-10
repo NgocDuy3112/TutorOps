@@ -18,9 +18,6 @@ import { Type } from "class-transformer";
 export const PRICING_MODES = ["per_session", "per_hour", "per_month"] as const;
 export type PricingMode = (typeof PRICING_MODES)[number];
 
-export const VENUES = ["home", "center", "online"] as const;
-export type Venue = (typeof VENUES)[number];
-
 export class ClassScheduleSlotDto {
   @ApiProperty({ minimum: 0, maximum: 6, description: "0 = C.Nhật" })
   @IsInt() @Min(0) @Max(6) weekday!: number;
@@ -43,8 +40,6 @@ export class CreateClassDto {
   @IsOptional() @IsIn(PRICING_MODES) pricingMode?: PricingMode;
   @ApiPropertyOptional({ description: "Tự động tạo buổi dạy theo lịch cố định" })
   @IsOptional() @IsBoolean() autoSchedule?: boolean;
-  @ApiPropertyOptional({ enum: VENUES })
-  @IsOptional() @IsIn(VENUES) venue?: Venue;
   @ApiPropertyOptional({ type: [ClassScheduleSlotDto] })
   @IsOptional()
   @IsArray()

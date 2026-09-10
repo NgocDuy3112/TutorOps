@@ -106,7 +106,6 @@ export function ClassDetailPage() {
           pricingMode: item.pricingMode ?? "per_session",
           autoSchedule: item.schedules?.length ? checked : false,
           schedules: item.schedules ?? [],
-          venue: item.venue ?? null,
           note: item.note ?? null,
         }),
       });

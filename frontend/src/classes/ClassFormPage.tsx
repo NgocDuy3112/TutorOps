@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ScheduleEditor, type ScheduleSlot } from "./ScheduleEditor";
-import { venueLabel, VENUE_OPTIONS, type Venue } from "./venue";
 
 const PRICING_MODE_OPTIONS = [
   { value: "per_session", label: "Theo buổi", unit: "đ/buổi" },
@@ -36,7 +35,6 @@ type TutorClass = {
   pricingMode?: PricingMode;
   autoSchedule?: boolean;
   schedules?: ScheduleSlot[];
-  venue?: string | null;
   note: string | null;
 };
 
@@ -55,7 +53,7 @@ export function ClassFormPage() {
   const [pricingMode, setPricingMode] = useState<PricingMode>("per_session");
   const [autoSchedule, setAutoSchedule] = useState(false);
   const [schedules, setSchedules] = useState<ScheduleSlot[]>([]);
-  const [venue, setVenue] = useState<string>("");
+
 
   useEffect(() => {
     if (!editing) return;
@@ -77,7 +75,6 @@ export function ClassFormPage() {
         setPricingMode(item.pricingMode ?? "per_session");
         setAutoSchedule(item.autoSchedule ?? false);
         setSchedules(item.schedules ?? []);
-        setVenue(item.venue ?? "");
       } catch (requestError) {
         setError(
           requestError instanceof Error
@@ -109,7 +106,6 @@ export function ClassFormPage() {
             pricingMode,
             autoSchedule: schedules.length > 0 ? autoSchedule : false,
             schedules,
-            venue: venue || null,
             note: form.note || null,
           }),
         },
@@ -240,21 +236,6 @@ export function ClassFormPage() {
                       />
                     </div>
                   )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="class-venue">Nơi dạy</Label>
-                  <Select value={venue} onValueChange={setVenue}>
-                    <SelectTrigger id="class-venue" className="w-full">
-                      <SelectValue placeholder="Tùy chọn" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {VENUE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="class-note">Ghi chú</Label>
