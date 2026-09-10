@@ -6,6 +6,7 @@ import { SessionsModule } from "./sessions/sessions.module";
 import { AssignmentsModule } from "./assignments/assignments.module";
 import { StorageModule } from "./storage/storage.module";
 import { FilesModule } from "./files/files.module";
+import { GoogleCalendarModule } from "./google-calendar/google-calendar.module";
 import { AccessModule } from "./access/access.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { SubmissionsModule } from "./submissions/submissions.module";
@@ -34,6 +35,7 @@ import { VersionModule } from "./version/version.module";
     DashboardModule,
     TuitionModule,
     ClassesModule,
+    GoogleCalendarModule,
     SlipsModule,
     VersionModule,
   ],

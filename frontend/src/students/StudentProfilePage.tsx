@@ -4,11 +4,8 @@ import {
   ArrowLeft,
   BookOpenCheck,
   CalendarCheck,
-  Copy,
-  Link2,
   Loader2,
   Pencil,
-  RefreshCw,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -64,9 +61,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [newLink, setNewLink] = useState<string | null>(null);
-  const [generatingLink, setGeneratingLink] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -97,32 +91,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
   useEffect(() => {
     void load();
   }, [studentId]);
-
-  // Rotates the student submission link: old tokens are revoked server-side
-  // and the fresh link is shown once (tokens are only stored hashed).
-  async function regenerateLink() {
-    setGeneratingLink(true);
-    setError("");
-    setCopied(false);
-    try {
-      const response = await fetch(
-        `${API}/students/${studentId}/access-tokens/student`,
-        { method: "POST" },
-      );
-      if (!response.ok)
-        throw new Error("Không thể tạo link. Vui lòng thử lại.");
-      const body = (await response.json()) as { token: string };
-      setNewLink(
-        `${window.location.origin}/submit/${encodeURIComponent(body.token)}`,
-      );
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
-      );
-    } finally {
-      setGeneratingLink(false);
-    }
-  }
 
   async function deleteStudent() {
     if (!student) return;
@@ -247,65 +215,6 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
               <Row label="Phụ huynh" value={student.parentName || "Chưa cập nhật"} />
               <Row label="Điện thoại" value={student.parentPhone || "Chưa cập nhật"} />
             </dl>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-3xl border-slate-200 shadow-sm">
-          <CardHeader className="flex-row items-center justify-between p-5 pb-0">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Link2 size={20} className="text-primary" />
-              Link nộp bài
-            </CardTitle>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-xl text-xs"
-              disabled={generatingLink}
-              onClick={() => void regenerateLink()}
-            >
-              {generatingLink ? (
-                <Loader2 className="animate-spin" size={14} />
-              ) : (
-                <RefreshCw size={14} />
-              )}
-              Tạo link mới
-            </Button>
-          </CardHeader>
-          <CardContent className="p-5">
-            {newLink ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <p
-                    className="min-w-0 flex-1 truncate rounded-xl bg-slate-100 px-3 py-2.5 font-mono text-xs"
-                    title={newLink}
-                  >
-                    {newLink}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 rounded-xl text-xs"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(newLink);
-                      setCopied(true);
-                    }}
-                  >
-                    <Copy size={14} />
-                    {copied ? "Đã sao chép" : "Sao chép"}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Link cũ sẽ hết hiệu lực ngay sau khi tạo link mới.
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Dùng để tạo link nộp bài cho học sinh. Tạo link mới sẽ thu hồi
-                link cũ.
-              </p>
-            )}
           </CardContent>
         </Card>
 
