@@ -229,6 +229,9 @@ export function SchedulePage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           taughtAt: taughtAt.toISOString(),
+          // Pin the class explicitly — students in multiple classes would
+          // otherwise produce a class-less session that tuition can't see.
+          classId: selectedClass.id,
           priceVnd:
             selectedClass.defaultPriceVnd == null
               ? undefined

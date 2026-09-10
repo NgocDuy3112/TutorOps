@@ -18,11 +18,12 @@ import { API } from "../lib/api";
 
 type Student = {
   id: string;
-  classes?: { pricingMode?: string }[];
+  classes?: { id?: string; pricingMode?: string }[];
 };
 type TeachingSession = {
   id: string;
   studentId: string;
+  classId?: string | null;
   taughtAt: string;
   endsAt?: string | null;
   priceVnd: number;
@@ -116,6 +117,13 @@ export function MarkTaughtSheet({
           // Recording a lesson = it happened. Due only counts 'taught'
           // sessions, so never leave manual records as 'unconfirmed'.
           status: "taught",
+          // Pin the class when unambiguous — class-less sessions are
+          // invisible to per-class tuition.
+          classId:
+            session?.classId ??
+            (student.classes && student.classes.length === 1
+              ? student.classes[0].id
+              : undefined),
         }),
       },
     );

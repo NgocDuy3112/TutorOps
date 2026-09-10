@@ -66,7 +66,7 @@ export const MonthlySlipCard = forwardRef<
             {/* Mini month calendar — teaching days filled purple. */}
             <section
               aria-label={`Lịch các buổi dạy trong ${formatMonthLabel(new Date(`${slip.month}-01T00:00:00`))}`}
-              className="col-span-3 rounded-xl border border-slate-100 p-2.5"
+              className="col-span-3 p-2.5"
             >
               <div className="grid grid-cols-7 gap-y-1 text-center text-[9px] font-semibold text-slate-400">
                 {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((label) => (
@@ -105,7 +105,7 @@ export const MonthlySlipCard = forwardRef<
             </section>
 
             {/* QR cell — QR first, then caption, then the headline amount */}
-            <section className="col-span-2 flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed p-3 text-center">
+            <section className="col-span-2 flex flex-col items-center justify-center gap-1 p-3 text-center">
               {slip.paymentQrUrl ? (
                 <img
                   alt="Mã QR chuyển khoản"
@@ -119,11 +119,11 @@ export const MonthlySlipCard = forwardRef<
               )}
               <p className="text-[10px] leading-snug text-muted-foreground">
                 {slip.paymentQrUrl
-                  ? "Quét mã để chuyển khoản."
+                  ? "Quét mã để chuyển học phí"
                   : "Chưa đặt mã QR — thêm trong Cài đặt."}
               </p>
-              <p className="text-3xl font-black text-primary">
-                {formatVnd(slip.due)}
+              <p className="whitespace-nowrap text-2xl font-black text-primary">
+                {formatVnd(slip.due).replace(" ₫", "₫")}
               </p>
             </section>
           </div>
