@@ -95,10 +95,7 @@ export const SheetContent = React.forwardRef<
         }}
         onOpenAutoFocus={(e) => e.preventDefault()}
         className={cn(
-          // Mobile: full-screen page (inner pages like PersonalInfo are
-          // full-screen too, so a partial sheet felt inconsistent).
-          // Desktop: right sidebar.
-          "fixed inset-x-0 top-0 bottom-0 z-50 flex flex-col bg-background shadow-lg data-[state=open]:animate-sheet-in data-[state=closed]:animate-sheet-out sm:inset-x-auto sm:right-0 sm:w-full sm:max-w-md sm:rounded-l-3xl",
+          "fixed inset-x-0 bottom-0 z-50 flex max-h-[90dvh] flex-col rounded-t-3xl bg-background shadow-lg data-[state=open]:animate-sheet-in data-[state=closed]:animate-sheet-out sm:inset-x-auto sm:right-0 sm:bottom-0 sm:top-0 sm:w-full sm:max-w-md sm:rounded-l-3xl sm:rounded-tr-none",
           isDragging && "transition-none",
           className,
         )}

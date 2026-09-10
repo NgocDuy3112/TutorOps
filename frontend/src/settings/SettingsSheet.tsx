@@ -86,6 +86,11 @@ export function SettingsSheet({
             <LogOut size={16} />
             Đăng xuất
           </Button>
+
+          <p className="mt-6 flex items-center justify-center gap-1 pb-2 text-xs text-muted-foreground">
+            <Info size={13} />
+            Quản lý tài khoản TutorOps
+          </p>
         </div>
       </SheetContent>
     </Sheet>

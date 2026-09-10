@@ -50,7 +50,6 @@ const SECTION_TITLES: Record<EditClassSection, string> = {
   schedule: "Sửa lịch dạy",
   note: "Sửa ghi chú",
 };
-const MAX_AMOUNT_VND = 100_000_000;
 
 export function EditClassSheet({
   classItem,
@@ -206,7 +205,7 @@ export function EditClassSheet({
                     <Input
                       id="sheet-class-price"
                       inputMode="numeric"
-                      max={MAX_AMOUNT_VND}
+                      max={10_000_000_000}
                       className="pr-20"
                       value={defaultPriceVnd}
                       onChange={(e) =>
