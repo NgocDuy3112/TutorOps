@@ -83,10 +83,12 @@ export class AuthService {
     const profile = await this.repository.findProfile(userId);
     return {
       ...profile,
-      paymentQrUrl: profile?.paymentQrKey
-        ? await this.storage.getDownloadUrl(profile.paymentQrKey)
+      // Same-origin URL — presigned S3 URLs expire after 300s and are
+      // cross-origin, which breaks the PNG export of the monthly slip.
+      paymentQrUrl: profile?.paymentQrFileId
+        ? `/files/${profile.paymentQrFileId}/raw`
         : null,
-      paymentQrKey: undefined,
+      paymentQrFileId: undefined,
     };
   }
   async updateProfile(
@@ -96,9 +98,13 @@ export class AuthService {
     return this.repository.updateProfile(userId, input.fullName, input.phone);
   }
   async updatePaymentQr(userId: string, file: Express.Multer.File) {
+    const previous = (await this.repository.findProfile(userId))
+      ?.paymentQrFileId;
     const stored = await this.files.upload(userId, file, "payment-qr");
     await this.repository.setPaymentQrFile(userId, stored.id);
-    return { paymentQrUrl: await this.storage.getDownloadUrl(stored.storageKey) };
+    // Clean up the replaced QR file so orphan rows don't accumulate.
+    if (previous) await this.files.softDelete(userId, previous).catch(() => {});
+    return { paymentQrUrl: `/files/${stored.id}/raw` };
   }
   async changePassword(
     userId: string,

@@ -3,6 +3,14 @@ export const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 /** Stripped base URL — used internally by the interceptor. */
 const BASE_URL = API.replace(/\/+$/, "");
 
+/** Resolve a backend-returned file path (e.g. "/files/x/raw") against the API
+ *  base. Absolute URLs (e.g. presigned S3) pass through untouched. */
+export function apiUrl(path: string) {
+  return /^https?:\/\//.test(path)
+    ? path
+    : `${BASE_URL}/${path.replace(/^\/+/, "")}`;
+}
+
 /** Routes that should never trigger the 401 → /login redirect. */
 const AUTH_BYPASS_PATTERNS = [
   "/public/",

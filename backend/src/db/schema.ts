@@ -417,12 +417,7 @@ export const payments = pgTable(
     amountVnd: bigint("amount_vnd", { mode: "number" }).notNull(),
     paidAt: timestamp("paid_at", { withTimezone: true }).notNull(),
     appliesToMonth: text("applies_to_month").notNull(),
-    status: paymentStatus("status").default("draft").notNull(),
-    receiptFileId: uuid("receipt_file_id").references(() => files.id, {
-      onDelete: "restrict",
-    }),
-    ocrDetectedAmountVnd: bigint("ocr_detected_amount_vnd", { mode: "number" }),
-    ocrConfidence: numeric("ocr_confidence"),
+    status: paymentStatus("status").default("confirmed").notNull(),
     confirmedBy: uuid("confirmed_by").references(() => users.id, {
       onDelete: "restrict",
     }),
