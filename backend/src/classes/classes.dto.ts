@@ -22,7 +22,7 @@ export const VENUES = ["home", "center", "online"] as const;
 export type Venue = (typeof VENUES)[number];
 
 export class ClassScheduleSlotDto {
-  @ApiProperty({ minimum: 0, maximum: 6, description: "0 = Chủ nhật" })
+  @ApiProperty({ minimum: 0, maximum: 6, description: "0 = C.Nhật" })
   @IsInt() @Min(0) @Max(6) weekday!: number;
   @ApiProperty({ description: "Giờ bắt đầu, VN local (HH:mm)" })
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) startTime!: string;
