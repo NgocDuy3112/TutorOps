@@ -94,7 +94,7 @@ export class AuthService {
     const user = await this.repository.findOrCreateGoogleUser(
       payload.email.toLowerCase(),
       payload.sub,
-      payload.name ?? payload.given_name ?? undefined,
+      payload.name ?? payload.givenName,
     );
     return this.createSession(user);
   }
@@ -106,7 +106,7 @@ export class AuthService {
     const user = await this.repository.findOrCreateGoogleUser(
       payload.email.toLowerCase(),
       payload.sub,
-      payload.name ?? payload.given_name ?? undefined,
+      payload.name ?? payload.givenName,
     );
     return this.createSession(user);
   }
@@ -119,7 +119,14 @@ export class AuthService {
     const payload = ticket.getPayload();
     if (!payload?.sub || !payload.email || payload.email_verified !== true)
       throw new UnauthorizedError(ErrorCodes.INVALID_GOOGLE_IDENTITY);
-    return payload;
+    // Return a narrowed shape — getPayload() types email as optional,
+    // but the guard above guarantees sub/email are present.
+    return {
+      sub: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      givenName: payload.given_name,
+    };
   }
 
   /** Exchanges the calendar-flow code for tokens and stores them.
