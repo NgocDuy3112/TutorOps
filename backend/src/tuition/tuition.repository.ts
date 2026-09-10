@@ -35,7 +35,7 @@ export class TuitionRepository {
         WHERE c.teacher_id = $3
           AND c.deleted_at IS NULL
           AND ts.deleted_at IS NULL
-          AND ts.status <> 'cancelled'
+          AND ts.status = 'taught'
           AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $1
         GROUP BY ts.class_id
       ) AS t ON t.class_id = c.id
@@ -49,7 +49,7 @@ export class TuitionRepository {
           WHERE c.pricing_mode = 'per_month'
             AND c.deleted_at IS NULL
             AND ts.deleted_at IS NULL
-            AND ts.status <> 'cancelled'
+            AND ts.status = 'taught'
             AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $1
         ) AS distinct_classes
         GROUP BY class_id
