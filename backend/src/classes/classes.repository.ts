@@ -175,11 +175,14 @@ export class ClassesRepository {
       [classId, teacherId],
     );
     for (const slot of slots) {
+      // No ON CONFLICT DO NOTHING: delete-first above makes it redundant, and
+      // a bare DO NOTHING would silently swallow the row on ANY unique index
+      // (e.g. a drift index on time without weekday) — losing slots with a
+      // 200 response. A real conflict must surface as an error instead.
       await client.query(
         `
         INSERT INTO class_schedules (class_id, teacher_id, weekday, start_time, end_time)
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT DO NOTHING
         `,
         [classId, teacherId, slot.weekday, slot.startTime, slot.endTime],
       );
