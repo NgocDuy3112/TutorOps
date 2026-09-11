@@ -328,17 +328,20 @@ export function SchedulePage() {
                     sessions,
                   ).length;
                   const selected = key === dateKey(selectedDate);
+                  const isToday = key === dateKey(new Date());
                   return (
                     <button
                       key={key}
                       type="button"
                       onClick={() => openAgenda(day)}
-                      className={`relative min-h-9 rounded-xl border p-1 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:min-h-10 ${
-                        selected
+                      className={`relative min-h-9 rounded-xl border p-1 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:min-h-10 ${selected
                           ? "border-primary bg-primary text-primary-foreground shadow-md shadow-violet-200"
-                          : "border-transparent hover:bg-slate-100"
-                      } ${sameMonth(day, month) ? "" : "text-muted-foreground opacity-40"}`}
+                          : isToday
+                            ? "border-violet-300 bg-violet-50 text-violet-900"
+                            : "border-transparent hover:bg-slate-100"
+                        } ${sameMonth(day, month) ? "" : "text-muted-foreground opacity-40"}`}
                       aria-pressed={selected}
+                      aria-current={isToday ? "date" : undefined}
                     >
                       <span className="block font-semibold">
                         {day.getDate()}
@@ -348,30 +351,28 @@ export function SchedulePage() {
                       {recordedCount > 0 && (
                         <span
                           aria-hidden
-                          className={`absolute bottom-1 size-1.5 rounded-full ${
-                            recordedCount > 0 && scheduledCount > 0
+                          className={`absolute bottom-1 size-1.5 rounded-full ${recordedCount > 0 && scheduledCount > 0
                               ? "left-[calc(50%-0.2rem)] -translate-x-full"
                               : "left-1/2 -translate-x-1/2"
-                          } ${selected ? "bg-white" : "bg-emerald-600"}`}
+                            } ${selected ? "bg-white" : "bg-emerald-600"}`}
                         />
                       )}
                       {scheduledCount > 0 && (
                         <span
                           aria-hidden
-                          className={`absolute bottom-1 size-1.5 rounded-full ${
-                            recordedCount > 0 && scheduledCount > 0
+                          className={`absolute bottom-1 size-1.5 rounded-full ${recordedCount > 0 && scheduledCount > 0
                               ? "left-[calc(50%+0.2rem)] translate-x-0"
                               : "left-1/2 -translate-x-1/2"
-                          } ${selected ? "bg-white/70" : "bg-amber-500"}`}
+                            } ${selected ? "bg-white/70" : "bg-amber-500"}`}
                         />
                       )}
                       {(recordedCount > 0 || scheduledCount > 0) && (
                         <span className="sr-only">
                           {[
                             recordedCount > 0 &&
-                              `${recordedCount} buổi đã ghi nhận`,
+                            `${recordedCount} buổi đã ghi nhận`,
                             scheduledCount > 0 &&
-                              `${scheduledCount} buổi dự kiến theo lịch`,
+                            `${scheduledCount} buổi dự kiến theo lịch`,
                           ]
                             .filter(Boolean)
                             .join(", ")}
@@ -758,43 +759,43 @@ function DayAgendaDialog({
                 />
               ))}
               {groups.map((group) => {
-              const groupTotal = group.sessions.reduce(
-                (sum, session) => sum + Number(session.priceVnd),
-                0,
-              );
-              return (
-                <section
-                  key={group.studentId}
-                  className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-100"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h4 className="truncate font-bold text-slate-800">
-                        {group.studentName}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {group.sessions.length} buổi dạy
-                      </p>
+                const groupTotal = group.sessions.reduce(
+                  (sum, session) => sum + Number(session.priceVnd),
+                  0,
+                );
+                return (
+                  <section
+                    key={group.studentId}
+                    className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-100"
+                  >
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h4 className="truncate font-bold text-slate-800">
+                          {group.studentName}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {group.sessions.length} buổi dạy
+                        </p>
+                      </div>
+                      {groupTotal > 0 && (
+                        <p className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-sm font-bold">
+                          {formatVnd(groupTotal)}
+                        </p>
+                      )}
                     </div>
-                    {groupTotal > 0 && (
-                      <p className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-sm font-bold">
-                        {formatVnd(groupTotal)}
-                      </p>
-                    )}
-                  </div>
 
-                  <div className="space-y-2">
-                    {group.sessions.map((session) => (
-                      <SessionCard
-                        key={session.id}
-                        session={session}
-                        onEdit={() => onEdit(session, group.studentName)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
+                    <div className="space-y-2">
+                      {group.sessions.map((session) => (
+                        <SessionCard
+                          key={session.id}
+                          session={session}
+                          onEdit={() => onEdit(session, group.studentName)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
             </>
           )}
         </div>
@@ -878,13 +879,12 @@ function SessionCard({
 
   return (
     <article
-      className={`rounded-2xl border p-3 transition-colors ${
-        cancelled
+      className={`rounded-2xl border p-3 transition-colors ${cancelled
           ? "border-rose-100 bg-rose-50/60"
           : taught
             ? "border-emerald-100 bg-emerald-50/60"
             : "border-slate-200 bg-slate-50"
-      }`}
+        }`}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
