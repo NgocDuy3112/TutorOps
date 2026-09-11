@@ -11,6 +11,8 @@ const APP_TIMEZONE = "Asia/Ho_Chi_Minh";
 // BYDAY values for RRULE — 0=SU … 6=SA (same as class_schedules.weekday).
 const BYDAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
 
+const GCAL_SYNC_ENABLED = false;
+
 /**
  * Push direction of the Google Calendar integration: every fixed-schedule
  * slot of an auto-scheduled class becomes ONE recurring event on the
@@ -37,6 +39,7 @@ export class GoogleCalendarService {
 
   /** Reconciles all auto_schedule classes of the teacher with their events. */
   async syncTeacher(userId: string): Promise<{ created: number; deleted: number }> {
+    if (!GCAL_SYNC_ENABLED) return { created: 0, deleted: 0 };
     const token = await this.repository.findToken(userId);
     if (!token) return { created: 0, deleted: 0 };
     const accessToken = await this.accessToken(userId, token.refreshToken);
