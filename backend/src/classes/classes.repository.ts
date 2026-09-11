@@ -187,6 +187,16 @@ export class ClassesRepository {
         [classId, teacherId, slot.weekday, slot.startTime, slot.endTime],
       );
     }
+    // Post-write guard: a silent drop (drift unique index, trigger, …) must
+    // fail the request loudly instead of returning 200 with lost slots.
+    const written = await client.query(
+      `SELECT count(*)::int AS n FROM class_schedules WHERE class_id = $1 AND teacher_id = $2`,
+      [classId, teacherId],
+    );
+    if (written.rows[0].n !== slots.length)
+      throw new Error(
+        `replaceSchedules: persisted ${written.rows[0].n}/${slots.length} slots — a DB constraint is rejecting inserts`,
+      );
   }
 
   async softDelete(teacherId: string, id: string) {
