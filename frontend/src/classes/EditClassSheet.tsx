@@ -235,17 +235,18 @@ export function EditClassSheet({
                   <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3">
                     <div>
                       <p className="text-sm font-semibold">
-                        Tự động tạo buổi dạy
+                        Nhắc buổi dạy trên lịch
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Hệ thống tự tạo buổi theo lịch trên, bạn chỉ cần xoá nếu
-                        nghỉ.
+                        Các khung giờ trên sẽ hiện dưới dạng buổi chờ xác nhận
+                        trên trang Lịch. Dạy xong bấm Xác nhận để ghi nhận học
+                        phí.
                       </p>
                     </div>
                     <Switch
                       checked={autoSchedule}
                       onCheckedChange={setAutoSchedule}
-                      aria-label="Tự động tạo buổi dạy"
+                      aria-label="Nhắc buổi dạy trên lịch"
                     />
                   </div>
                 )}

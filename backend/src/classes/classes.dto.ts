@@ -38,7 +38,7 @@ export class CreateClassDto {
   defaultPriceVnd?: number;
   @ApiPropertyOptional({ enum: PRICING_MODES, default: "per_session" })
   @IsOptional() @IsIn(PRICING_MODES) pricingMode?: PricingMode;
-  @ApiPropertyOptional({ description: "Tự động tạo buổi dạy theo lịch cố định" })
+  @ApiPropertyOptional({ description: "Nhắc buổi dạy theo lịch cố định trên trang Lịch (virtual slot, xác nhận tay)" })
   @IsOptional() @IsBoolean() autoSchedule?: boolean;
   @ApiPropertyOptional({ type: [ClassScheduleSlotDto] })
   @IsOptional()

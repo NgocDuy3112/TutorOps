@@ -112,7 +112,7 @@ export function ClassDetailPage() {
       if (!response.ok) throw new Error();
     } catch {
       setItem(item); // revert on failure
-      setError("Không thể đổi tự động tạo buổi. Vui lòng thử lại.");
+      setError("Không thể đổi nhắc buổi dạy. Vui lòng thử lại.");
     } finally {
       setTogglingAuto(false);
     }
@@ -436,13 +436,13 @@ export function ClassDetailPage() {
               )}
               <div className="flex items-start justify-between gap-4">
                 <dt className="shrink-0 text-muted-foreground">
-                  Tự động tạo buổi
+                  Nhắc buổi trên lịch
                 </dt>
                 <dd>
                   <Switch
                     checked={item.autoSchedule}
                     disabled={togglingAuto}
-                    aria-label="Tự động tạo buổi dạy"
+                      aria-label="Nhắc buổi dạy trên lịch"
                     onCheckedChange={(checked) =>
                       void toggleAutoSchedule(checked)
                     }
