@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ScheduleEditor, type ScheduleSlot } from "./ScheduleEditor";
-import { VENUE_OPTIONS } from "./venue";
 
 const PRICING_MODE_OPTIONS = [
   { value: "per_session", label: "Theo buổi", unit: "đ/buổi" },
@@ -38,7 +37,6 @@ type TutorClass = {
   pricingMode?: PricingMode;
   autoSchedule?: boolean;
   schedules?: ScheduleSlot[];
-  venue?: string | null;
   note: string | null;
   students: Student[];
 };
@@ -83,7 +81,6 @@ export function EditClassSheet({
   const [schedules, setSchedules] = useState<ScheduleSlot[]>(
     classItem.schedules ?? [],
   );
-  const [venue, setVenue] = useState(classItem.venue ?? "");
 
   useEffect(() => {
     setName(classItem.name);
@@ -94,7 +91,6 @@ export function EditClassSheet({
     setPricingMode(classItem.pricingMode ?? "per_session");
     setAutoSchedule(classItem.autoSchedule ?? false);
     setSchedules(classItem.schedules ?? []);
-    setVenue(classItem.venue ?? "");
   }, [classItem]);
 
   async function submitInfo(event: FormEvent) {
@@ -112,7 +108,6 @@ export function EditClassSheet({
           pricingMode,
           autoSchedule: schedules.length > 0 ? autoSchedule : false,
           schedules,
-          venue: venue || null,
           note: note || null,
         }),
       });
@@ -258,21 +253,6 @@ export function EditClassSheet({
               )}
               {showNote && (
               <>
-              <div className="space-y-2">
-                <Label htmlFor="sheet-class-venue">Nơi dạy</Label>
-                <Select value={venue} onValueChange={setVenue}>
-                  <SelectTrigger id="sheet-class-venue" className="w-full">
-                    <SelectValue placeholder="Tùy chọn" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VENUE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-note">Ghi chú</Label>
                 <Input
