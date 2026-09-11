@@ -321,9 +321,12 @@ export function SchedulePage() {
                 ))}
                 {calendarDays.map((day) => {
                   const key = dateKey(day);
-                  const hasSessions =
-                    (sessionsByDate.get(key)?.length ?? 0) > 0 ||
-                    virtualSlotsForDate(day, classes, sessions).length > 0;
+                  const recordedCount = sessionsByDate.get(key)?.length ?? 0;
+                  const scheduledCount = virtualSlotsForDate(
+                    day,
+                    classes,
+                    sessions,
+                  ).length;
                   const selected = key === dateKey(selectedDate);
                   return (
                     <button
@@ -340,15 +343,61 @@ export function SchedulePage() {
                       <span className="block font-semibold">
                         {day.getDate()}
                       </span>
-                      {hasSessions && (
+                      {/* Two semantic dots: emerald = recorded session,
+                          amber = scheduled (not yet confirmed). */}
+                      {recordedCount > 0 && (
                         <span
                           aria-hidden
-                          className={`absolute bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full ${selected ? "bg-white" : "bg-violet-600"}`}
+                          className={`absolute bottom-1 size-1.5 rounded-full ${
+                            recordedCount > 0 && scheduledCount > 0
+                              ? "left-[calc(50%-0.2rem)] -translate-x-full"
+                              : "left-1/2 -translate-x-1/2"
+                          } ${selected ? "bg-white" : "bg-emerald-600"}`}
                         />
+                      )}
+                      {scheduledCount > 0 && (
+                        <span
+                          aria-hidden
+                          className={`absolute bottom-1 size-1.5 rounded-full ${
+                            recordedCount > 0 && scheduledCount > 0
+                              ? "left-[calc(50%+0.2rem)] translate-x-0"
+                              : "left-1/2 -translate-x-1/2"
+                          } ${selected ? "bg-white/70" : "bg-amber-500"}`}
+                        />
+                      )}
+                      {(recordedCount > 0 || scheduledCount > 0) && (
+                        <span className="sr-only">
+                          {[
+                            recordedCount > 0 &&
+                              `${recordedCount} buổi đã ghi nhận`,
+                            scheduledCount > 0 &&
+                              `${scheduledCount} buổi dự kiến theo lịch`,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </span>
                       )}
                     </button>
                   );
                 })}
+              </div>
+            )}
+            {!loading && (
+              <div className="mt-2 flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className="size-1.5 rounded-full bg-emerald-600"
+                  />
+                  Đã ghi nhận
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className="size-1.5 rounded-full bg-amber-500"
+                  />
+                  Dự kiến theo lịch
+                </span>
               </div>
             )}
           </CardContent>
@@ -775,7 +824,7 @@ function VirtualSlotCard({
   onConfirm: () => void;
 }) {
   return (
-    <article className="rounded-2xl border border-dashed border-violet-300 bg-violet-50/50 p-3">
+    <article className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/60 p-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-slate-800">
@@ -788,7 +837,7 @@ function VirtualSlotCard({
         <div className="flex shrink-0 items-center gap-2">
           <span
             aria-hidden
-            className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700"
+            className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
           >
             Dự kiến
           </span>
@@ -834,7 +883,7 @@ function SessionCard({
           ? "border-rose-100 bg-rose-50/60"
           : taught
             ? "border-emerald-100 bg-emerald-50/60"
-            : "border-slate-100 bg-violet-50"
+            : "border-slate-200 bg-slate-50"
       }`}
     >
       <div className="flex items-center justify-between gap-3">
