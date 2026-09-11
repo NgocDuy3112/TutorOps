@@ -27,6 +27,8 @@ const PRICING_MODE_OPTIONS = [
   { value: "per_month", label: "Theo tháng", unit: "đ/tháng" },
 ] as const;
 
+const MAX_PRICE_VND = 10_000_000_000;
+
 type PricingMode = (typeof PRICING_MODE_OPTIONS)[number]["value"];
 
 type Student = { id: string; name: string; parentPhone: string | null };
@@ -200,7 +202,7 @@ export function EditClassSheet({
                     <Input
                       id="sheet-class-price"
                       inputMode="numeric"
-                      max={10_000_000_000}
+                      max={MAX_PRICE_VND}
                       className="pr-20"
                       value={defaultPriceVnd}
                       onChange={(e) =>
