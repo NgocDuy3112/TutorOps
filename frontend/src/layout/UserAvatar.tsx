@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { API } from "../lib/api";
 
 type Profile = { email: string; fullName: string | null };
@@ -16,6 +16,7 @@ const initials = (profile: Profile | null) => {
 
 export function UserAvatar() {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${API}/auth/me`)
@@ -25,13 +26,16 @@ export function UserAvatar() {
   }, []);
 
   return (
-    <Link
-      to="/settings"
-      className="grid size-11 place-items-center rounded-full bg-violet-100 text-sm font-bold text-primary shadow-sm transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-      aria-label="Mở trang cá nhân"
-      title={profile?.fullName || profile?.email || "Cá nhân"}
-    >
-      {initials(profile)}
-    </Link>
+    <>
+      <button
+        type="button"
+        onClick={() => navigate("/settings")}
+        className="grid size-11 place-items-center rounded-full bg-violet-100 text-sm font-bold text-primary shadow-sm transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        aria-label="Mở cài đặt"
+        title={profile?.fullName || profile?.email || "Cá nhân"}
+      >
+        {initials(profile)}
+      </button>
+    </>
   );
 }

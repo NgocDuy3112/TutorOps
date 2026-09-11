@@ -6,7 +6,11 @@ export class AuthRepository {
   async findProfile(userId: string) {
     return (
       await pool.query(
-        'SELECT id, email, role, full_name AS "fullName", phone FROM users WHERE id = $1 AND deleted_at IS NULL',
+        `SELECT u.id, u.email, u.role, u.full_name AS "fullName", u.phone,
+                f.id AS "paymentQrFileId"
+         FROM users u
+         LEFT JOIN files f ON f.id = u.payment_qr_file_id AND f.deleted_at IS NULL
+         WHERE u.id = $1 AND u.deleted_at IS NULL`,
         [userId],
       )
     ).rows[0];
@@ -38,6 +42,13 @@ export class AuthRepository {
     await pool.query(
       "UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2 AND deleted_at IS NULL",
       [passwordHash, userId],
+    );
+  }
+
+  async setPaymentQrFile(userId: string, fileId: string) {
+    await pool.query(
+      "UPDATE users SET payment_qr_file_id = $1, updated_at = now() WHERE id = $2 AND deleted_at IS NULL",
+      [fileId, userId],
     );
   }
 

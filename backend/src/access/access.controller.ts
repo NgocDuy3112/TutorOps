@@ -6,9 +6,10 @@ import {
   Post,
   Query,
   Req,
-  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
+import { UnauthorizedError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { AuthGuard } from "../auth/auth.guard";
 import { AccessService } from "./access.service";
 import { pool } from "../db/client";
@@ -25,9 +26,9 @@ export class AccessController {
     @Param("type") type: "student" | "parent",
   ) {
     if (!["student", "parent"].includes(type))
-      throw new UnauthorizedException("invalid_token_type");
+      throw new UnauthorizedError(ErrorCodes.INVALID_TOKEN_TYPE);
     const token = await this.access.regenerate(req.user.id, id, type);
-    if (!token) throw new UnauthorizedException("student_not_found");
+    if (!token) throw new UnauthorizedError(ErrorCodes.STUDENT_NOT_FOUND);
     return { token };
   }
 
@@ -38,7 +39,7 @@ export class AccessController {
     @Param("id") id: string,
   ) {
     const token = await this.access.createAssignmentLink(req.user.id, id);
-    if (!token) throw new UnauthorizedException("assignment_not_found");
+    if (!token) throw new UnauthorizedError(ErrorCodes.ASSIGNMENT_NOT_FOUND);
     return { token };
   }
 
@@ -60,39 +61,5 @@ export class AccessController {
       [access.studentId],
     );
     return { student: access, assignments: assignments.rows };
-  }
-
-  @Get("public/parents")
-  async parent(@Query("token") token: string) {
-    const access = await this.access.authenticate(token, "parent");
-    const [sessions, payments, assignments] = await Promise.all([
-      pool.query(
-        `SELECT taught_at AS "taughtAt", price_vnd AS "priceVnd", note FROM teaching_sessions WHERE student_id = $1 AND deleted_at IS NULL ORDER BY taught_at DESC`,
-        [access.studentId],
-      ),
-      pool.query(
-        `SELECT amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status FROM payments WHERE student_id = $1 AND status = 'confirmed' ORDER BY paid_at DESC`,
-        [access.studentId],
-      ),
-      // FR6.3: không trả điểm số cho phụ huynh — chỉ title, deadline, trạng thái, nhận xét
-      pool.query(
-        `SELECT a.title, a.due_at AS "dueAt", sa.status,
-                sa.submitted_at AS "submittedAt", sa.reviewed_at AS "reviewedAt",
-                sa.review_note AS "reviewNote"
-         FROM student_assignments sa
-         JOIN assignments a ON a.id = sa.assignment_id
-         WHERE sa.student_id = $1
-           AND sa.status = 'reviewed'
-           AND a.deleted_at IS NULL
-         ORDER BY sa.reviewed_at DESC NULLS LAST`,
-        [access.studentId],
-      ),
-    ]);
-    return {
-      student: { id: access.studentId, name: access.name },
-      sessions: sessions.rows,
-      payments: payments.rows,
-      assignments: assignments.rows,
-    };
   }
 }

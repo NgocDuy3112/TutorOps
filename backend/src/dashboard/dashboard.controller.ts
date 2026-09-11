@@ -11,4 +11,9 @@ export class DashboardController {
   calendar(@Req() request: AuthenticatedRequest) {
     return this.dashboard.calendar(request.user.id);
   }
+
+  @Get("overview")
+  overview(@Req() request: AuthenticatedRequest) {
+    return this.dashboard.overview(request.user.id);
+  }
 }

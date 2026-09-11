@@ -1,13 +1,18 @@
-import { FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, Pencil, Save } from "lucide-react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { ArrowLeft, ImageUp, Loader2, Pencil, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MobileShell } from "../layout/MobileShell";
-import { API } from "../lib/api";
-type Profile = { fullName: string; email: string; phone: string };
+import { API, apiUrl } from "../lib/api";
+type Profile = {
+  fullName: string;
+  email: string;
+  phone: string;
+  paymentQrUrl?: string | null;
+};
 
 export function PersonalInfoPage() {
   const [profile, setProfile] = useState<Profile>({
@@ -17,12 +22,37 @@ export function PersonalInfoPage() {
   });
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
+  const [uploadingQr, setUploadingQr] = useState(false);
+  const [qrMessage, setQrMessage] = useState("");
+  const qrInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch(`${API}/auth/me`)
       .then((r) => r.json())
       .then(setProfile);
   }, []);
+
+  async function uploadQr(file: File) {
+    setUploadingQr(true);
+    setQrMessage("");
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch(`${API}/auth/payment-qr`, {
+        method: "POST",
+        body,
+      });
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+      setProfile((current) => ({ ...current, paymentQrUrl: data.paymentQrUrl }));
+      setQrMessage("Đã cập nhật mã QR");
+    } catch {
+      setQrMessage("Không thể tải ảnh QR. Chỉ nhận PNG/JPG.");
+    } finally {
+      setUploadingQr(false);
+      if (qrInputRef.current) qrInputRef.current.value = "";
+    }
+  }
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -129,6 +159,59 @@ export function PersonalInfoPage() {
               )}
               {message && <p className="text-sm text-emerald-600">{message}</p>}
             </form>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-4 rounded-2xl">
+          <CardHeader className="p-5 pb-0">
+            <h2 className="text-lg font-bold">Mã QR thanh toán</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ảnh QR từ app ngân hàng của bạn, hiện trên phiếu tổng kết gửi phụ huynh.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3 p-5">
+            <div className="flex items-center gap-4">
+              {profile.paymentQrUrl ? (
+                <img
+                  alt="Mã QR thanh toán"
+                  className="h-24 w-24 rounded-lg border object-contain"
+                  src={apiUrl(profile.paymentQrUrl)}
+                />
+              ) : (
+                <div className="grid h-24 w-24 place-items-center rounded-lg border border-dashed text-xs text-muted-foreground">
+                  Chưa có
+                </div>
+              )}
+              <div>
+                <input
+                  ref={qrInputRef}
+                  accept="image/png,image/jpeg"
+                  className="hidden"
+                  type="file"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void uploadQr(file);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={uploadingQr}
+                  onClick={() => qrInputRef.current?.click()}
+                >
+                  {uploadingQr ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <ImageUp size={16} />
+                  )}
+                  {profile.paymentQrUrl ? "Đổi ảnh QR" : "Tải ảnh QR"}
+                </Button>
+                {qrMessage && (
+                  <p className="mt-2 text-sm text-muted-foreground">{qrMessage}</p>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </main>

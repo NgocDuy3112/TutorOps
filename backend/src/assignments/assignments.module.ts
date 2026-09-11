@@ -1,17 +1,12 @@
 import { Module } from "@nestjs/common";
-import { AuthGuard } from "../auth/auth.guard";
-import { AuthRepository } from "../auth/auth.repository";
+import { AuthCoreModule } from "../auth/auth-core.module";
 import { AssignmentsController } from "./assignments.controller";
 import { AssignmentsService } from "./assignments.service";
 import { AssignmentsRepository } from "./assignments.repository";
 
 @Module({
+  imports: [AuthCoreModule],
   controllers: [AssignmentsController],
-  providers: [
-    AssignmentsService,
-    AssignmentsRepository,
-    AuthGuard,
-    AuthRepository,
-  ],
+  providers: [AssignmentsService, AssignmentsRepository],
 })
 export class AssignmentsModule {}

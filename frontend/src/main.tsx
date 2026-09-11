@@ -12,8 +12,8 @@ import {
 import "./styles.css";
 import { LoginPage } from "./auth/LoginPage";
 import { SignupPage } from "./auth/SignupPage";
-import { DashboardPage } from "./dashboard/DashboardPage";
-import { AssignmentsPage } from "./assignments/AssignmentsPage";
+import { SchedulePage } from "./dashboard/SchedulePage";
+import { OverviewPage } from "./dashboard/OverviewPage";
 import { AssignmentFormPage } from "./assignments/AssignmentFormPage";
 import { AssignmentSubmissionsPage } from "./assignments/AssignmentSubmissionsPage";
 import { StudentProfilePage } from "./students/StudentProfilePage";
@@ -24,12 +24,10 @@ import { ClassFormPage } from "./classes/ClassFormPage";
 import { ClassDetailPage } from "./classes/ClassDetailPage";
 import { TuitionPage } from "./tuition/TuitionPage";
 import { StudentSubmissionPage } from "./public/StudentSubmissionPage";
-import { ParentReportPage } from "./public/ParentReportPage";
 import { AssignmentDropboxPage } from "./public/AssignmentDropboxPage";
 import { SettingsPage } from "./settings/SettingsPage";
 import { PersonalInfoPage } from "./settings/PersonalInfoPage";
 import { ChangePasswordPage } from "./settings/ChangePasswordPage";
-import { VersionBanner } from "./components/VersionBanner";
 import { OnboardingDialog } from "./onboarding/OnboardingDialog";
 import { IosInstallBanner } from "./notifications/IosInstallBanner";
 
@@ -37,7 +35,6 @@ function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const isPublicSubmission = window.location.pathname.startsWith("/submit/");
-  const isPublicParent = window.location.pathname.startsWith("/parent/");
   const isAssignmentDropbox = window.location.pathname.startsWith(
     "/assignment-submit/",
   );
@@ -55,17 +52,16 @@ function App() {
   }, [navigate]);
 
   useEffect(() => {
-    if (isPublicSubmission || isPublicParent || isAssignmentDropbox) return;
+    if (isPublicSubmission || isAssignmentDropbox) return;
     fetch(`${API}/auth/me`)
       .then((response) => setAuthenticated(response.ok))
       .catch(() => setAuthenticated(false));
   }, []);
 
-  if (isPublicSubmission || isPublicParent || isAssignmentDropbox) {
+  if (isPublicSubmission || isAssignmentDropbox) {
     return (
       <Routes>
         <Route path="/submit/:token" element={<StudentSubmissionPage />} />
-        <Route path="/parent/:token" element={<ParentReportPage />} />
         <Route
           path="/assignment-submit/:token"
           element={<AssignmentDropboxRoute />}
@@ -105,8 +101,18 @@ function App() {
         />
         <Route
           path="/"
+          element={<Navigate to="/overview" replace />}
+        />
+        <Route
+          path="/overview"
           element={
-            authenticated ? <DashboardPage /> : <Navigate to="/login" replace />
+            authenticated ? <OverviewPage /> : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/schedule"
+          element={
+            authenticated ? <SchedulePage /> : <Navigate to="/login" replace />
           }
         />
         <Route
@@ -139,13 +145,7 @@ function App() {
         />
         <Route
           path="/assignments"
-          element={
-            authenticated ? (
-              <AssignmentsPage />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+          element={<Navigate to="/classes" replace />}
         />
         <Route
           path="/assignments/new"
@@ -241,7 +241,6 @@ function StudentProfileRoute() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <VersionBanner />
       <App />
     </BrowserRouter>
   </StrictMode>,

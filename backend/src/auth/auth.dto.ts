@@ -6,6 +6,13 @@ import {
   MinLength,
 } from "class-validator";
 
+export class GoogleOneTapDto {
+  @ApiProperty({ description: "Google ID token (JWT) from One Tap / GIS" })
+  @IsString()
+  @MinLength(1)
+  credential!: string;
+}
+
 export class CredentialsDto {
   @ApiProperty({ example: "teacher@example.com" })
   @IsEmail()

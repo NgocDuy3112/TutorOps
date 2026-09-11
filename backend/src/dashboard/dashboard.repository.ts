@@ -1,6 +1,25 @@
 import { Injectable } from "@nestjs/common";
 import { pool } from "../db/client";
-import type { DashboardCalendarDto } from "./dashboard.dto";
+import type {
+  DashboardCalendarDto,
+  DashboardOverviewDto,
+} from "./dashboard.dto";
+
+// App serves Vietnamese tutors (VND, vi-VN); month boundaries follow VN local time.
+const APP_TIMEZONE = "Asia/Ho_Chi_Minh";
+
+function vnMonthKey(offsetMonths = 0): string {
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const date = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offsetMonths, 1),
+  );
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function vnTodayKey(): string {
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+}
 
 @Injectable()
 export class DashboardRepository {
@@ -20,8 +39,7 @@ export class DashboardRepository {
       const studentsQuery = `
         SELECT
           id,
-          name,
-          default_price_vnd AS "defaultPriceVnd"
+          name
         FROM students
         WHERE teacher_id = $1
           AND deleted_at IS NULL
@@ -35,6 +53,7 @@ export class DashboardRepository {
           s.name AS "studentName",
           ts.taught_at AS "taughtAt",
           ts.price_vnd AS "priceVnd",
+          ts.status,
           ts.note
         FROM teaching_sessions AS ts
         INNER JOIN students AS s ON s.id = ts.student_id
@@ -83,6 +102,218 @@ export class DashboardRepository {
         students: students.rows,
         sessions: sessions.rows,
         assignments: assignments.rows,
+      };
+    } finally {
+      client.release();
+    }
+  }
+
+  // Glanceable summary for the Overview tab: KPIs (with last-month deltas),
+  // today's sessions, imminent assignment deadlines, and top debtors.
+  async overview(teacherId: string): Promise<DashboardOverviewDto> {
+    const thisMonth = vnMonthKey(0);
+    const lastMonth = vnMonthKey(-1);
+    const today = vnTodayKey();
+    const client = await pool.connect();
+    try {
+      const classCountQuery = `
+        SELECT COUNT(*)::int AS count
+        FROM classes
+        WHERE teacher_id = $1 AND deleted_at IS NULL
+      `;
+      const sessionsQuery = `
+        SELECT
+          COUNT(*) FILTER (
+            WHERE to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
+          )::int AS "thisMonth",
+          COUNT(*) FILTER (
+            WHERE to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $4
+          )::int AS "lastMonth"
+        FROM teaching_sessions AS ts
+        INNER JOIN students AS s ON s.id = ts.student_id
+        WHERE s.teacher_id = $1
+          AND s.deleted_at IS NULL
+          AND ts.deleted_at IS NULL
+          AND ts.status <> 'cancelled'
+      `;
+      const paidQuery = `
+        SELECT
+          COALESCE(SUM(amount_vnd) FILTER (WHERE applies_to_month = $2), 0) AS "thisMonth",
+          COALESCE(SUM(amount_vnd) FILTER (WHERE applies_to_month = $3), 0) AS "lastMonth"
+        FROM payments AS p
+        LEFT JOIN classes AS c ON c.id = p.class_id
+        LEFT JOIN students AS s ON s.id = p.student_id
+        WHERE p.status = 'confirmed'
+          AND (
+            (c.teacher_id = $1 AND c.deleted_at IS NULL)
+            OR (p.class_id IS NULL AND s.teacher_id = $1 AND s.deleted_at IS NULL)
+          )
+      `;
+      // Same due logic as the tuition report, grouped per class: session
+      // prices plus one flat fee per per_month class that had >= 1 session in
+      // the month. Legacy payments without a class reduce the outstanding
+      // total so old money is never counted as debt.
+      const debtQuery = `
+        WITH due AS (
+          SELECT
+            ts.class_id,
+            COALESCE(SUM(ts.price_vnd) FILTER (
+              WHERE c.pricing_mode IS DISTINCT FROM 'per_month'
+            ), 0)
+              + COALESCE((
+                SELECT SUM(fee)
+                FROM (
+                  SELECT DISTINCT ts2.class_id, c2.default_price_vnd AS fee
+                  FROM teaching_sessions AS ts2
+                  INNER JOIN classes AS c2 ON c2.id = ts2.class_id
+                  WHERE c2.pricing_mode = 'per_month'
+                    AND c2.deleted_at IS NULL
+                    AND ts2.deleted_at IS NULL
+                    AND ts2.status = 'taught'
+                    AND ts2.class_id = ts.class_id
+                    AND to_char(ts2.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
+                ) AS d
+              ), 0) AS due
+          FROM teaching_sessions AS ts
+          INNER JOIN classes AS c ON c.id = ts.class_id
+          WHERE c.teacher_id = $1
+            AND c.deleted_at IS NULL
+            AND ts.deleted_at IS NULL
+            AND ts.status = 'taught'
+            AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
+          GROUP BY ts.class_id
+        )
+        SELECT
+          GREATEST(
+            COALESCE(SUM(GREATEST(due - paid, 0)), 0)
+              - COALESCE((
+                SELECT SUM(amount_vnd)
+                FROM payments AS p
+                LEFT JOIN students AS s ON s.id = p.student_id
+                WHERE p.class_id IS NULL
+                  AND p.status = 'confirmed'
+                  AND p.applies_to_month = $3
+                  AND s.teacher_id = $1
+                  AND s.deleted_at IS NULL
+              ), 0),
+            0
+          ) AS outstanding,
+          COUNT(*) FILTER (WHERE due - paid > 0)::int AS "debtCount"
+        FROM (
+          SELECT
+            c.id,
+            COALESCE(d.due, 0) AS due,
+            COALESCE(p.paid, 0) AS paid
+          FROM classes AS c
+          LEFT JOIN due AS d ON d.class_id = c.id
+          LEFT JOIN (
+            SELECT class_id, SUM(amount_vnd) AS paid
+            FROM payments
+            WHERE status = 'confirmed' AND applies_to_month = $3
+            GROUP BY class_id
+          ) AS p ON p.class_id = c.id
+          WHERE c.teacher_id = $1 AND c.deleted_at IS NULL
+        ) AS per_class
+      `;
+      const topDebtorsQuery = `
+        SELECT
+          c.id,
+          c.name,
+          GREATEST(COALESCE(d.due, 0) - COALESCE(p.paid, 0), 0) AS balance
+        FROM classes AS c
+        LEFT JOIN (
+          SELECT
+            ts.class_id,
+            COALESCE(SUM(ts.price_vnd) FILTER (
+              WHERE c2.pricing_mode IS DISTINCT FROM 'per_month'
+            ), 0) AS due
+          FROM teaching_sessions AS ts
+          INNER JOIN classes AS c2 ON c2.id = ts.class_id
+          WHERE c2.teacher_id = $1
+            AND c2.deleted_at IS NULL
+            AND ts.deleted_at IS NULL
+            AND ts.status = 'taught'
+            AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM') = $3
+          GROUP BY ts.class_id
+        ) AS d ON d.class_id = c.id
+        LEFT JOIN (
+          SELECT class_id, SUM(amount_vnd) AS paid
+          FROM payments
+          WHERE status = 'confirmed' AND applies_to_month = $3
+          GROUP BY class_id
+        ) AS p ON p.class_id = c.id
+        WHERE c.teacher_id = $1
+          AND c.deleted_at IS NULL
+          AND COALESCE(d.due, 0) - COALESCE(p.paid, 0) > 0
+        ORDER BY balance DESC
+        LIMIT 3
+      `;
+      const todaySessionsQuery = `
+        SELECT
+          ts.id,
+          ts.student_id AS "studentId",
+          s.name AS "studentName",
+          ts.taught_at AS "taughtAt",
+          ts.ends_at AS "endsAt",
+          ts.price_vnd AS "priceVnd",
+          ts.status
+        FROM teaching_sessions AS ts
+        INNER JOIN students AS s ON s.id = ts.student_id
+        WHERE s.teacher_id = $1
+          AND s.deleted_at IS NULL
+          AND ts.deleted_at IS NULL
+          AND to_char(ts.taught_at AT TIME ZONE $2, 'YYYY-MM-DD') = $3
+        ORDER BY ts.taught_at
+      `;
+      const deadlinesQuery = `
+        SELECT
+          a.id,
+          a.title,
+          a.due_at AS "dueAt",
+          COUNT(sa.id)::int AS "studentCount"
+        FROM assignments AS a
+        LEFT JOIN student_assignments AS sa ON sa.assignment_id = a.id
+        WHERE a.teacher_id = $1
+          AND a.deleted_at IS NULL
+          AND a.due_at IS NOT NULL
+          AND a.due_at >= now()
+          AND a.due_at <= now() + interval '3 days'
+        GROUP BY a.id
+        ORDER BY a.due_at
+        LIMIT 5
+      `;
+      const [
+        classCount,
+        sessions,
+        paid,
+        debt,
+        topDebtors,
+        todaySessions,
+        deadlines,
+      ] = await Promise.all([
+        client.query(classCountQuery, [teacherId]),
+        client.query(sessionsQuery, [teacherId, APP_TIMEZONE, thisMonth, lastMonth]),
+        client.query(paidQuery, [teacherId, thisMonth, lastMonth]),
+        client.query(debtQuery, [teacherId, APP_TIMEZONE, thisMonth]),
+        client.query(topDebtorsQuery, [teacherId, APP_TIMEZONE, thisMonth]),
+        client.query(todaySessionsQuery, [teacherId, APP_TIMEZONE, today]),
+        client.query(deadlinesQuery, [teacherId]),
+      ]);
+      return {
+        classCount: Number(classCount.rows[0].count),
+        sessionsThisMonth: Number(sessions.rows[0].thisMonth),
+        sessionsLastMonth: Number(sessions.rows[0].lastMonth),
+        paidThisMonth: Number(paid.rows[0].thisMonth),
+        paidLastMonth: Number(paid.rows[0].lastMonth),
+        outstanding: Number(debt.rows[0].outstanding),
+        debtCount: Number(debt.rows[0].debtCount),
+        todaySessions: todaySessions.rows,
+        upcomingDeadlines: deadlines.rows,
+        topDebtors: topDebtors.rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          balance: Number(row.balance),
+        })),
       };
     } finally {
       client.release();

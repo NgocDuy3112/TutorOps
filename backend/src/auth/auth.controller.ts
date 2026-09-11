@@ -1,28 +1,36 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Post,
   Patch,
   Query,
   Req,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AuthGuard } from "./auth.guard";
 
 const SESSION_COOKIE = "tutorops_session";
 // Session TTL in seconds; keep in sync with auth.service createSession.
 const SESSION_TTL_SECONDS = 86400;
 import { AuthService } from "./auth.service";
-import { CredentialsDto } from "./auth.dto";
+import { CredentialsDto, GoogleOneTapDto } from "./auth.dto";
 import { UpdateProfileDto, ChangePasswordDto } from "./profile.dto";
-import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { GoogleCalendarService } from "../google-calendar/google-calendar.service";
 
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly googleCalendar: GoogleCalendarService,
+  ) {}
   @Post("register")
   @ApiOperation({ summary: "Register teacher" })
   async register(
@@ -37,16 +45,46 @@ export class AuthController {
   @Get("google") async google() {
     return this.auth.getGoogleUrl();
   }
+  @Post("google/onetap")
+  @ApiOperation({ summary: "Sign in with Google One Tap ID token" })
+  async googleOneTap(
+    @Body() body: GoogleOneTapDto,
+    @Res({ passthrough: true }) response: HttpResponse,
+  ) {
+    return this.setSession(
+      response,
+      this.auth.googleOneTap(body.credential),
+    );
+  }
   @Get("google/callback") async googleCallback(
     @Query("code") code: string,
     @Query("state") state: string,
     @Res() response: HttpResponse,
   ) {
     const result = await this.auth.googleCallback(code, state);
-    this.setCookie(response, result.token);
-    return response.redirect(
-      process.env.FRONTEND_URL ?? "http://localhost:5173",
-    );
+    const frontend = process.env.FRONTEND_URL ?? "http://localhost:5173";
+    if ("mode" in result && result.mode === "calendar") {
+      // Calendar connect: user was already logged in — just report back.
+      return response.redirect(`${frontend}/settings?gcal=connected`);
+    }
+    this.setCookie(response, (result as { token: string }).token);
+    return response.redirect(frontend);
+  }
+  @Get("google/calendar")
+  @UseGuards(AuthGuard)
+  async calendarConnect(@Req() request: AuthenticatedRequest) {
+    return this.auth.getCalendarConnectUrl(request.user.id);
+  }
+  @Get("google/calendar/status")
+  @UseGuards(AuthGuard)
+  async calendarStatus(@Req() request: AuthenticatedRequest) {
+    return { connected: await this.googleCalendar.isConnected(request.user.id) };
+  }
+  @Delete("google/calendar")
+  @UseGuards(AuthGuard)
+  async calendarDisconnect(@Req() request: AuthenticatedRequest) {
+    await this.googleCalendar.disconnect(request.user.id);
+    return { ok: true };
   }
   @Post("login") @ApiOperation({ summary: "Login teacher" }) async login(
     @Body() body: CredentialsDto,
@@ -73,6 +111,24 @@ export class AuthController {
     @Body() body: ChangePasswordDto,
   ) {
     return this.auth.changePassword(request.user.id, body);
+  }
+  @Post("payment-qr")
+  @UseGuards(AuthGuard)
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: { file: { type: "string", format: "binary" } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor("file", { limits: { fileSize: 20 * 1024 * 1024 } }),
+  )
+  uploadPaymentQr(
+    @Req() request: AuthenticatedRequest,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.auth.updatePaymentQr(request.user.id, file);
   }
   @Post("logout") async logout(
     @Req() request: AuthenticatedRequest,

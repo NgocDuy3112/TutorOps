@@ -10,11 +10,31 @@ import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
 import { formatVnd, parseVnd } from "../lib/format";
 import { API } from "../lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ScheduleEditor, type ScheduleSlot } from "./ScheduleEditor";
+
+const PRICING_MODE_OPTIONS = [
+  { value: "per_session", label: "Theo buổi", unit: "đ/buổi" },
+  { value: "per_hour", label: "Theo giờ", unit: "đ/giờ" },
+  { value: "per_month", label: "Theo tháng", unit: "đ/tháng" },
+] as const;
+
+type PricingMode = (typeof PRICING_MODE_OPTIONS)[number]["value"];
 
 type TutorClass = {
   id: string;
   name: string;
   defaultPriceVnd: number | null;
+  pricingMode?: PricingMode;
+  autoSchedule?: boolean;
+  schedules?: ScheduleSlot[];
   note: string | null;
 };
 
@@ -25,7 +45,15 @@ export function ClassFormPage() {
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", defaultPriceVnd: "", note: "" });
+  const [form, setForm] = useState({
+    name: "",
+    defaultPriceVnd: "",
+    note: "",
+  });
+  const [pricingMode, setPricingMode] = useState<PricingMode>("per_session");
+  const [autoSchedule, setAutoSchedule] = useState(false);
+  const [schedules, setSchedules] = useState<ScheduleSlot[]>([]);
+
 
   useEffect(() => {
     if (!editing) return;
@@ -44,6 +72,9 @@ export function ClassFormPage() {
             item.defaultPriceVnd == null ? "" : String(item.defaultPriceVnd),
           note: item.note ?? "",
         });
+        setPricingMode(item.pricingMode ?? "per_session");
+        setAutoSchedule(item.autoSchedule ?? false);
+        setSchedules(item.schedules ?? []);
       } catch (requestError) {
         setError(
           requestError instanceof Error
@@ -61,23 +92,37 @@ export function ClassFormPage() {
     event.preventDefault();
     setSaving(true);
     setError("");
-    const response = await fetch(
-      editing ? `${API}/classes/${classId}` : `${API}/classes`,
-      {
-        method: editing ? "PATCH" : "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          defaultPriceVnd: form.defaultPriceVnd
-            ? parseVnd(form.defaultPriceVnd)
-            : null,
-          note: form.note || null,
-        }),
-      },
-    );
-    setSaving(false);
-    if (response.ok) navigate("/classes");
-    else setError("Không thể lưu lớp.");
+    try {
+      const response = await fetch(
+        editing ? `${API}/classes/${classId}` : `${API}/classes`,
+        {
+          method: editing ? "PATCH" : "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            name: form.name,
+            defaultPriceVnd: form.defaultPriceVnd
+              ? parseVnd(form.defaultPriceVnd)
+              : null,
+            pricingMode,
+            autoSchedule: schedules.length > 0 ? autoSchedule : false,
+            schedules,
+            note: form.note || null,
+          }),
+        },
+      );
+      if (!response.ok) throw new Error("Không thể lưu lớp.");
+      navigate("/classes");
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message === "class_name_exists"
+            ? "Tên lớp đã tồn tại. Hãy chọn tên khác."
+            : requestError.message
+          : "Có lỗi xảy ra.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -118,25 +163,80 @@ export function ClassFormPage() {
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="class-pricing-mode">Cách tính</Label>
+                    <Select
+                      value={pricingMode}
+                      onValueChange={(value) =>
+                        setPricingMode(value as PricingMode)
+                      }
+                    >
+                      <SelectTrigger id="class-pricing-mode" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRICING_MODE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="class-price">Số tiền</Label>
+                    <div className="relative">
+                      <Input
+                        id="class-price"
+                        inputMode="numeric"
+                        max={10_000_000_000}
+                        className="pr-20"
+                        value={form.defaultPriceVnd}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            defaultPriceVnd: e.target.value
+                              ? formatVnd(parseVnd(e.target.value)).replace(
+                                  " ₫",
+                                  "",
+                                )
+                              : "",
+                          })
+                        }
+                      />
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground"
+                      >
+                        {
+                          PRICING_MODE_OPTIONS.find(
+                            (option) => option.value === pricingMode,
+                          )?.unit
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="class-price">Giá mặc định (tối đa 10 tỷ ₫)</Label>
-                  <Input
-                    id="class-price"
-                    inputMode="numeric"
-                    max={10_000_000_000}
-                    value={form.defaultPriceVnd}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        defaultPriceVnd: e.target.value
-                          ? formatVnd(parseVnd(e.target.value)).replace(
-                              " ₫",
-                              "",
-                            )
-                          : "",
-                      })
-                    }
-                  />
+                  <Label>Lịch dạy cố định</Label>
+                  <ScheduleEditor slots={schedules} onChange={setSchedules} />
+                  {schedules.length > 0 && (
+                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                      <div>
+                        <p className="text-sm font-semibold">Nhắc buổi dạy trên lịch</p>
+                        <p className="text-xs text-muted-foreground">
+                          Các khung giờ trên sẽ hiện dưới dạng buổi chờ xác nhận
+                          trên trang Lịch. Dạy xong bấm Xác nhận để ghi nhận học phí.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={autoSchedule}
+                        onCheckedChange={setAutoSchedule}
+                        aria-label="Nhắc buổi dạy trên lịch"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="class-note">Ghi chú</Label>

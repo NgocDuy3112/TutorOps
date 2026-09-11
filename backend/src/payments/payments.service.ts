@@ -1,25 +1,103 @@
-import type { CreatePaymentDto, UpdatePaymentDto } from "./payments.dto";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import type {
+  AssignPaymentClassDto,
+  CreatePaymentDto,
+  UpdatePaymentDto,
+} from "./payments.dto";
+import { Injectable } from "@nestjs/common";
+import { ConflictError, NotFoundError } from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { pool } from "../db/client";
 import { NotificationsService } from "../notifications/notifications.service";
 
 @Injectable()
 export class PaymentsService {
   constructor(private readonly notifications: NotificationsService) {}
-  async list(teacherId: string, studentId: string) {
-    const owned = await this.owned(teacherId, studentId);
-    if (!owned) throw new NotFoundException("student_not_found");
+
+  // Legacy payments (recorded before class-based tuition) have no class.
+  // Owned via their student so each tutor only sees their own money.
+  async legacyList(teacherId: string, month?: string) {
+    const result = await pool.query(
+      `SELECT p.id,
+              p.amount_vnd AS "amountVnd",
+              p.paid_at AS "paidAt",
+              p.applies_to_month AS "appliesToMonth",
+              p.note,
+              s.name AS "studentName"
+       FROM payments p
+       JOIN students s ON s.id = p.student_id AND s.teacher_id = $1
+       WHERE p.class_id IS NULL AND p.status = 'confirmed'
+         ${month ? "AND p.applies_to_month = $2" : ""}
+       ORDER BY p.paid_at DESC`,
+      month ? [teacherId, month] : [teacherId],
+    );
+    return { payments: result.rows };
+  }
+
+  // One-time move of a legacy payment into a class: student_id stays on the
+  // row as a trace, only class_id is set. Re-assignment is rejected.
+  async assignClass(
+    teacherId: string,
+    paymentId: string,
+    input: AssignPaymentClassDto,
+  ) {
+    const existing = await pool.query(
+      `SELECT p.class_id, p.amount_vnd, s.name AS "studentName"
+       FROM payments p
+       JOIN students s ON s.id = p.student_id AND s.teacher_id = $2
+       WHERE p.id = $1 AND p.status = 'confirmed'`,
+      [paymentId, teacherId],
+    );
+    if (existing.rowCount === 0)
+      throw new NotFoundError(ErrorCodes.PAYMENT_NOT_FOUND);
+    if (existing.rows[0].class_id != null)
+      throw new ConflictError(ErrorCodes.PAYMENT_ALREADY_ASSIGNED);
+
+    const result = await pool.query(
+      `UPDATE payments SET class_id = $3
+       WHERE id = $1 AND class_id IS NULL AND status = 'confirmed'
+         AND EXISTS (
+           SELECT 1 FROM classes
+           WHERE classes.id = $3 AND classes.teacher_id = $2
+             AND classes.deleted_at IS NULL
+         )
+       RETURNING id, class_id`,
+      [paymentId, teacherId, input.classId],
+    );
+    if (result.rowCount === 0)
+      throw new NotFoundError(ErrorCodes.CLASS_NOT_FOUND);
+
+    const classRow = await pool.query(
+      `SELECT name FROM classes WHERE id = $1`,
+      [input.classId],
+    );
+    void this.notifications.sendToUser(teacherId, {
+      title: "Đã gán khoản thu vào lớp",
+      body: `${Number(existing.rows[0].amount_vnd).toLocaleString("vi-VN")} ₫${existing.rows[0].studentName ? ` (${existing.rows[0].studentName})` : ""} → lớp ${classRow.rows[0]?.name ?? ""}`,
+      url: `/classes/${input.classId}`,
+    });
+    return result.rows[0];
+  }
+
+  // Tuition is per class: due comes from the class's sessions (per_session /
+  // per_hour) plus the per_month flat fee, paid from class-scoped payments.
+  async list(teacherId: string, classId: string) {
+    const owned = await this.owned(teacherId, classId);
+    if (!owned) throw new NotFoundError(ErrorCodes.CLASS_NOT_FOUND);
     const [payments, totals] = await Promise.all([
       pool.query(
-        `SELECT id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note FROM payments WHERE student_id = $1 ORDER BY paid_at DESC`,
-        [studentId],
+        `SELECT id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note FROM payments WHERE class_id = $1 ORDER BY paid_at DESC`,
+        [classId],
       ),
       pool.query(
         `SELECT
-          COALESCE((SELECT SUM(price_vnd) FROM teaching_sessions WHERE student_id = $1 AND deleted_at IS NULL), 0) AS "totalDue",
-          COALESCE((SELECT SUM(amount_vnd) FROM payments WHERE student_id = $1 AND status = 'confirmed'), 0) AS "totalPaid",
-          (SELECT COUNT(*)::int FROM teaching_sessions WHERE student_id = $1 AND deleted_at IS NULL) AS "sessionCount"`,
-        [studentId],
+          COALESCE((SELECT SUM(ts.price_vnd) FROM teaching_sessions ts
+            LEFT JOIN classes c ON c.id = ts.class_id
+            WHERE ts.class_id = $1 AND ts.deleted_at IS NULL
+              AND ts.status = 'taught'
+              AND c.pricing_mode IS DISTINCT FROM 'per_month'), 0) AS "totalDue",
+          COALESCE((SELECT SUM(amount_vnd) FROM payments WHERE class_id = $1 AND status = 'confirmed'), 0) AS "totalPaid",
+          (SELECT COUNT(*)::int FROM teaching_sessions WHERE class_id = $1 AND deleted_at IS NULL) AS "sessionCount"`,
+        [classId],
       ),
     ]);
     const totalDue = Number(totals.rows[0].totalDue),
@@ -29,17 +107,18 @@ export class PaymentsService {
       payments: payments.rows,
       totalDue,
       totalPaid,
-      balance: totalDue - totalPaid,
+      // Overpayment (paid beyond due) is not negative debt.
+      balance: Math.max(totalDue - totalPaid, 0),
       sessionCount,
     };
   }
-  async create(teacherId: string, studentId: string, input: CreatePaymentDto) {
-    if (!(await this.owned(teacherId, studentId)))
-      throw new NotFoundException("student_not_found");
+  async create(teacherId: string, classId: string, input: CreatePaymentDto) {
+    if (!(await this.owned(teacherId, classId)))
+      throw new NotFoundError(ErrorCodes.CLASS_NOT_FOUND);
     const result = await pool.query(
-      `INSERT INTO payments (student_id, amount_vnd, paid_at, applies_to_month, status, note) VALUES ($1, $2, now(), $3, 'confirmed', $4) RETURNING id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note`,
+      `INSERT INTO payments (class_id, amount_vnd, paid_at, applies_to_month, status, note) VALUES ($1, $2, now(), $3, 'confirmed', $4) RETURNING id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note`,
       [
-        studentId,
+        classId,
         input.amountVnd,
         input.appliesToMonth ?? currentMonth(),
         input.note ?? null,
@@ -48,53 +127,55 @@ export class PaymentsService {
     void this.notifications.sendToUser(teacherId, {
       title: "Đã ghi nhận học phí",
       body: `Đã ghi nhận ${Number(input.amountVnd).toLocaleString("vi-VN")} ₫`,
-      url: `/students/${studentId}`,
+      url: `/classes/${classId}`,
     });
     return result.rows[0];
   }
   async update(
     teacherId: string,
-    studentId: string,
+    classId: string,
     paymentId: string,
     input: UpdatePaymentDto,
   ) {
     const result = await pool.query(
       `UPDATE payments SET amount_vnd = $4, applies_to_month = $5, note = $6
-       WHERE id = $1 AND student_id = $2 AND status = 'confirmed'
+       WHERE id = $1 AND class_id = $2 AND status = 'confirmed'
          AND EXISTS (
-           SELECT 1 FROM students
-           WHERE students.id = $2 AND students.teacher_id = $3 AND students.deleted_at IS NULL
+           SELECT 1 FROM classes
+           WHERE classes.id = $2 AND classes.teacher_id = $3 AND classes.deleted_at IS NULL
          )
        RETURNING id, amount_vnd AS "amountVnd", paid_at AS "paidAt", applies_to_month AS "appliesToMonth", status, note`,
       [
         paymentId,
-        studentId,
+        classId,
         teacherId,
         input.amountVnd,
         input.appliesToMonth,
         input.note ?? null,
       ],
     );
-    if (result.rowCount === 0) throw new NotFoundException("payment_not_found");
+    if (result.rowCount === 0)
+      throw new NotFoundError(ErrorCodes.PAYMENT_NOT_FOUND);
     return result.rows[0];
   }
-  async remove(teacherId: string, studentId: string, paymentId: string) {
+  async remove(teacherId: string, classId: string, paymentId: string) {
     const result = await pool.query(
       `DELETE FROM payments
-       WHERE id = $1 AND student_id = $2 AND status = 'confirmed'
+       WHERE id = $1 AND class_id = $2 AND status = 'confirmed'
          AND EXISTS (
-           SELECT 1 FROM students
-           WHERE students.id = $2 AND students.teacher_id = $3 AND students.deleted_at IS NULL
+           SELECT 1 FROM classes
+           WHERE classes.id = $2 AND classes.teacher_id = $3 AND classes.deleted_at IS NULL
          )`,
-      [paymentId, studentId, teacherId],
+      [paymentId, classId, teacherId],
     );
-    if (result.rowCount === 0) throw new NotFoundException("payment_not_found");
+    if (result.rowCount === 0)
+      throw new NotFoundError(ErrorCodes.PAYMENT_NOT_FOUND);
     return { ok: true };
   }
-  private async owned(teacherId: string, studentId: string) {
+  private async owned(teacherId: string, classId: string) {
     const result = await pool.query(
-      `SELECT 1 FROM students WHERE id = $1 AND teacher_id = $2 AND deleted_at IS NULL`,
-      [studentId, teacherId],
+      `SELECT 1 FROM classes WHERE id = $1 AND teacher_id = $2 AND deleted_at IS NULL`,
+      [classId, teacherId],
     );
     return Boolean(result.rowCount);
   }

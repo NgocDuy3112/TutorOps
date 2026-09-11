@@ -1,20 +1,25 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Pencil, Plus, Trash2, UserRound, UserPlus } from "lucide-react";
+import {
+  Check,
+  Filter,
+  Loader2,
+  Plus,
+  Search,
+  UserRound,
+  UserPlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
+import { Fab } from "@/components/Fab";
+import { cn } from "@/lib/utils";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
-import { EditStudentSheet } from "./EditStudentSheet";
+import { Toast } from "../components/Toast";
+import { useLocation } from "react-router-dom";
 import { API } from "../lib/api";
 
 type StudentClass = {
@@ -28,17 +33,21 @@ type Student = {
   name: string;
   parentName: string | null;
   parentPhone: string | null;
-  defaultPriceVnd: number;
   classes?: StudentClass[];
 };
 
 export function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const navigate = useNavigate();
-  const [editing, setEditing] = useState<Student | null>(null);
-  const [deleting, setDeleting] = useState<Student | null>(null);
+  const location = useLocation();
+  const [toast, setToast] = useState<string | null>(
+    (location.state as { toast?: string } | null)?.toast ?? null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState("all");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   async function loadData() {
     setLoading(true);
@@ -60,36 +69,143 @@ export function StudentsPage() {
     void loadData();
   }, []);
 
-  async function removeStudent(id: string) {
-    const response = await fetch(`${API}/students/${id}`, {
-      method: "DELETE",
-    });
-    if (response.ok) {
-      setStudents((current) => current.filter((student) => student.id !== id));
-      setDeleting(null);
+  // Class filter options derive from the students' own class memberships.
+  const classCounts = new Map<string, { name: string; count: number }>();
+  for (const student of students) {
+    for (const item of student.classes ?? []) {
+      const entry = classCounts.get(item.id);
+      classCounts.set(item.id, {
+        name: item.name,
+        count: (entry?.count ?? 0) + 1,
+      });
     }
   }
+  const unassignedCount = students.filter(
+    (student) => (student.classes ?? []).length === 0,
+  ).length;
+  const classFilterOptions = [
+    { value: "all", label: "Tất cả", count: students.length },
+    ...[...classCounts.entries()]
+      .sort((a, b) => a[1].name.localeCompare(b[1].name, "vi"))
+      .map(([id, entry]) => ({
+        value: id,
+        label: entry.name,
+        count: entry.count,
+      })),
+    ...(unassignedCount > 0
+      ? [{ value: "none", label: "Chưa có lớp", count: unassignedCount }]
+      : []),
+  ];
+
+  const filteredStudents = students.filter((student) => {
+    const matchesClass =
+      classFilter === "all" ||
+      (classFilter === "none"
+        ? (student.classes ?? []).length === 0
+        : (student.classes ?? []).some((item) => item.id === classFilter));
+    const matchesSearch = student.name
+      .toLocaleLowerCase("vi")
+      .includes(search.trim().toLocaleLowerCase("vi"));
+    return matchesClass && matchesSearch;
+  });
+  const activeFilterLabel =
+    classFilterOptions.find((option) => option.value === classFilter)?.label ?? "";
 
   return (
     <MobileShell>
-      <PageHeader
-        title="Học sinh"
-        action={
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              className="min-h-11 rounded-2xl"
-              onClick={() => navigate("/students/new")}
-            >
-              <Plus size={16} />
-              Thêm
-            </Button>
-            <UserAvatar />
-          </div>
-        }
-      />
+      <PageHeader title="Học sinh" action={<UserAvatar />} />
+      <Fab onClick={() => navigate("/students/new")} label="Thêm học sinh" />
       <main className="mx-auto max-w-6xl px-4 py-6">
+        <div className="relative mb-4 flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Tìm học sinh"
+              aria-label="Tìm học sinh"
+              className="min-h-11 rounded-2xl bg-white pl-9"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Lọc theo lớp"
+            aria-expanded={filterOpen}
+            className={cn(
+              "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
+              classFilter !== "all" &&
+                "border-primary bg-primary/10 text-primary",
+              filterOpen && "border-primary text-primary",
+            )}
+            onClick={() => setFilterOpen((open) => !open)}
+          >
+            <Filter size={17} />
+            {classFilter !== "all" && (
+              <span
+                aria-hidden
+                className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary"
+              />
+            )}
+          </Button>
+        </div>
+        {filterOpen && students.length > 0 && (
+          <>
+            {/* Click-away layer: transparent, below the panel */}
+            <div
+              aria-hidden
+              className="fixed inset-0 z-20"
+              onClick={() => setFilterOpen(false)}
+            />
+            <div
+              role="listbox"
+              aria-label="Lọc theo lớp"
+              className="absolute right-4 top-full z-30 -mt-3 w-36 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
+            >
+              {classFilterOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={classFilter === option.value}
+                  onClick={() => {
+                    setClassFilter(option.value);
+                    setFilterOpen(false);
+                  }}
+                  className={cn(
+                    "flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-[13px] font-semibold transition-colors",
+                    classFilter === option.value
+                      ? "bg-primary/10 text-primary"
+                      : "text-slate-700 hover:bg-slate-50",
+                  )}
+                >
+                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                  {option.count != null && (
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                      {option.count}
+                    </span>
+                  )}
+                  {classFilter === option.value && <Check size={14} />}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {classFilter !== "all" && (
+          <button
+            type="button"
+            onClick={() => setClassFilter("all")}
+            className="mb-4 flex min-h-9 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
+            aria-label="Bỏ bộ lọc lớp"
+          >
+            Lớp: {activeFilterLabel}
+            <span aria-hidden>✕</span>
+          </button>
+        )}
         {error && (
           <Card className="mb-4 border-amber-200 bg-amber-50">
             <CardContent className="p-4 text-sm text-amber-800">
@@ -107,29 +223,13 @@ export function StudentsPage() {
 
         {!loading && (
           <StudentsGrid
-            students={students}
+            students={filteredStudents}
             onAdd={() => navigate("/students/new")}
-            onEdit={setEditing}
-            onDelete={setDeleting}
+            hasAnyStudents={students.length > 0}
           />
         )}
       </main>
-
-      <DeleteStudentDialog
-        student={deleting}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        onConfirm={() => deleting && void removeStudent(deleting.id)}
-      />
-      {editing && (
-        <EditStudentSheet
-          student={editing}
-          onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            void loadData();
-          }}
-        />
-      )}
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }
@@ -137,16 +237,20 @@ export function StudentsPage() {
 function StudentsGrid({
   students,
   onAdd,
-  onEdit,
-  onDelete,
+  hasAnyStudents,
 }: {
   students: Student[];
   onAdd: () => void;
-  onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
+  hasAnyStudents: boolean;
 }) {
   if (students.length === 0) {
-    return (
+    return hasAnyStudents ? (
+      <EmptyState
+        icon={<UserRound size={28} />}
+        title="Không tìm thấy"
+        description="Thử đổi từ khóa tìm kiếm hoặc bộ lọc lớp."
+      />
+    ) : (
       <EmptyState
         icon={<UserPlus size={28} />}
         title="Chưa có học sinh"
@@ -164,43 +268,28 @@ function StudentsGrid({
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {students.map((student) => (
-        <StudentCard
-          key={student.id}
-          student={student}
-          onEdit={() => onEdit(student)}
-          onDelete={() => onDelete(student)}
-        />
+        <StudentCard key={student.id} student={student} />
       ))}
     </div>
   );
 }
 
-function StudentCard({
-  student,
-  onEdit,
-  onDelete,
-}: {
-  student: Student;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
+function StudentCard({ student }: { student: Student }) {
   return (
     <Card className="rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
       <CardContent className="p-4">
-        <div className="flex items-start gap-3">
+        <Link
+          to={`/students/${student.id}`}
+          className="flex items-start gap-3"
+          aria-label={`Xem hồ sơ ${student.name}`}
+        >
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-primary">
             <UserRound size={20} />
           </span>
           <div className="min-w-0 flex-1">
-            <Link
-              to={`/students/${student.id}`}
-              className="block truncate font-bold hover:text-primary"
-            >
+            <span className="block truncate font-bold hover:text-primary">
               {student.name}
-            </Link>
-            <p className="mt-1 truncate text-sm text-muted-foreground">
-              {student.parentPhone || "Chưa có SĐT liên hệ"}
-            </p>
+            </span>
             {(student.classes ?? []).length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1">
                 {student.classes!.map((item) => (
@@ -214,69 +303,8 @@ function StudentCard({
               </div>
             )}
           </div>
-          <div className="flex shrink-0 gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="min-h-10 min-w-10 rounded-2xl"
-              onClick={onEdit}
-              aria-label="Sửa học sinh"
-            >
-              <Pencil size={15} />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="min-h-10 min-w-10 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={onDelete}
-              aria-label="Xóa học sinh"
-            >
-              <Trash2 size={15} />
-            </Button>
-          </div>
-        </div>
+        </Link>
       </CardContent>
     </Card>
-  );
-}
-
-function DeleteStudentDialog({
-  student,
-  onOpenChange,
-  onConfirm,
-}: {
-  student: Student | null;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <Dialog open={Boolean(student)} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Xóa học sinh?</DialogTitle>
-          <DialogDescription>
-            Hành động này sẽ ẩn học sinh {student?.name}. Bạn có chắc muốn xóa?
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            onClick={() => onOpenChange(false)}
-          >
-            Hủy
-          </Button>
-          <Button
-            type="button"
-            className="min-h-11 bg-red-600 hover:bg-red-700"
-            onClick={onConfirm}
-          >
-            <Trash2 size={16} />
-            Xóa học sinh
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }

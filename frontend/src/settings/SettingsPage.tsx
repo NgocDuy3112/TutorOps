@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import {
+  CalendarDays,
   ChevronRight,
   Info,
   KeyRound,
@@ -7,15 +8,65 @@ import {
   Bell,
   UserRound,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { PushNotificationSetup } from "../notifications/PushNotificationSetup";
+import { Toast } from "../components/Toast";
 import { API } from "../lib/api";
 
 export function SettingsPage() {
+  const [calendarState, setCalendarState] = useState<
+    "loading" | "connected" | "disconnected"
+  >("loading");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const justConnected = searchParams.get("gcal") === "connected";
+  const [toast, setToast] = useState<string | null>(
+    justConnected ? "Đã kết nối Google Lịch — lịch dạy đã được đẩy lên." : null,
+  );
+
+  useEffect(() => {
+    if (!justConnected) return;
+    // Clear the ?gcal flag so a refresh never re-triggers the toast.
+    setSearchParams({}, { replace: true });
+  }, [justConnected, setSearchParams]);
+
+  useEffect(() => {
+    if (!justConnected) return;
+    void fetch(`${API}/auth/google/calendar/status`).then((response) =>
+      response.ok
+        ? response.json()
+        : Promise.reject(new Error()),
+    ).then((body: { connected: boolean }) =>
+      setCalendarState(body.connected ? "connected" : "disconnected"),
+    ).catch(() => setCalendarState("disconnected"));
+  }, [justConnected, searchParams]);
+
+  useEffect(() => {
+    if (justConnected) return;
+    setCalendarState("loading");
+    fetch(`${API}/auth/google/calendar/status`)
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error())))
+      .then((body: { connected: boolean }) =>
+        setCalendarState(body.connected ? "connected" : "disconnected"),
+      )
+      .catch(() => setCalendarState("disconnected"));
+  }, [justConnected]);
+
+  async function disconnectCalendar() {
+    const response = await fetch(`${API}/auth/google/calendar`, {
+      method: "DELETE",
+    });
+    if (response.ok) {
+      setCalendarState("disconnected");
+      setToast("Đã ngắt kết nối Google Lịch.");
+    }
+  }
+
   async function logout() {
     await fetch(`${API}/auth/logout`, {
       method: "POST",
@@ -25,7 +76,7 @@ export function SettingsPage() {
 
   return (
     <MobileShell>
-      <PageHeader maxWidth="3xl" title="Cá nhân" />
+      <PageHeader maxWidth="3xl" title="Cá nhân" description="Cài đặt tài khoản và ứng dụng" />
       <main className="mx-auto max-w-3xl px-4 py-5">
         <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
           <SettingsLink
@@ -40,6 +91,49 @@ export function SettingsPage() {
             title="Đổi mật khẩu"
             description="Cập nhật mật khẩu đăng nhập"
           />
+          <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-4">
+            <span className="grid size-9 place-items-center rounded-lg bg-indigo-50 text-primary">
+              <CalendarDays size={19} />
+            </span>
+            <span className="flex-1">
+              <strong className="block text-sm">Google Lịch</strong>
+              <small className="text-xs text-muted-foreground">
+                {calendarState === "connected"
+                  ? "Đã kết nối — lịch tự động được đẩy lên Google Lịch"
+                  : "Đẩy lịch dạy lên Google Calendar"}
+              </small>
+              {justConnected && (
+                <small className="block text-xs font-medium text-emerald-700">
+                  Đã kết nối thành công.
+                </small>
+              )}
+            </span>
+            {calendarState === "loading" ? (
+              <Switch disabled checked={false} aria-label="Google Lịch" />
+            ) : (
+              <Switch
+                checked={calendarState === "connected"}
+                aria-label="Google Lịch"
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    // The connect endpoint returns JSON {url} (same shape as
+                    // the login flow) — fetch it, then go to Google consent.
+                    // The switch flips for real after returning to /settings.
+                    void fetch(`${API}/auth/google/calendar`)
+                      .then((response) => response.json())
+                      .then(({ url }) => {
+                        window.location.href = url;
+                      });
+                    return;
+                  }
+                  setCalendarState("loading");
+                  void disconnectCalendar().then(() => {
+                    setCalendarState("disconnected");
+                  });
+                }}
+              />
+            )}
+          </div>
           <div className="flex items-center gap-3 px-4 py-4">
             <span className="grid size-9 place-items-center rounded-lg bg-indigo-50 text-primary">
               <Bell size={19} />
@@ -68,6 +162,7 @@ export function SettingsPage() {
           Quản lý tài khoản TutorOps
         </p>
       </main>
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }

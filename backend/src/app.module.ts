@@ -6,6 +6,7 @@ import { SessionsModule } from "./sessions/sessions.module";
 import { AssignmentsModule } from "./assignments/assignments.module";
 import { StorageModule } from "./storage/storage.module";
 import { FilesModule } from "./files/files.module";
+import { GoogleCalendarModule } from "./google-calendar/google-calendar.module";
 import { AccessModule } from "./access/access.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { SubmissionsModule } from "./submissions/submissions.module";
@@ -13,7 +14,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { TuitionModule } from "./tuition/tuition.module";
 import { ClassesModule } from "./classes/classes.module";
-import { OcrModule } from "./ocr/ocr.module";
+import { SlipsModule } from "./slips/slips.module";
 import { CommonModule } from "./common/common.module";
 import { VersionModule } from "./version/version.module";
 
@@ -34,7 +35,8 @@ import { VersionModule } from "./version/version.module";
     DashboardModule,
     TuitionModule,
     ClassesModule,
-    OcrModule,
+    GoogleCalendarModule,
+    SlipsModule,
     VersionModule,
   ],
 })

@@ -1,19 +1,30 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpenCheck,
   CalendarCheck,
+  Loader2,
   Pencil,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/EmptyState";
 import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditStudentSheet } from "./EditStudentSheet";
 import { MarkTaughtSheet } from "./MarkTaughtSheet";
+import { MonthlySlipSection } from "./MonthlySlipSection";
 import { API } from "../lib/api";
 
 type Student = {
@@ -21,8 +32,7 @@ type Student = {
   name: string;
   parentName: string | null;
   parentPhone: string | null;
-  defaultPriceVnd: number;
-  submissionMode: string;
+  classes?: { pricingMode?: string }[];
 };
 type Session = {
   id: string;
@@ -37,12 +47,18 @@ type Assignment = {
   students: { id: string; status: string }[];
 };
 
+type ProfileTab = "info" | "slip" | "assignments";
+
 export function StudentProfilePage({ studentId }: { studentId: string }) {
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<ProfileTab>("info");
   const [student, setStudent] = useState<Student | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showSessionForm, setShowSessionForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -76,6 +92,28 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
     void load();
   }, [studentId]);
 
+  async function deleteStudent() {
+    if (!student) return;
+    setDeleting(true);
+    try {
+      const response = await fetch(`${API}/students/${student.id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok)
+        throw new Error("Không thể xóa học sinh. Vui lòng thử lại.");
+      navigate("/students", {
+        state: { toast: `Đã xoá học sinh ${student.name}` },
+      });
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
+      );
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading)
     return (
       <MobileShell>
@@ -95,24 +133,42 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
   const studentAssignments = assignments.filter((assignment) =>
     assignment.students.some((item) => item.id === studentId),
   );
-  const recentSessions = sessions.slice(0, 5);
-  const recentAssignments = studentAssignments.slice(0, 5);
   const pendingCount = studentAssignments.filter((a) =>
     a.students.some((s) => s.id === studentId && s.status === "pending"),
   ).length;
 
   return (
     <MobileShell>
-      <header className="border-b bg-white">
-        <div className="mx-auto max-w-3xl px-4 py-4">
+      <header className="sticky top-0 z-30 border-b bg-white">
+        <div className="mx-auto max-w-3xl px-4 pb-3 pt-4">
           <Button asChild variant="link" className="h-auto p-0 text-primary">
             <Link to="/students">
               <ArrowLeft size={16} />
               Học sinh
             </Link>
           </Button>
-          <h1 className="mt-3 text-2xl font-bold">{student.name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Hồ sơ học sinh</p>
+          <h1 className="mt-2 text-2xl font-bold">{student.name}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Hồ sơ học sinh</p>
+        </div>
+        <div className="mx-auto max-w-3xl px-4 pb-3">
+          <div
+            role="tablist"
+            aria-label="Nội dung học sinh"
+            className="grid grid-cols-3 gap-1 rounded-2xl bg-primary/10 p-1"
+          >
+          <TabButton active={tab === "info"} onClick={() => setTab("info")}>
+            Thông tin
+          </TabButton>
+          <TabButton active={tab === "slip"} onClick={() => setTab("slip")}>
+            Phiếu tháng
+          </TabButton>
+          <TabButton
+            active={tab === "assignments"}
+            onClick={() => setTab("assignments")}
+          >
+            Bài tập ({studentAssignments.length})
+          </TabButton>
+          </div>
         </div>
       </header>
 
@@ -126,53 +182,54 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           </p>
         )}
 
+        {tab === "info" && (
+        <>
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="flex items-center gap-2 text-lg">
               <UserRound size={20} className="text-primary" />
               Thông tin
             </CardTitle>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-2xl"
-              onClick={() => setShowEditForm(true)}
-            >
-              <Pencil size={15} />
-              Sửa
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-2xl"
+                onClick={() => setShowEditForm(true)}
+              >
+                <Pencil size={15} />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="min-h-10 min-w-10 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                aria-label="Xóa học sinh"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 size={15} />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-5">
             <dl className="space-y-3 text-sm">
               <Row label="Phụ huynh" value={student.parentName || "Chưa cập nhật"} />
               <Row label="Điện thoại" value={student.parentPhone || "Chưa cập nhật"} />
-              <Row
-                label="Nộp bài"
-                value={student.submissionMode === "self_submit" ? "Tự nộp" : "Giáo viên nhập"}
-              />
             </dl>
           </CardContent>
         </Card>
 
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
-            <CardTitle className="text-lg">Buổi dạy ({sessions.length})</CardTitle>
+            <CardTitle className="text-lg">Buổi đã dạy ({sessions.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 p-5">
-            <Button
-              type="button"
-              onClick={() => setShowSessionForm(true)}
-              className="min-h-12 w-full justify-start gap-3 rounded-2xl"
-            >
-              <CalendarCheck size={18} />
-              Đã dạy hôm nay
-            </Button>
-            {recentSessions.length === 0 ? (
+            {sessions.length === 0 ? (
               <p className="text-sm text-muted-foreground">Chưa có buổi dạy nào.</p>
             ) : (
               <div className="space-y-2">
-                {recentSessions.map((item) => (
+                {sessions.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center justify-between rounded-2xl bg-slate-50 p-3"
@@ -194,7 +251,12 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             )}
           </CardContent>
         </Card>
+        </>
+        )}
 
+        {tab === "slip" && <MonthlySlipSection studentId={studentId} />}
+
+        {tab === "assignments" && (
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="text-lg">
@@ -207,7 +269,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5">
-            {recentAssignments.length === 0 ? (
+            {studentAssignments.length === 0 ? (
               <EmptyState
                 icon={<BookOpenCheck size={24} />}
                 title="Chưa có bài tập"
@@ -215,7 +277,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
               />
             ) : (
               <div className="space-y-2">
-                {recentAssignments.map((item) => {
+                {studentAssignments.map((item) => {
                   const studentStatus = item.students.find(
                     (s) => s.id === studentId,
                   )?.status;
@@ -252,6 +314,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             )}
           </CardContent>
         </Card>
+        )}
       </main>
 
       {showEditForm && (
@@ -274,6 +337,39 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           }}
         />
       )}
+      <Dialog
+        open={showDeleteConfirm}
+        onOpenChange={(open) => !open && !deleting && setShowDeleteConfirm(false)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xóa học sinh?</DialogTitle>
+            <DialogDescription>
+              Hành động này sẽ ẩn học sinh {student?.name} khỏi danh sách. Dữ
+              liệu liên quan vẫn được giữ. Bạn có chắc muốn xóa?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deleting}
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleting}
+              onClick={() => void deleteStudent()}
+            >
+              {deleting && <Loader2 className="animate-spin" size={16} />}
+              Xóa học sinh
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileShell>
   );
 }
@@ -284,5 +380,31 @@ function Row({ label, value }: { label: string; value: string }) {
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-medium">{value}</dd>
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`min-h-10 rounded-xl px-1 text-xs font-bold transition-colors sm:px-3 sm:text-sm ${
+        active
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-slate-700 hover:text-primary"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

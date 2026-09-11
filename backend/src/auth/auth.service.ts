@@ -1,18 +1,29 @@
+import { Injectable } from "@nestjs/common";
 import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-} from "@nestjs/common";
+  ConflictError,
+  UnauthorizedError,
+} from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import argon2 from "argon2";
 import crypto from "node:crypto";
 import { redis } from "../db/client";
 import { AuthRepository } from "./auth.repository";
+import { FilesService } from "../files/files.service";
+import { StorageService } from "../storage/storage.service";
+import { GoogleCalendarRepository } from "../google-calendar/google-calendar.repository";
+import { GoogleCalendarService } from "../google-calendar/google-calendar.service";
 import type { AuthUser } from "./http.types";
 import { OAuth2Client } from "google-auth-library";
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly repository: AuthRepository) {}
+  constructor(
+    private readonly repository: AuthRepository,
+    private readonly files: FilesService,
+    private readonly storage: StorageService,
+    private readonly calendarTokens: GoogleCalendarRepository,
+    private readonly googleCalendar: GoogleCalendarService,
+  ) {}
   private google = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -23,7 +34,7 @@ export class AuthService {
   }
   async register(email: string, password: string) {
     if (!email || !password || password.length < 8)
-      throw new UnauthorizedException("invalid_credentials");
+      throw new UnauthorizedError(ErrorCodes.INVALID_CREDENTIALS);
     try {
       const user = await this.repository.createUser(
         email.toLowerCase(),
@@ -32,7 +43,7 @@ export class AuthService {
       return this.createSession(user);
     } catch (error: unknown) {
       if (error instanceof Error && "code" in error && error.code === "23505")
-        throw new ConflictException("email_already_exists");
+        throw new ConflictError(ErrorCodes.EMAIL_ALREADY_EXISTS);
       throw error;
     }
   }
@@ -49,37 +60,125 @@ export class AuthService {
     };
   }
 
+  /** Calendar connect: offline access + events scope so we can push
+   *  recurring schedule events. State is prefixed `cal:` so the shared
+   *  callback route can branch between login and calendar flows. */
+  async getCalendarConnectUrl(userId: string) {
+    const state = crypto.randomBytes(32).toString("base64url");
+    await redis.set(`oauth:cal:${state}`, userId, { EX: 600 });
+    return {
+      url: this.google.generateAuthUrl({
+        access_type: "offline",
+        scope: [
+          "openid",
+          "email",
+          "profile",
+          "https://www.googleapis.com/auth/calendar.events",
+        ],
+        state: `cal:${state}`,
+        prompt: "consent", // refresh_token is only issued on first consent
+      }),
+    };
+  }
+
   async googleCallback(code: string, state: string) {
+    if (state?.startsWith("cal:")) return this.calendarCallback(code, state);
     const stateKey = `oauth:google:state:${state}`;
     if (!state || !(await redis.get(stateKey)))
-      throw new UnauthorizedException("invalid_oauth_state");
+      throw new UnauthorizedError(ErrorCodes.INVALID_OAUTH_STATE);
     await redis.del(stateKey);
     const { tokens } = await this.google.getToken(code);
     if (!tokens.id_token)
-      throw new UnauthorizedException("missing_google_id_token");
-    const ticket = await this.google.verifyIdToken({
-      idToken: tokens.id_token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    if (!payload?.sub || !payload.email || payload.email_verified !== true)
-      throw new UnauthorizedException("invalid_google_identity");
+      throw new UnauthorizedError(ErrorCodes.MISSING_GOOGLE_ID_TOKEN);
+    const payload = await this.verifyGoogleIdentity(tokens.id_token);
     const user = await this.repository.findOrCreateGoogleUser(
       payload.email.toLowerCase(),
       payload.sub,
-      payload.name ?? payload.given_name ?? undefined,
+      payload.name ?? payload.givenName,
     );
     return this.createSession(user);
   }
 
+  /** One Tap / GIS: the browser hands us a signed ID token directly —
+   *  no code exchange needed. Same identity checks as the redirect flow. */
+  async googleOneTap(credential: string) {
+    const payload = await this.verifyGoogleIdentity(credential);
+    const user = await this.repository.findOrCreateGoogleUser(
+      payload.email.toLowerCase(),
+      payload.sub,
+      payload.name ?? payload.givenName,
+    );
+    return this.createSession(user);
+  }
+
+  private async verifyGoogleIdentity(idToken: string) {
+    const ticket = await this.google.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload?.sub || !payload.email || payload.email_verified !== true)
+      throw new UnauthorizedError(ErrorCodes.INVALID_GOOGLE_IDENTITY);
+    // Return a narrowed shape — getPayload() types email as optional,
+    // but the guard above guarantees sub/email are present.
+    return {
+      sub: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      givenName: payload.given_name,
+    };
+  }
+
+  /** Exchanges the calendar-flow code for tokens and stores them.
+   *  Returns connected=true on success so the redirect can inform the UI. */
+  private async calendarCallback(code: string, state: string) {
+    const stateKey = `oauth:cal:${state.slice("cal:".length)}`;
+    const userId = await redis.get(stateKey);
+    if (!userId) throw new UnauthorizedError(ErrorCodes.INVALID_OAUTH_STATE);
+    await redis.del(stateKey);
+    const { tokens } = await this.google.getToken(code);
+    if (!tokens.refresh_token)
+      throw new UnauthorizedError(ErrorCodes.INVALID_OAUTH_STATE);
+    await this.calendarTokens.upsertTokens(userId, {
+      refreshToken: tokens.refresh_token!,
+      accessToken: tokens.access_token ?? null,
+      tokenExpiry:
+        tokens.expiry_date != null
+          ? new Date(tokens.expiry_date)
+          : null,
+    });
+    // Connected: push the teacher's existing schedules right away, so the
+    // toggle flipping on means the calendar is actually populated.
+    await this.googleCalendar.syncTeacher(userId).catch(() => undefined);
+    return { mode: "calendar" as const, userId };
+  }
+
   async profile(userId: string) {
-    return this.repository.findProfile(userId);
+    const profile = await this.repository.findProfile(userId);
+    return {
+      ...profile,
+      // Same-origin URL — presigned S3 URLs expire after 300s and are
+      // cross-origin, which breaks the PNG export of the monthly slip.
+      paymentQrUrl: profile?.paymentQrFileId
+        ? `/files/${profile.paymentQrFileId}/raw`
+        : null,
+      paymentQrFileId: undefined,
+    };
   }
   async updateProfile(
     userId: string,
     input: import("./profile.dto").UpdateProfileDto,
   ) {
     return this.repository.updateProfile(userId, input.fullName, input.phone);
+  }
+  async updatePaymentQr(userId: string, file: Express.Multer.File) {
+    const previous = (await this.repository.findProfile(userId))
+      ?.paymentQrFileId;
+    const stored = await this.files.upload(userId, file, "payment-qr");
+    await this.repository.setPaymentQrFile(userId, stored.id);
+    // Clean up the replaced QR file so orphan rows don't accumulate.
+    if (previous) await this.files.softDelete(userId, previous).catch(() => {});
+    return { paymentQrUrl: `/files/${stored.id}/raw` };
   }
   async changePassword(
     userId: string,
@@ -90,7 +189,7 @@ export class AuthService {
       !record?.passwordHash ||
       !(await argon2.verify(record.passwordHash, input.currentPassword))
     )
-      throw new UnauthorizedException("invalid_password");
+      throw new UnauthorizedError(ErrorCodes.INVALID_PASSWORD);
     await this.repository.updatePassword(
       userId,
       await argon2.hash(input.newPassword),
@@ -111,7 +210,7 @@ export class AuthService {
       !user?.password_hash ||
       !(await argon2.verify(user.password_hash, password))
     )
-      throw new UnauthorizedException("invalid_credentials");
+      throw new UnauthorizedError(ErrorCodes.INVALID_CREDENTIALS);
     return this.createSession(user);
   }
   private async createSession(user: AuthUser) {

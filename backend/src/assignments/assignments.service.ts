@@ -3,11 +3,12 @@ import type {
   ReviewDropboxSubmissionDto,
   UpdateAssignmentDto,
 } from "./assignments.dto";
+import { Injectable } from "@nestjs/common";
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+  BadRequestError,
+  NotFoundError,
+} from "../common/app-exception";
+import { ErrorCodes } from "../common/error-codes";
 import { AssignmentsRepository } from "./assignments.repository";
 import { StorageService } from "../storage/storage.service";
 
@@ -24,17 +25,19 @@ export class AssignmentsService {
     return this.repository.list(teacherId);
   }
   create(teacherId: string, input: CreateAssignmentDto) {
-    if (!input.title?.trim()) throw new Error("invalid_assignment");
+    if (!input.title?.trim())
+      throw new BadRequestError(ErrorCodes.INVALID_ASSIGNMENT);
     this.assertValidTargets(input.studentIds, input.classIds);
     this.assertFutureDeadline(input.dueAt);
     return this.repository.create(teacherId, input);
   }
   async update(teacherId: string, id: string, input: UpdateAssignmentDto) {
-    if (!input.title?.trim()) throw new Error("invalid_assignment");
+    if (!input.title?.trim())
+      throw new BadRequestError(ErrorCodes.INVALID_ASSIGNMENT);
     this.assertValidTargets(input.studentIds, input.classIds);
     this.assertFutureDeadline(input.dueAt ?? undefined);
     const assignment = await this.repository.update(teacherId, id, input);
-    if (!assignment) throw new NotFoundException("assignment_not_found");
+    if (!assignment) throw new NotFoundError(ErrorCodes.ASSIGNMENT_NOT_FOUND);
     return assignment;
   }
   /** FR4.7: phải gán ít nhất 1 lớp hoặc 1 học sinh */
@@ -43,12 +46,12 @@ export class AssignmentsService {
     classIds?: string[],
   ) {
     if (!(studentIds?.length ?? 0) && !(classIds?.length ?? 0))
-      throw new BadRequestException("assignment_target_required");
+      throw new BadRequestError(ErrorCodes.ASSIGNMENT_TARGET_REQUIRED);
   }
   /** FR4.6: deadline không được ở quá khứ */
   private assertFutureDeadline(dueAt?: string | null) {
     if (dueAt && new Date(dueAt).getTime() < Date.now() - MAX_CLOCK_SKEW_MS)
-      throw new BadRequestException("past_deadline_not_allowed");
+      throw new BadRequestError(ErrorCodes.PAST_DEADLINE_NOT_ALLOWED);
   }
   async dropboxSubmissions(teacherId: string, assignmentId: string) {
     return this.repository.dropboxSubmissions(teacherId, assignmentId);
@@ -67,7 +70,7 @@ export class AssignmentsService {
         status === "viewed" ? "viewed_at" : "downloaded_at",
       ))
     )
-      throw new NotFoundException("submission_not_found");
+      throw new NotFoundError(ErrorCodes.SUBMISSION_NOT_FOUND);
     return { ok: true };
   }
   async reviewDropboxSubmission(
@@ -78,14 +81,14 @@ export class AssignmentsService {
   ) {
     // FR4.4: điểm 0–10, bước 0.25
     if (Math.round(input.score * 4) !== input.score * 4)
-      throw new BadRequestException("invalid_score_step");
+      throw new BadRequestError(ErrorCodes.INVALID_SCORE_STEP);
     const submission = await this.repository.reviewDropboxSubmission(
       teacherId,
       assignmentId,
       submissionId,
       input,
     );
-    if (!submission) throw new NotFoundException("submission_or_student_not_found");
+    if (!submission) throw new NotFoundError(ErrorCodes.SUBMISSION_OR_STUDENT_NOT_FOUND);
     return submission;
   }
   async dropboxFileUrl(
@@ -98,12 +101,12 @@ export class AssignmentsService {
       assignmentId,
       fileId,
     );
-    if (!file) throw new NotFoundException("file_not_found");
+    if (!file) throw new NotFoundError(ErrorCodes.FILE_NOT_FOUND);
     return { url: await this.storage.getDownloadUrl(file.storageKey) };
   }
   async remove(teacherId: string, id: string) {
     if (!(await this.repository.softDelete(teacherId, id)))
-      throw new NotFoundException("assignment_not_found");
+      throw new NotFoundError(ErrorCodes.ASSIGNMENT_NOT_FOUND);
     return { ok: true };
   }
 }

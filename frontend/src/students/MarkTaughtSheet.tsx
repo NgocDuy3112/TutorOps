@@ -16,14 +16,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatVnd, parseVnd, toLocalDateTimeInput } from "../lib/format";
 import { API } from "../lib/api";
 
-type Student = { id: string; defaultPriceVnd: number };
+type Student = {
+  id: string;
+  classes?: { id?: string; pricingMode?: string }[];
+};
 type TeachingSession = {
   id: string;
   studentId: string;
+  classId?: string | null;
   taughtAt: string;
+  endsAt?: string | null;
   priceVnd: number;
   note: string | null;
 };
+
+// Pricing mode of the student's class when they belong to exactly one;
+// mixed/none falls back to manual per-session pricing.
+function effectiveMode(student: Student): string {
+  const classes = student.classes ?? [];
+  return classes.length === 1 ? (classes[0].pricingMode ?? "per_session") : "per_session";
+}
 
 export function MarkTaughtSheet({
   student,
@@ -36,7 +48,7 @@ export function MarkTaughtSheet({
   session?: TeachingSession | null;
   initialDate?: Date;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (message: string) => void;
 }) {
   const [taughtAt, setTaughtAt] = useState(() =>
     toLocalDateTimeInput(
@@ -45,6 +57,12 @@ export function MarkTaughtSheet({
   );
   const [priceVnd, setPriceVnd] = useState(() =>
     session?.priceVnd == null ? "" : String(session.priceVnd),
+  );
+  const mode = effectiveMode(student);
+  const [endTime, setEndTime] = useState(() =>
+    session?.endsAt
+      ? new Date(session.endsAt).toTimeString().slice(0, 5)
+      : "",
   );
   const [note, setNote] = useState(session?.note ?? "");
   const [saving, setSaving] = useState(false);
@@ -59,6 +77,9 @@ export function MarkTaughtSheet({
       ),
     );
     setPriceVnd(session?.priceVnd == null ? "" : String(session.priceVnd));
+    setEndTime(
+      session?.endsAt ? new Date(session.endsAt).toTimeString().slice(0, 5) : "",
+    );
     setNote(session?.note ?? "");
   }, [initialDate, session]);
 
@@ -68,6 +89,17 @@ export function MarkTaughtSheet({
     const taughtDate = new Date(taughtAt);
     if (taughtDate.getTime() > Date.now() + 5 * 60 * 1000) {
       return setError("Không thể ghi nhận buổi dạy cho ngày tương lai.");
+    }
+    let endsAtIso: string | undefined;
+    if (mode === "per_hour") {
+      if (!endTime) return setError("Nhập giờ kết thúc buổi học.");
+      const [hours, minutes] = endTime.split(":").map(Number);
+      const endDate = new Date(taughtDate);
+      endDate.setHours(hours ?? 0, minutes ?? 0, 0, 0);
+      if (endDate.getTime() <= taughtDate.getTime()) {
+        return setError("Giờ kết thúc phải sau giờ bắt đầu.");
+      }
+      endsAtIso = endDate.toISOString();
     }
     setSaving(true);
     const response = await fetch(
@@ -79,13 +111,29 @@ export function MarkTaughtSheet({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           taughtAt: taughtDate.toISOString(),
+          endsAt: endsAtIso,
           priceVnd: priceVnd ? parseVnd(priceVnd) : undefined,
           note,
+          // Recording a lesson = it happened. Due only counts 'taught'
+          // sessions, so never leave manual records as 'unconfirmed'.
+          status: "taught",
+          // Pin the class when unambiguous — class-less sessions are
+          // invisible to per-class tuition.
+          classId:
+            session?.classId ??
+            (student.classes && student.classes.length === 1
+              ? student.classes[0].id
+              : undefined),
         }),
       },
     );
     setSaving(false);
-    if (response.ok) return onSaved();
+    if (response.ok) {
+      onSaved(
+        editing ? "Đã cập nhật buổi dạy" : "Đã ghi nhận buổi dạy",
+      );
+      return;
+    }
     setError(
       response.status === 400
         ? "Không thể ghi nhận buổi dạy cho ngày tương lai."
@@ -103,7 +151,7 @@ export function MarkTaughtSheet({
     });
     setDeleting(false);
     setConfirmDelete(false);
-    if (response.ok) onSaved();
+    if (response.ok) onSaved("Đã xoá buổi dạy");
   }
 
   return (
@@ -127,21 +175,40 @@ export function MarkTaughtSheet({
               max={new Date()}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="priceVnd">Tiền buổi học</Label>
-            <Input
-              id="priceVnd"
-              inputMode="numeric"
-              value={priceVnd}
-              onChange={(event) => {
-                const value = event.target.value;
-                setPriceVnd(
-                  value ? formatVnd(parseVnd(value)).replace(" ₫", "") : "",
-                );
-              }}
-              placeholder={formatVnd(student.defaultPriceVnd)}
-            />
-          </div>
+          {mode === "per_hour" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="endTime">Giờ kết thúc</Label>
+              <Input
+                id="endTime"
+                type="time"
+                value={endTime}
+                onChange={(event) => setEndTime(event.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Học phí tự tính theo giờ từ lớp của học sinh.
+              </p>
+            </div>
+          )}
+          {mode === "per_month" ? (
+            <p className="rounded-2xl bg-violet-50 p-3 text-sm text-primary">
+              Lớp này tính học phí theo tháng — buổi dạy không cộng tiền.
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              <Label htmlFor="priceVnd">Tiền buổi học</Label>
+              <Input
+                id="priceVnd"
+                inputMode="numeric"
+                value={priceVnd}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setPriceVnd(
+                    value ? formatVnd(parseVnd(value)).replace(" ₫", "") : "",
+                  );
+                }}
+              />
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="note">Ghi chú</Label>
             <Textarea

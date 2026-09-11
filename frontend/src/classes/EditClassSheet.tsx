@@ -1,14 +1,6 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Loader2, Search, UserMinus, UserPlus, UsersRound } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,41 +10,79 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatVnd, parseVnd } from "../lib/format";
-import { cn } from "@/lib/utils";
 import { API } from "../lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ScheduleEditor, type ScheduleSlot } from "./ScheduleEditor";
+
+const PRICING_MODE_OPTIONS = [
+  { value: "per_session", label: "Theo buổi", unit: "đ/buổi" },
+  { value: "per_hour", label: "Theo giờ", unit: "đ/giờ" },
+  { value: "per_month", label: "Theo tháng", unit: "đ/tháng" },
+] as const;
+
+const MAX_PRICE_VND = 10_000_000_000;
+
+type PricingMode = (typeof PRICING_MODE_OPTIONS)[number]["value"];
 
 type Student = { id: string; name: string; parentPhone: string | null };
 type TutorClass = {
   id: string;
   name: string;
   defaultPriceVnd: number | null;
+  pricingMode?: PricingMode;
+  autoSchedule?: boolean;
+  schedules?: ScheduleSlot[];
   note: string | null;
   students: Student[];
 };
 
+export type EditClassSection = "pricing" | "schedule" | "note";
+
+const SECTION_TITLES: Record<EditClassSection, string> = {
+  pricing: "Sửa học phí",
+  schedule: "Sửa lịch dạy",
+  note: "Sửa ghi chú",
+};
+
 export function EditClassSheet({
   classItem,
+  section,
   onClose,
   onSaved,
+  onDeleted,
 }: {
   classItem: TutorClass;
+  /** Scoped edit: show only one field group. Undefined = full sheet. */
+  section?: EditClassSection;
   onClose: () => void;
   onSaved: () => void;
+  onDeleted: () => void;
 }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [name, setName] = useState(classItem.name);
   const [defaultPriceVnd, setDefaultPriceVnd] = useState(
     classItem.defaultPriceVnd == null ? "" : String(classItem.defaultPriceVnd),
   );
   const [note, setNote] = useState(classItem.note ?? "");
-  const [studentIds, setStudentIds] = useState<string[]>(
-    classItem.students.map((s) => s.id),
+  const [pricingMode, setPricingMode] = useState<PricingMode>(
+    classItem.pricingMode ?? "per_session",
   );
-  const [studentSearch, setStudentSearch] = useState("");
-  const [changing, setChanging] = useState<string | null>(null);
-  const [removing, setRemoving] = useState<Student | null>(null);
+  const [autoSchedule, setAutoSchedule] = useState(
+    classItem.autoSchedule ?? false,
+  );
+  const [schedules, setSchedules] = useState<ScheduleSlot[]>(
+    classItem.schedules ?? [],
+  );
 
   useEffect(() => {
     setName(classItem.name);
@@ -60,119 +90,172 @@ export function EditClassSheet({
       classItem.defaultPriceVnd == null ? "" : String(classItem.defaultPriceVnd),
     );
     setNote(classItem.note ?? "");
-    setStudentIds(classItem.students.map((s) => s.id));
+    setPricingMode(classItem.pricingMode ?? "per_session");
+    setAutoSchedule(classItem.autoSchedule ?? false);
+    setSchedules(classItem.schedules ?? []);
   }, [classItem]);
-
-  useEffect(() => {
-    async function loadStudents() {
-      try {
-        const response = await fetch(`${API}/students`, {
-        });
-        if (response.ok) setAllStudents(await response.json());
-      } catch {
-      }
-    }
-    void loadStudents();
-  }, []);
-
-  const currentStudents = useMemo(
-    () => allStudents.filter((s) => studentIds.includes(s.id)),
-    [allStudents, studentIds],
-  );
-
-  const availableStudents = useMemo(() => {
-    const term = studentSearch.trim().toLocaleLowerCase("vi");
-    return allStudents.filter(
-      (s) =>
-        !studentIds.includes(s.id) &&
-        s.name.toLocaleLowerCase("vi").includes(term),
-    );
-  }, [allStudents, studentIds, studentSearch]);
-
-  async function addStudent(studentId: string) {
-    setChanging(studentId);
-    const response = await fetch(
-      `${API}/classes/${classItem.id}/students/${studentId}`,
-      { method: "POST" },
-    );
-    if (response.ok) {
-      setStudentIds((current) => [...current, studentId]);
-    }
-    setChanging(null);
-  }
-
-  async function removeStudent() {
-    if (!removing) return;
-    setChanging(removing.id);
-    const response = await fetch(
-      `${API}/classes/${classItem.id}/students/${removing.id}`,
-      { method: "DELETE" },
-    );
-    if (response.ok) {
-      setStudentIds((current) => current.filter((id) => id !== removing.id));
-    }
-    setChanging(null);
-    setRemoving(null);
-  }
 
   async function submitInfo(event: FormEvent) {
     event.preventDefault();
     if (!name.trim()) return setError("Nhập tên lớp.");
     setSaving(true);
     setError("");
-    const response = await fetch(`${API}/classes/${classItem.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        name,
-        defaultPriceVnd: defaultPriceVnd ? parseVnd(defaultPriceVnd) : null,
-        note: note || null,
-      }),
-    });
-    setSaving(false);
-    if (response.ok) onSaved();
-    else setError("Không thể lưu lớp.");
+    try {
+      const response = await fetch(`${API}/classes/${classItem.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name,
+          defaultPriceVnd: defaultPriceVnd ? parseVnd(defaultPriceVnd) : null,
+          pricingMode,
+          autoSchedule: schedules.length > 0 ? autoSchedule : false,
+          schedules,
+          note: note || null,
+        }),
+      });
+      if (!response.ok) throw new Error("Không thể lưu lớp.");
+      onSaved();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message === "class_name_exists"
+            ? "Tên lớp đã tồn tại. Hãy chọn tên khác."
+            : requestError.message
+          : "Có lỗi xảy ra.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
+
+  async function remove() {
+    setDeleting(true);
+    setError("");
+    try {
+      const response = await fetch(`${API}/classes/${classItem.id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok)
+        throw new Error("Không thể xóa lớp. Vui lòng thử lại.");
+      onDeleted();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
+      );
+      setConfirmDelete(false);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const showName = !section;
+  const showPricing = !section || section === "pricing";
+  const showSchedule = !section || section === "schedule";
+  const showNote = !section || section === "note";
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Sửa lớp</SheetTitle>
+          <SheetTitle>{section ? SECTION_TITLES[section] : "Sửa lớp"}</SheetTitle>
         </SheetHeader>
 
         <div className="flex h-full flex-col">
           <div className="flex-1 space-y-6 overflow-y-auto pb-4">
             <form id="edit-class-info-form" onSubmit={submitInfo} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="sheet-class-name">Tên lớp</Label>
-                <Input
-                  id="sheet-class-name"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoFocus={false}
-                />
+              {showName && (
+                <div className="space-y-2">
+                  <Label htmlFor="sheet-class-name">Tên lớp</Label>
+                  <Input
+                    id="sheet-class-name"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoFocus={false}
+                  />
+                </div>
+              )}
+              {showPricing && (
+              <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="sheet-class-pricing">Cách tính</Label>
+                  <Select
+                    value={pricingMode}
+                    onValueChange={(value) => setPricingMode(value as PricingMode)}
+                  >
+                    <SelectTrigger id="sheet-class-pricing" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRICING_MODE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sheet-class-price">Số tiền</Label>
+                  <div className="relative">
+                    <Input
+                      id="sheet-class-price"
+                      inputMode="numeric"
+                      max={MAX_PRICE_VND}
+                      className="pr-20"
+                      value={defaultPriceVnd}
+                      onChange={(e) =>
+                        setDefaultPriceVnd(
+                          e.target.value
+                            ? formatVnd(parseVnd(e.target.value)).replace(" ₫", "")
+                            : "",
+                        )
+                      }
+                      autoFocus={false}
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground"
+                    >
+                      {
+                        PRICING_MODE_OPTIONS.find(
+                          (option) => option.value === pricingMode,
+                        )?.unit
+                      }
+                    </span>
+                  </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="sheet-class-price">
-                  Giá mặc định (tối đa 10 tỷ ₫)
-                </Label>
-                <Input
-                  id="sheet-class-price"
-                  inputMode="numeric"
-                  max={10_000_000_000}
-                  value={defaultPriceVnd}
-                  onChange={(e) =>
-                    setDefaultPriceVnd(
-                      e.target.value
-                        ? formatVnd(parseVnd(e.target.value)).replace(" ₫", "")
-                        : "",
-                    )
-                  }
-                  autoFocus={false}
-                />
               </div>
+              </>
+              )}
+              {showSchedule && (
+              <div className="space-y-2">
+                <Label>Lịch dạy cố định</Label>
+                <ScheduleEditor slots={schedules} onChange={setSchedules} />
+                {schedules.length > 0 && (
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        Nhắc buổi dạy trên lịch
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Các khung giờ trên sẽ hiện dưới dạng buổi chờ xác nhận
+                        trên trang Lịch. Dạy xong bấm Xác nhận để ghi nhận học
+                        phí.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={autoSchedule}
+                      onCheckedChange={setAutoSchedule}
+                      aria-label="Nhắc buổi dạy trên lịch"
+                    />
+                  </div>
+                )}
+              </div>
+              )}
+              {showNote && (
+              <>
               <div className="space-y-2">
                 <Label htmlFor="sheet-class-note">Ghi chú</Label>
                 <Input
@@ -183,6 +266,8 @@ export function EditClassSheet({
                   autoFocus={false}
                 />
               </div>
+              </>
+              )}
               {error && (
                 <p
                   role="alert"
@@ -191,114 +276,47 @@ export function EditClassSheet({
                   {error}
                 </p>
               )}
-            </form>
-
-            <section className="space-y-3">
-              <h3 className="text-sm font-bold text-slate-800">
-                Học sinh ({currentStudents.length})
-              </h3>
-              {currentStudents.length === 0 ? (
-                <p className="py-3 text-center text-sm text-muted-foreground">
-                  Chưa có học sinh nào.
-                </p>
-              ) : (
-                <div className="space-y-1.5">
-                  {currentStudents.map((student) => (
-                    <div
-                      key={student.id}
-                      className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5"
-                    >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-violet-50 text-xs font-bold text-primary">
-                        {student.name.slice(0, 2).toLocaleUpperCase("vi")}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                        {student.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setRemoving(student)}
-                        disabled={changing === student.id}
-                        className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                        aria-label={`Bỏ ${student.name}`}
-                      >
-                        {changing === student.id ? (
-                          <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                          <UserMinus size={16} />
-                        )}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-800">
-                  Thêm học sinh
-                </h3>
-                {availableStudents.length > 0 && (
-                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                    {availableStudents.length}
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  size={16}
-                />
-                <Input
-                  value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
-                  className="pl-9"
-                  placeholder="Tìm học sinh..."
-                  autoFocus={false}
-                />
-              </div>
-              <div className="max-h-[25dvh] overflow-y-auto rounded-2xl border border-slate-200 bg-white">
-                {availableStudents.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
-                    <span className="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-400">
-                      <UsersRound size={18} />
-                    </span>
-                    <p className="text-sm text-muted-foreground">
-                      {allStudents.length === 0
-                        ? "Chưa có học sinh nào."
-                        : "Không tìm thấy học sinh."}
-                    </p>
-                  </div>
-                ) : (
-                  availableStudents.map((student, index) => (
-                    <button
-                      key={student.id}
+              {!section &&
+              (confirmDelete ? (
+                <div className="rounded-2xl bg-red-50 p-3">
+                  <p className="text-sm font-semibold text-red-700">
+                    Xoá lớp "{classItem.name}"? Học sinh và dữ liệu liên quan
+                    vẫn được giữ.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <Button
                       type="button"
-                      onClick={() => void addStudent(student.id)}
-                      disabled={changing === student.id}
-                      className={cn(
-                        "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50 disabled:opacity-60",
-                        index > 0 && "border-t border-slate-100",
-                      )}
+                      variant="outline"
+                      className="min-h-11 flex-1 rounded-2xl bg-white"
+                      disabled={deleting}
+                      onClick={() => setConfirmDelete(false)}
                     >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
-                        {student.name.slice(0, 2).toLocaleUpperCase("vi")}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                        {student.name}
-                      </span>
-                      <span className="grid size-8 shrink-0 place-items-center rounded-lg text-primary transition-colors">
-                        {changing === student.id ? (
-                          <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                          <UserPlus size={16} />
-                        )}
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            </section>
+                      Giữ lại
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="min-h-11 flex-1 rounded-2xl"
+                      disabled={deleting}
+                      onClick={() => void remove()}
+                    >
+                      {deleting && <Loader2 className="animate-spin" size={16} />}
+                      {deleting ? "Đang xoá..." : "Xoá hẳn"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-11 w-full rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 size={16} />
+                  Xoá lớp
+                </Button>
+              ))}
+            </form>
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2">
@@ -322,20 +340,6 @@ export function EditClassSheet({
           </div>
         </div>
       </SheetContent>
-      <Dialog open={Boolean(removing)} onOpenChange={(open) => !open && setRemoving(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Bỏ học sinh khỏi lớp?</DialogTitle>
-            <DialogDescription>
-              {removing?.name} sẽ không còn trong lớp "{classItem.name}". Học sinh vẫn được giữ trong hệ thống.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setRemoving(null)}>Hủy</Button>
-            <Button type="button" variant="destructive" onClick={() => void removeStudent()}>Xác nhận</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Sheet>
   );
 }
