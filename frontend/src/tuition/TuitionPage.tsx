@@ -168,8 +168,8 @@ export function TuitionPage() {
   return (
     <MobileShell>
       <PageHeader title="Học phí" action={<UserAvatar />} />
-      <main className="mx-auto max-w-4xl px-4 py-5 sm:py-6">
-        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70">
+      <main className="mx-auto max-w-4xl px-4 py-5 sm:py-6 lg:max-w-6xl">
+        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 lg:grid lg:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] lg:items-center lg:gap-6">
           <div className="flex items-center justify-between gap-2">
             <Button
               type="button"
@@ -195,7 +195,7 @@ export function TuitionPage() {
               <ChevronRight size={18} />
             </Button>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
+          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-6">
             <KpiBlock
               label="Khoản cần thu"
               value={formatVnd(totals?.totalDue ?? 0)}

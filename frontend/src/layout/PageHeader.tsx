@@ -5,11 +5,12 @@ type PageHeaderProps = {
   title: string;
   description?: string;
   action?: ReactNode;
-  maxWidth?: "3xl" | "6xl";
+  maxWidth?: "3xl" | "4xl" | "6xl";
 };
 
 const maxWidthClass = {
   "3xl": "max-w-3xl",
+  "4xl": "max-w-4xl",
   "6xl": "max-w-6xl",
 };
 

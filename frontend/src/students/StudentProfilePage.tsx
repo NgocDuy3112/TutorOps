@@ -172,7 +172,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-5">
+      <main className="mx-auto max-w-3xl space-y-4 px-4 py-5 lg:max-w-6xl">
         {error && (
           <p
             role="alert"
@@ -183,6 +183,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
         )}
 
         {tab === "info" && (
+        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <>
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
@@ -252,6 +253,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           </CardContent>
         </Card>
         </>
+        </div>
         )}
 
         {tab === "slip" && <MonthlySlipSection studentId={studentId} />}
