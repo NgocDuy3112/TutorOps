@@ -127,12 +127,22 @@ describe("TutorOps database E2E", () => {
         expect(body.totalPaid).toBe(50000);
         expect(body.balance).toBe(100000);
       });
+    // /public/parents was removed in 38ba078 (replaced by the teacher-auth
+    // monthly slip) — assert the replacement endpoint instead.
+    const monthKey = new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      timeZone: "Asia/Ho_Chi_Minh",
+    }).format(new Date());
     await request(app.getHttpServer())
-      .get(`/public/parents?token=${parentToken}`)
+      .get(`/students/${studentId}/slip?month=${monthKey}`)
+      .set("Cookie", [sessionCookie])
       .expect(200)
       .expect(({ body }) => {
-        expect(body.student.id).toBe(studentId);
-        expect(body.assignments[0].title).toBe("DB Assignment");
+        expect(body.student.name).toBe("Database Student");
+        expect(body.sessionCount).toBe(1);
+        expect(body.due).toBe(150000);
+        expect(body.paid).toBe(50000);
       });
   });
 

@@ -238,11 +238,16 @@ export class SessionsRepository {
     priceVnd: number,
   ) {
     // Partial unique index (class_id, student_id, taught_at) WHERE
-    // deleted_at IS NULL makes re-confirming the same slot a no-op.
+    // class_id IS NOT NULL AND deleted_at IS NULL makes re-confirming the
+    // same slot a no-op. The ON CONFLICT predicate must imply the index
+    // predicate — writing only `deleted_at IS NULL` here fails inference
+    // ("no unique or exclusion constraint matching the ON CONFLICT
+    // specification"), so it must match the 0013 index predicate exactly.
     const result = await pool.query(
       `INSERT INTO teaching_sessions (student_id, class_id, taught_at, ends_at, price_vnd, status)
        VALUES ($1, $2, $3, $4, $5, 'taught')
-       ON CONFLICT (class_id, student_id, taught_at) WHERE deleted_at IS NULL
+       ON CONFLICT (class_id, student_id, taught_at)
+       WHERE class_id IS NOT NULL AND deleted_at IS NULL
        DO NOTHING`,
       [studentId, classId, taughtAt, endsAt, priceVnd],
     );

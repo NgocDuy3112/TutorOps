@@ -6,7 +6,7 @@
 UPDATE teaching_sessions AS ts
 SET class_id = sub.class_id
 FROM (
-  SELECT ts2.id AS session_id, MIN(cs.class_id) AS class_id
+  SELECT ts2.id AS session_id, MIN(cs.class_id::text)::uuid AS class_id
   FROM teaching_sessions AS ts2
   JOIN class_students AS cs ON cs.student_id = ts2.student_id
   WHERE ts2.class_id IS NULL

@@ -84,7 +84,7 @@ export function OverviewPage() {
   return (
     <MobileShell>
       <PageHeader title="Tổng quan" action={<UserAvatar />} />
-      <main className="mx-auto max-w-3xl space-y-5 px-4 py-5 sm:py-6">
+      <main className="mx-auto max-w-3xl space-y-5 px-4 py-5 sm:py-6 lg:max-w-6xl">
         {loading && (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="animate-spin" size={17} />
@@ -113,7 +113,7 @@ export function OverviewPage() {
           <>
             <section
               aria-label="Chỉ số tháng này"
-              className="grid grid-cols-2 gap-3"
+              className="grid grid-cols-2 gap-3 lg:grid-cols-4"
             >
               <KpiCard
                 icon={<BookOpen size={16} />}
@@ -144,12 +144,13 @@ export function OverviewPage() {
               />
             </section>
 
-            <OverviewSection
-              title="Hôm nay"
-              icon={<CalendarCheck size={18} className="text-primary" />}
-              count={data.todaySessions.length}
-              countLabel="buổi"
-            >
+            <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+              <OverviewSection
+                title="Hôm nay"
+                icon={<CalendarCheck size={18} className="text-primary" />}
+                count={data.todaySessions.length}
+                countLabel="buổi"
+              >
               {data.todaySessions.length === 0 ? (
                 <SectionEmpty
                   icon={<CalendarCheck size={20} />}
@@ -172,14 +173,14 @@ export function OverviewPage() {
                   </Link>
                 ))
               )}
-            </OverviewSection>
+              </OverviewSection>
 
-            <OverviewSection
-              title="Sắp đến hạn"
-              icon={<ClipboardList size={18} className="text-primary" />}
-              count={data.upcomingDeadlines.length}
-              countLabel="bài tập"
-            >
+              <OverviewSection
+                title="Sắp đến hạn"
+                icon={<ClipboardList size={18} className="text-primary" />}
+                count={data.upcomingDeadlines.length}
+                countLabel="bài tập"
+              >
               {data.upcomingDeadlines.length === 0 ? (
                 <SectionEmpty
                   icon={<ClipboardList size={20} />}
@@ -208,7 +209,8 @@ export function OverviewPage() {
                   </Link>
                 ))
               )}
-            </OverviewSection>
+              </OverviewSection>
+            </div>
           </>
         )}
       </main>
