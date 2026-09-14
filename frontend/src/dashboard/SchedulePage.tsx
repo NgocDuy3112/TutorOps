@@ -277,7 +277,8 @@ export function SchedulePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-5">
+      <main className="mx-auto max-w-4xl px-4 py-5 lg:max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start lg:gap-6">
+        <div className="min-w-0">
         <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
           <CardHeader className="space-y-3 border-b border-slate-100 p-4">
             <div className="flex items-center justify-between gap-2">
@@ -477,6 +478,99 @@ export function SchedulePage() {
             </CardContent>
           </Card>
         )}
+        </div>
+
+        {/* Desktop side panel: selected-day agenda inline. Mobile keeps the
+            DayAgendaDialog flow — this panel is lg-only and renders the same
+            data (selectedGroups + selectedVirtual) without duplicating ids. */}
+        <aside className="hidden min-w-0 lg:block">
+          <Card className="sticky top-20 rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
+            <CardHeader className="flex-row items-center justify-between border-b border-slate-100 p-4 pb-3">
+              <CardTitle className="flex min-w-0 items-center gap-2 text-base">
+                <CalendarCheck size={18} className="shrink-0 text-primary" />
+                <span className="truncate capitalize">{selectedLabel}</span>
+              </CardTitle>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {selectedSessions.length} buổi
+              </span>
+            </CardHeader>
+            <CardContent className="p-3">
+              {selectedGroups.length === 0 && selectedVirtual.length === 0 ? (
+                <div className="flex flex-col items-center rounded-3xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-10 text-center">
+                  <span className="grid size-14 place-items-center rounded-2xl bg-violet-50 text-primary">
+                    <CalendarOff size={24} />
+                  </span>
+                  <p className="mt-3 text-sm font-medium text-slate-700">
+                    Chưa có hoạt động nào
+                  </p>
+                  <p className="mt-1 max-w-55 text-xs text-muted-foreground">
+                    Bấm nút bên dưới để ghi nhận buổi dạy trong ngày này.
+                  </p>
+                </div>
+              ) : (
+                <div className="max-h-[calc(100dvh-16rem)] space-y-3 overflow-y-auto pr-1">
+                  {selectedVirtual.map((slot) => (
+                    <VirtualSlotCard
+                      key={slot.classId}
+                      slot={slot}
+                      canConfirm={
+                        new Date(`${dateKey(selectedDate)}T${slot.startTime}:00`) <=
+                        new Date(Date.now() + 5 * 60_000)
+                      }
+                      busy={confirmingSlot === slot.classId}
+                      onConfirm={() => void confirmSlot(slot.classId, selectedDate)}
+                    />
+                  ))}
+                  {selectedGroups.map((group) => {
+                    const groupTotal = group.sessions.reduce(
+                      (sum, session) => sum + Number(session.priceVnd),
+                      0,
+                    );
+                    return (
+                      <section
+                        key={group.studentId}
+                        className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm shadow-slate-100"
+                      >
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h4 className="truncate font-bold text-slate-800">
+                              {group.studentName}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                              {group.sessions.length} buổi dạy
+                            </p>
+                          </div>
+                          {groupTotal > 0 && (
+                            <p className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-sm font-bold">
+                              {formatVnd(groupTotal)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          {group.sessions.map((session) => (
+                            <SessionCard
+                              key={session.id}
+                              session={session}
+                              onEdit={() => startEditSession(session, group.studentName)}
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              )}
+              <Button
+                type="button"
+                className="mt-3 min-h-11 w-full rounded-2xl"
+                onClick={startCreateSession}
+              >
+                <Plus size={16} />
+                Ghi nhận buổi dạy
+              </Button>
+            </CardContent>
+          </Card>
+        </aside>
       </main>
 
       <DayAgendaDialog

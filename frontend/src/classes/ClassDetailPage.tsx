@@ -221,7 +221,7 @@ export function ClassDetailPage() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-6">
+      <main className="mx-auto max-w-3xl space-y-6 px-4 py-6 lg:max-w-6xl">
         {loading ? (
           <p className="flex gap-2 text-sm text-muted-foreground">
             <Loader2 className="animate-spin" size={17} />
@@ -263,7 +263,7 @@ export function ClassDetailPage() {
               </TabButton>
             </div>
             {tab === "assignments" ? (
-            <section>
+            <section className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
               <div className="space-y-2">
                 {classAssignments.length ? (
                   classAssignments.map((assignment) => (
@@ -300,7 +300,7 @@ export function ClassDetailPage() {
             </section>
             ) : tab === "students" ? (
             <>
-            <section>
+            <section className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
               <div className="space-y-2">
                 {item.students.length ? (
                   item.students.map((s) => (
