@@ -154,7 +154,6 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
             <MonthlySlipCard
               ref={slipRef}
               slip={{ ...slip, comment }}
-              hideComment
               headerAction={
                 <div data-noexport className="shrink-0">
                   <Select value={month} onValueChange={setMonth}>

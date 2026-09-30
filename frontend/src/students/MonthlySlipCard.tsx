@@ -33,8 +33,8 @@ export type SlipData = {
  */
 export const MonthlySlipCard = forwardRef<
   HTMLDivElement,
-  { slip: SlipData; headerAction?: ReactNode; footer?: ReactNode; hideComment?: boolean }
->(function MonthlySlipCard({ slip, headerAction, footer, hideComment }, ref) {
+  { slip: SlipData; headerAction?: ReactNode; footer?: ReactNode }
+>(function MonthlySlipCard({ slip, headerAction, footer }, ref) {
   // Day-of-month of each session, resolved in VN local time so the calendar
   // highlights the day the student actually attended.
   const taughtDays = new Set(
@@ -102,6 +102,9 @@ export const MonthlySlipCard = forwardRef<
                   );
                 })}
               </div>
+              <p className="mt-2 text-center text-xs font-semibold text-primary/80">
+                Đã dạy {slip.sessions.length}/{slip.sessionCount} buổi
+              </p>
             </section>
 
             {/* QR cell — QR first, then caption, then the headline amount */}
@@ -128,7 +131,7 @@ export const MonthlySlipCard = forwardRef<
             </section>
           </div>
 
-          {slip.comment.trim() && !hideComment && (
+          {slip.comment.trim() && (
             <section className="rounded-2xl border border-primary/15 bg-white p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary/70">
                 Nhận xét của giáo viên
