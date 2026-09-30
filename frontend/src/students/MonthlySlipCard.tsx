@@ -33,8 +33,8 @@ export type SlipData = {
  */
 export const MonthlySlipCard = forwardRef<
   HTMLDivElement,
-  { slip: SlipData; headerAction?: ReactNode; footer?: ReactNode }
->(function MonthlySlipCard({ slip, headerAction, footer }, ref) {
+  { slip: SlipData; headerAction?: ReactNode; footer?: ReactNode; hideComment?: boolean }
+>(function MonthlySlipCard({ slip, headerAction, footer, hideComment }, ref) {
   // Day-of-month of each session, resolved in VN local time so the calendar
   // highlights the day the student actually attended.
   const taughtDays = new Set(
@@ -109,11 +109,11 @@ export const MonthlySlipCard = forwardRef<
               {slip.paymentQrUrl ? (
                 <img
                   alt="Mã QR chuyển khoản"
-                  className="size-20 rounded-lg object-contain"
+                  className="size-28 rounded-xl object-contain shadow-sm"
                   src={apiUrl(slip.paymentQrUrl)}
                 />
               ) : (
-                <div className="grid size-20 place-items-center rounded-lg bg-muted text-[11px] text-muted-foreground">
+                <div className="grid size-28 place-items-center rounded-xl bg-muted text-[11px] text-muted-foreground">
                   Chưa có QR
                 </div>
               )}
@@ -128,7 +128,7 @@ export const MonthlySlipCard = forwardRef<
             </section>
           </div>
 
-          {slip.comment.trim() && (
+          {slip.comment.trim() && !hideComment && (
             <section className="rounded-2xl border border-primary/15 bg-white p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary/70">
                 Nhận xét của giáo viên

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { monthKey, recentMonthOptions } from "../lib/format";
 import { Toast } from "../components/Toast";
 import { API } from "../lib/api";
+import { isIos } from "../lib/platform";
 import { MonthlySlipCard, type SlipData } from "./MonthlySlipCard";
 
 export function MonthlySlipSection({ studentId }: { studentId: string }) {
@@ -109,11 +110,26 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
           // cookie instead of an anonymous fetch.
           fetchRequestInit: { credentials: "include" },
         });
-        const link = document.createElement("a");
-        link.download = `phieu-tong-ket-${slip.student.name}-${month}.png`;
-        link.href = dataUrl;
-        link.click();
-        setToast("Đã tải ảnh phiếu tổng kết");
+        // On iOS the <a download> click trick does nothing — open the image
+        // in a new tab so the user can long-press to save it. Desktop keeps
+        // the traditional download-click flow.
+        if (isIos()) {
+          const blob = await (await fetch(dataUrl)).blob();
+          const blobUrl = URL.createObjectURL(blob);
+          window.open(blobUrl, "_blank");
+          // Revoke after a short delay so the tab has time to load.
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        } else {
+          const link = document.createElement("a");
+          link.download = `phieu-tong-ket-${slip.student.name}-${month}.png`;
+          link.href = dataUrl;
+          link.click();
+        }
+        setToast(
+          isIos()
+            ? "Ảnh đã mở trong tab mới — nhấn giữ để lưu"
+            : "Đã tải ảnh phiếu tổng kết",
+        );
       } finally {
         if (qr && originalSrc) qr.src = originalSrc;
       }
@@ -138,6 +154,7 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
             <MonthlySlipCard
               ref={slipRef}
               slip={{ ...slip, comment }}
+              hideComment
               headerAction={
                 <div data-noexport className="shrink-0">
                   <Select value={month} onValueChange={setMonth}>

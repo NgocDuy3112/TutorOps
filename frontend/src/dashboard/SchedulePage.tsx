@@ -169,6 +169,7 @@ export function SchedulePage() {
   // enrolled student at the slot time. The virtual dot disappears as soon as
   // the day has a real session for that class.
   async function confirmSlot(classId: string, date: Date) {
+    setError("");
     setConfirmingSlot(classId);
     try {
       const response = await fetch(
@@ -213,6 +214,7 @@ export function SchedulePage() {
 
   async function chooseStudent(student: Student) {
     if (!selectedClass) return;
+    setError("");
     setCreatingSession(true);
     const taughtAt = new Date(selectedDate);
     // Default to the class's fixed slot for this weekday; fall back to the

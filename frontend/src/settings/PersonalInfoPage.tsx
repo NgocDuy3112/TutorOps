@@ -174,11 +174,11 @@ export function PersonalInfoPage() {
               {profile.paymentQrUrl ? (
                 <img
                   alt="Mã QR thanh toán"
-                  className="h-24 w-24 rounded-lg border object-contain"
+                  className="h-28 w-28 rounded-xl border object-contain"
                   src={apiUrl(profile.paymentQrUrl)}
                 />
               ) : (
-                <div className="grid h-24 w-24 place-items-center rounded-lg border border-dashed text-xs text-muted-foreground">
+                <div className="grid h-28 w-28 place-items-center rounded-xl border border-dashed text-xs text-muted-foreground">
                   Chưa có
                 </div>
               )}
