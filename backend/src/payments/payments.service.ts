@@ -13,8 +13,6 @@ import { NotificationsService } from "../notifications/notifications.service";
 export class PaymentsService {
   constructor(private readonly notifications: NotificationsService) {}
 
-  // Legacy payments (recorded before class-based tuition) have no class.
-  // Owned via their student so each tutor only sees their own money.
   async legacyList(teacherId: string, month?: string) {
     const result = await pool.query(
       `SELECT p.id,
@@ -33,8 +31,6 @@ export class PaymentsService {
     return { payments: result.rows };
   }
 
-  // One-time move of a legacy payment into a class: student_id stays on the
-  // row as a trace, only class_id is set. Re-assignment is rejected.
   async assignClass(
     teacherId: string,
     paymentId: string,
@@ -78,8 +74,6 @@ export class PaymentsService {
     return result.rows[0];
   }
 
-  // Tuition is per class: due comes from the class's sessions (per_session /
-  // per_hour) plus the per_month flat fee, paid from class-scoped payments.
   async list(teacherId: string, classId: string) {
     const owned = await this.owned(teacherId, classId);
     if (!owned) throw new NotFoundError(ErrorCodes.CLASS_NOT_FOUND);
@@ -107,7 +101,6 @@ export class PaymentsService {
       payments: payments.rows,
       totalDue,
       totalPaid,
-      // Overpayment (paid beyond due) is not negative debt.
       balance: Math.max(totalDue - totalPaid, 0),
       sessionCount,
     };
@@ -182,7 +175,6 @@ export class PaymentsService {
 }
 
 function currentMonth(): string {
-  // VN local time (UTC+7), no DST — fixed offset is safe.
   const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 }

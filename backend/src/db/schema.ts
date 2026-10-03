@@ -406,8 +406,6 @@ export const payments = pgTable(
   "payments",
   {
     id: id(),
-    // Legacy: payments recorded per student before class-based tuition.
-    // New payments set classId only.
     studentId: uuid("student_id").references(() => students.id, {
       onDelete: "restrict",
     }),

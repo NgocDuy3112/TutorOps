@@ -1,10 +1,5 @@
 import { HttpException, HttpStatus } from "@nestjs/common";
 
-/**
- * Base app exception carrying a machine-readable `code` (see `error-codes.ts`).
- * Extends `HttpException` so Nest handles the response natively even if the
- * logging filter is bypassed; the filter only adds structured logging.
- */
 export class AppException extends HttpException {
   readonly code: string;
 

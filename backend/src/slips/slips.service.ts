@@ -24,8 +24,6 @@ export class SlipsService {
       balance: Math.max(slip.due - slip.paid, 0),
       assignments: slip.assignments,
       comment: slip.comment,
-      // Same-origin URL — presigned S3 URLs are cross-origin and get blocked
-      // by CORS when the PNG export re-fetches the QR image.
       paymentQrUrl: slip.paymentQrFileId
         ? `/files/${slip.paymentQrFileId}/raw`
         : null,

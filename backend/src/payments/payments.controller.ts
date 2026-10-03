@@ -59,7 +59,6 @@ export class PaymentsController {
   }
 }
 
-// Root-level routes for payments that have no class context yet (legacy rows).
 @Controller("payments")
 @UseGuards(AuthGuard)
 export class PaymentsLegacyController {

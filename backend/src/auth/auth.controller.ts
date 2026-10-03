@@ -17,7 +17,6 @@ import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AuthGuard } from "./auth.guard";
 
 const SESSION_COOKIE = "tutorops_session";
-// Session TTL in seconds; keep in sync with auth.service createSession.
 const SESSION_TTL_SECONDS = 86400;
 import { AuthService } from "./auth.service";
 import { CredentialsDto, GoogleOneTapDto } from "./auth.dto";
@@ -64,7 +63,6 @@ export class AuthController {
     const result = await this.auth.googleCallback(code, state);
     const frontend = process.env.FRONTEND_URL ?? "http://localhost:5173";
     if ("mode" in result && result.mode === "calendar") {
-      // Calendar connect: user was already logged in — just report back.
       return response.redirect(`${frontend}/settings?gcal=connected`);
     }
     this.setCookie(response, (result as { token: string }).token);
@@ -155,8 +153,6 @@ export class AuthController {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
-      // Express maxAge is MILLISECONDS — passing seconds here expired the
-      // cookie in ~86s, logging users out after ~2 minutes.
       maxAge: SESSION_TTL_SECONDS * 1000,
     });
   }

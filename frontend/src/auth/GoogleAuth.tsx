@@ -25,7 +25,6 @@ declare global {
   }
 }
 
-/** Load the Google Identity Services script once per page load. */
 let gsiPromise: Promise<void> | null = null;
 
 function loadGoogleIdentity(): Promise<void> {
@@ -65,13 +64,6 @@ function GoogleIcon() {
 
 type GoogleButtonProps = { onSuccess: () => void };
 
-/**
- * Google sign-in entry point. Tapping the button attempts Google One Tap
- * (native account chooser). One Tap is browser-controlled and can be
- * suppressed (cooldown, dismissed earlier, FedCM denial) — the prompt
- * notification tells us when that happens and we fall back to the classic
- * OAuth redirect so the button never dead-ends.
- */
 export function GoogleButton({ onSuccess }: GoogleButtonProps) {
   const onSuccessRef = useRef(onSuccess);
   onSuccessRef.current = onSuccess;
@@ -98,7 +90,6 @@ export function GoogleButton({ onSuccess }: GoogleButtonProps) {
           onSuccessRef.current();
           return;
         }
-        // One Tap exchange failed — fall back to the redirect flow.
         redirectToGoogle();
       },
     });

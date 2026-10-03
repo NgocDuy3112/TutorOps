@@ -60,9 +60,6 @@ export class AuthService {
     };
   }
 
-  /** Calendar connect: offline access + events scope so we can push
-   *  recurring schedule events. State is prefixed `cal:` so the shared
-   *  callback route can branch between login and calendar flows. */
   async getCalendarConnectUrl(userId: string) {
     const state = crypto.randomBytes(32).toString("base64url");
     await redis.set(`oauth:cal:${state}`, userId, { EX: 600 });
@@ -76,7 +73,7 @@ export class AuthService {
           "https://www.googleapis.com/auth/calendar.events",
         ],
         state: `cal:${state}`,
-        prompt: "consent", // refresh_token is only issued on first consent
+        prompt: "consent",
       }),
     };
   }
@@ -99,8 +96,6 @@ export class AuthService {
     return this.createSession(user);
   }
 
-  /** One Tap / GIS: the browser hands us a signed ID token directly —
-   *  no code exchange needed. Same identity checks as the redirect flow. */
   async googleOneTap(credential: string) {
     const payload = await this.verifyGoogleIdentity(credential);
     const user = await this.repository.findOrCreateGoogleUser(
@@ -119,8 +114,6 @@ export class AuthService {
     const payload = ticket.getPayload();
     if (!payload?.sub || !payload.email || payload.email_verified !== true)
       throw new UnauthorizedError(ErrorCodes.INVALID_GOOGLE_IDENTITY);
-    // Return a narrowed shape — getPayload() types email as optional,
-    // but the guard above guarantees sub/email are present.
     return {
       sub: payload.sub,
       email: payload.email,
@@ -129,8 +122,6 @@ export class AuthService {
     };
   }
 
-  /** Exchanges the calendar-flow code for tokens and stores them.
-   *  Returns connected=true on success so the redirect can inform the UI. */
   private async calendarCallback(code: string, state: string) {
     const stateKey = `oauth:cal:${state.slice("cal:".length)}`;
     const userId = await redis.get(stateKey);
@@ -147,8 +138,6 @@ export class AuthService {
           ? new Date(tokens.expiry_date)
           : null,
     });
-    // Connected: push the teacher's existing schedules right away, so the
-    // toggle flipping on means the calendar is actually populated.
     await this.googleCalendar.syncTeacher(userId).catch(() => undefined);
     return { mode: "calendar" as const, userId };
   }
@@ -157,8 +146,6 @@ export class AuthService {
     const profile = await this.repository.findProfile(userId);
     return {
       ...profile,
-      // Same-origin URL — presigned S3 URLs expire after 300s and are
-      // cross-origin, which breaks the PNG export of the monthly slip.
       paymentQrUrl: profile?.paymentQrFileId
         ? `/files/${profile.paymentQrFileId}/raw`
         : null,
@@ -176,7 +163,6 @@ export class AuthService {
       ?.paymentQrFileId;
     const stored = await this.files.upload(userId, file, "payment-qr");
     await this.repository.setPaymentQrFile(userId, stored.id);
-    // Clean up the replaced QR file so orphan rows don't accumulate.
     if (previous) await this.files.softDelete(userId, previous).catch(() => {});
     return { paymentQrUrl: `/files/${stored.id}/raw` };
   }

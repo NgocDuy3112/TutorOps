@@ -1,8 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { pool } from "../db/client";
 
-// App serves Vietnamese tutors (VND, vi-VN); month boundaries follow VN local
-// time — same convention as tuition.repository.ts.
 const APP_TIMEZONE = "Asia/Ho_Chi_Minh";
 
 export type SlipRow = {
@@ -66,8 +64,6 @@ export class SlipsRepository {
            ORDER BY ts.taught_at`,
           [studentId, APP_TIMEZONE, month],
         ),
-        // Per-session billing: sum of session prices, excluding per_month
-        // classes (those are billed as a flat fee below) — mirrors tuition.
         pool.query(
           `SELECT COALESCE(SUM(ts.price_vnd) FILTER (
               WHERE c.pricing_mode IS DISTINCT FROM 'per_month'

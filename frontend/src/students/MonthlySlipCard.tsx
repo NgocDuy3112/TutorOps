@@ -23,20 +23,10 @@ export type SlipData = {
   generatedAt: string;
 };
 
-/**
- * Phiếu tổng kết tháng — render tĩnh để xuất ảnh PNG (html-to-image).
- * Chỉ dùng token màu sẵn có, không style động.
- *
- * `headerAction` / `footer` host interactive controls (month filter, comment
- * editor). They render inside the card but must be marked `data-noexport`
- * by the caller — the PNG export filter strips them.
- */
 export const MonthlySlipCard = forwardRef<
   HTMLDivElement,
   { slip: SlipData; headerAction?: ReactNode; footer?: ReactNode }
 >(function MonthlySlipCard({ slip, headerAction, footer }, ref) {
-  // Day-of-month of each session, resolved in VN local time so the calendar
-  // highlights the day the student actually attended.
   const taughtDays = new Set(
     slip.sessions.map((session) =>
       Number(
@@ -63,7 +53,6 @@ export const MonthlySlipCard = forwardRef<
 
         <div className="space-y-4 px-5 py-4">
           <div className="grid grid-cols-5 gap-3">
-            {/* Mini month calendar — teaching days filled purple. */}
             <section
               aria-label={`Lịch các buổi dạy trong ${formatMonthLabel(new Date(`${slip.month}-01T00:00:00`))}`}
               className="col-span-3 p-2.5"
@@ -107,7 +96,6 @@ export const MonthlySlipCard = forwardRef<
               </p>
             </section>
 
-            {/* QR cell — QR first, then caption, then the headline amount */}
             <section className="col-span-2 flex flex-col items-center justify-center gap-1 p-3 text-center">
               {slip.paymentQrUrl ? (
                 <img

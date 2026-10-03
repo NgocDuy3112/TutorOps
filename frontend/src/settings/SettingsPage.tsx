@@ -113,9 +113,6 @@ export function SettingsPage() {
                 aria-label="Google Lịch"
                 onCheckedChange={(checked) => {
                   if (checked) {
-                    // The connect endpoint returns JSON {url} (same shape as
-                    // the login flow) — fetch it, then go to Google consent.
-                    // The switch flips for real after returning to /settings.
                     void fetch(`${API}/auth/google/calendar`)
                       .then((response) => response.json())
                       .then(({ url }) => {

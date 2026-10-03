@@ -11,7 +11,6 @@ import {
 import { ErrorCodes } from "../common/error-codes";
 import { SessionsRepository } from "./sessions.repository";
 
-/** FR3.4: cho phép lệch clock 5 phút */
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 @Injectable()
@@ -46,10 +45,6 @@ export class SessionsService {
     });
   }
 
-  // Price depends on the class pricing mode:
-  // - per_session: manual price, else class default, else 0
-  // - per_hour: hourly rate x duration (needs endsAt), manual override wins
-  // - per_month: fixed monthly fee charged by the tuition report; sessions cost 0
   private computePrice(
     pricing: {
       classId: string | null;
@@ -85,9 +80,6 @@ export class SessionsService {
     return { ok: true };
   }
 
-  // Confirms a fixed-schedule slot: materializes one taught session per
-  // enrolled student for every schedule slot matching that weekday. Slot
-  // times/prices come from the class (server-side source of truth).
   async confirmSlot(teacherId: string, classId: string, input: ConfirmSlotDto) {
     const pricing = await this.repository.classOwned(teacherId, classId);
     if (!pricing) throw new NotFoundError(ErrorCodes.CLASS_NOT_FOUND);

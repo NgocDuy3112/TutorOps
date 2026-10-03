@@ -24,7 +24,6 @@ import { API } from "../lib/api";
 type PaymentDialogProps = {
   klass: { id: string; name: string } | null;
   balance: number;
-  /** Month being viewed in tuition report ("YYYY-MM") — default for appliesToMonth. */
   month: string;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;

@@ -93,7 +93,6 @@ export function AssignmentFormPage() {
           );
           setClassIds(assignment.classIds ?? []);
         } else {
-          // Prefill the class when creating from a class detail page.
           const classIdParam = searchParams.get("classId");
           if (classIdParam) setClassIds([classIdParam]);
         }

@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { pool } from "../db/client";
 import type { TuitionClassRow } from "./tuition.dto";
 
-// App serves Vietnamese tutors (VND, vi-VN); month boundaries follow VN local time.
 const APP_TIMEZONE = "Asia/Ho_Chi_Minh";
 
 const UNCATEGORIZED_NAME = "Chưa phân lớp";
@@ -78,10 +77,6 @@ export class TuitionRepository {
       sessionCount: Number(row.sessionCount),
     }));
 
-    // Legacy payments recorded before class-based tuition have no class.
-    // Surface them as an uncategorized row so the money is never lost.
-    // Scoped to the tutor via the payment's student (legacy rows carry
-    // student_id as a trace).
     const legacy = await pool.query(
       `
       SELECT COALESCE(SUM(p.amount_vnd), 0) AS paid

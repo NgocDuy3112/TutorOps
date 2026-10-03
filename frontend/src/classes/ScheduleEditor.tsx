@@ -25,10 +25,6 @@ const WEEKDAYS = [
   "Thứ 7",
 ];
 
-/**
- * Editor for fixed weekly schedule slots (weekday + start/end VN local time).
- * Controlled component: parent owns the slot list.
- */
 export function ScheduleEditor({
   slots,
   onChange,

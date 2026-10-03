@@ -62,8 +62,6 @@ export class FilesController {
       "Content-Disposition",
       `inline; filename="${file.originalName}"`,
     );
-    // Private cache: re-uploads get a new file id, so caching by id is safe
-    // and lets the PNG export re-fetch hit the browser cache.
     response.setHeader("Cache-Control", "private, max-age=86400");
     return new StreamableFile(file.stream);
   }

@@ -35,9 +35,6 @@ export class TeachingSessionDto {
   @ApiPropertyOptional() @IsOptional() @IsString() note?: string;
 }
 
-// Confirms a fixed-schedule slot for a class: one taught session per
-// enrolled student, priced by the class pricing mode. Requested by date
-// (the slot times come from the class schedule server-side).
 export class ConfirmSlotDto {
   @ApiProperty({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" })
   @Matches(/^\d{4}-\d{2}-\d{2}$/)

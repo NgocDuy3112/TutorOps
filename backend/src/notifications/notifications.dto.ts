@@ -8,7 +8,6 @@ export class PushKeysDto {
 
 export class PushSubscriptionDto {
   @ApiProperty() @IsUrl({ require_tld: false }) endpoint!: string;
-  // Present (null) in PushSubscription.toJSON() output on all browsers.
   @ApiPropertyOptional() @IsOptional() @IsNumber() expirationTime?: number | null;
   @ApiProperty({ type: PushKeysDto }) keys!: PushKeysDto;
   @ApiPropertyOptional() @IsOptional() @IsString() userAgent?: string;

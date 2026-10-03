@@ -36,7 +36,6 @@ export const SheetContent = React.forwardRef<
     if (!el) return;
 
     function onTouchStart(e: TouchEvent) {
-      // Only allow drag from the handle area or top 40px
       const rect = el!.getBoundingClientRect();
       const touchY = e.touches[0].clientY - rect.top;
       if (touchY > 40) return;

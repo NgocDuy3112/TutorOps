@@ -15,7 +15,7 @@ function getDaysInMonth(year: number, month: number) {
 
 function getFirstDayOfMonth(year: number, month: number) {
   const day = new Date(year, month, 1).getDay();
-  return day === 0 ? 6 : day - 1; // Monday = 0
+  return day === 0 ? 6 : day - 1;
 }
 
 function dateKey(date: Date) {
@@ -116,8 +116,6 @@ export function DatePicker({
     const next = !open;
     setOpen(next);
     if (next) {
-      // The popover is absolutely positioned inside scrollable sheet content;
-      // scroll it into view so it is not clipped by the sheet bottom.
       requestAnimationFrame(() =>
         popoverRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
       );

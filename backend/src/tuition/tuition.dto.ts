@@ -1,5 +1,4 @@
 export type TuitionClassRow = {
-  // null = legacy payments recorded before class-based tuition
   id: string | null;
   name: string;
   due: number;

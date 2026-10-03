@@ -95,9 +95,6 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
     if (!slipRef.current || !slip) return;
     setExporting(true);
     try {
-      // The QR is an auth-protected cross-origin image: <img> renders it fine
-      // but html-to-image re-fetches it without credentials and fails. Inline
-      // it as a data URL first, restore the original src afterwards.
       const qr = slipRef.current.querySelector<HTMLImageElement>(
         "img[alt='Mã QR chuyển khoản']",
       );

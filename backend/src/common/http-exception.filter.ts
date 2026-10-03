@@ -9,7 +9,6 @@ import { AppException } from "./app-exception";
 import { ErrorCodes } from "./error-codes";
 import { AppLogger } from "./app-logger";
 
-/** Logs every thrown exception as `{event, code, status, method, path}`. */
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   constructor(private readonly logger: AppLogger) {}

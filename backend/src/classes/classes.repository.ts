@@ -8,7 +8,6 @@ import { ConflictError } from "../common/app-exception";
 import { ErrorCodes } from "../common/error-codes";
 import { pool } from "../db/client";
 
-/** Postgres unique_violation — thrown when a class name is already taken. */
 const UNIQUE_VIOLATION = "23505";
 
 function isUniqueViolation(error: unknown): boolean {
@@ -112,10 +111,6 @@ export class ClassesRepository {
     }
   }
 
-  // Full replace for fields the edit UI owns (name, price, pricing mode,
-  // schedule, note): the UI always sends them, and null means "cleared".
-  // COALESCE here would silently keep the old value, making fields impossible
-  // to clear. `subject` is not edited by any UI yet, so it stays COALESCE.
   async update(teacherId: string, id: string, input: UpdateClassDto) {
     const client = await pool.connect();
     try {
@@ -175,10 +170,6 @@ export class ClassesRepository {
       [classId, teacherId],
     );
     for (const slot of slots) {
-      // No ON CONFLICT DO NOTHING: delete-first above makes it redundant, and
-      // a bare DO NOTHING would silently swallow the row on ANY unique index
-      // (e.g. a drift index on time without weekday) — losing slots with a
-      // 200 response. A real conflict must surface as an error instead.
       await client.query(
         `
         INSERT INTO class_schedules (class_id, teacher_id, weekday, start_time, end_time)
@@ -187,8 +178,6 @@ export class ClassesRepository {
         [classId, teacherId, slot.weekday, slot.startTime, slot.endTime],
       );
     }
-    // Post-write guard: a silent drop (drift unique index, trigger, …) must
-    // fail the request loudly instead of returning 200 with lost slots.
     const written = await client.query(
       `SELECT count(*)::int AS n FROM class_schedules WHERE class_id = $1 AND teacher_id = $2`,
       [classId, teacherId],

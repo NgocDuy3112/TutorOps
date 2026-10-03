@@ -56,8 +56,6 @@ export class StorageService {
     );
   }
 
-  /** Stream the raw object through the backend so clients stay same-origin
-   *  (presigned URLs are cross-origin and blocked by S3 CORS on fetch). */
   async download(key: string) {
     const result = await this.client.send(
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),

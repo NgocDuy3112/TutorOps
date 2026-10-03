@@ -24,9 +24,6 @@ function supported() {
 export function PushNotificationSetup() {
   const [state, setState] = useState<State>("loading");
   const [errorDetail, setErrorDetail] = useState("");
-  // Preloaded at page load so enable() can call requestPermission() and
-  // subscribe() back-to-back inside the user gesture — WebKit (iOS)
-  // requires both to run with fresh user activation.
   const publicKeyRef = useRef<string | null>(null);
 
   function fail(scope: string, error: unknown) {
@@ -57,7 +54,6 @@ export function PushNotificationSetup() {
       setState("unsupported");
       return;
     }
-    // Preload the VAPID key — non-fatal if it fails, enable() retries.
     await fetchPublicKey().catch(() => undefined);
     try {
       const registration = await navigator.serviceWorker.register("/sw.js");
@@ -74,8 +70,6 @@ export function PushNotificationSetup() {
         setState("enabled");
         return;
       }
-      // iOS periodically revokes subscriptions server-side while the local
-      // one is still valid — re-register instead of asking the user again.
       const saved = await fetch(`${API}/notifications/subscriptions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -91,9 +85,6 @@ export function PushNotificationSetup() {
     setState("loading");
     setErrorDetail("");
     try {
-      // WebKit (iOS) requires requestPermission() to run synchronously
-      // inside the user gesture — any await before it loses the gesture
-      // and the permission dialog never appears. Ask first, fetch after.
       const permission = await Notification.requestPermission();
       if (permission === "denied") {
         setState("blocked");

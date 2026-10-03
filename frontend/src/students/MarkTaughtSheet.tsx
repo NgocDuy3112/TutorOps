@@ -38,8 +38,6 @@ type TeachingSession = {
   note: string | null;
 };
 
-// Pricing mode of the student's class when they belong to exactly one;
-// mixed/none falls back to manual per-session pricing.
 function effectiveMode(student: Student): string {
   const classes = student.classes ?? [];
   return classes.length === 1 ? (classes[0].pricingMode ?? "per_session") : "per_session";
@@ -122,11 +120,7 @@ export function MarkTaughtSheet({
           endsAt: endsAtIso,
           priceVnd: priceVnd ? parseVnd(priceVnd) : undefined,
           note,
-          // Recording a lesson = it happened. Due only counts 'taught'
-          // sessions, so never leave manual records as 'unconfirmed'.
           status: "taught",
-          // Pin the class when unambiguous — class-less sessions are
-          // invisible to per-class tuition.
           classId:
             session?.classId ??
             (student.classes && student.classes.length === 1

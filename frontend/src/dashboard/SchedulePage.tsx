@@ -59,8 +59,6 @@ type StudentDayGroup = {
   studentName: string;
   sessions: TeachingSession[];
 };
-// Fixed-schedule slot drawn on the calendar for a future date — not in the
-// DB until the teacher confirms it ("Xác nhận đã dạy" creates real sessions).
 type VirtualSlot = {
   classId: string;
   className: string;
@@ -167,9 +165,6 @@ export function SchedulePage() {
     year: "numeric",
   }).format(selectedDate);
 
-  // Confirms a fixed-schedule slot: backend creates one taught session per
-  // enrolled student at the slot time. The virtual dot disappears as soon as
-  // the day has a real session for that class.
   async function confirmSlot(classId: string, date: Date) {
     setError("");
     setConfirmingSlot(classId);
@@ -219,8 +214,6 @@ export function SchedulePage() {
     setError("");
     setCreatingSession(true);
     const taughtAt = new Date(selectedDate);
-    // Default to the class's fixed slot for this weekday; fall back to the
-    // current clock time only for classes without a matching schedule.
     const slot = selectedClass.schedules?.find(
       (item) => item.weekday === selectedDate.getDay(),
     );
@@ -236,14 +229,11 @@ export function SchedulePage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           taughtAt: taughtAt.toISOString(),
-          // Pin the class explicitly — students in multiple classes would
-          // otherwise produce a class-less session that tuition can't see.
           classId: selectedClass.id,
           priceVnd:
             selectedClass.defaultPriceVnd == null
               ? undefined
               : Number(selectedClass.defaultPriceVnd),
-          // Recording from the calendar = the lesson happened.
           status: "taught",
         }),
       });
@@ -711,7 +701,6 @@ function friendlyError(detail: string, fallback: string) {
     const code = JSON.parse(detail).message as string | undefined;
     if (code && FRIENDLY_ERRORS[code]) return FRIENDLY_ERRORS[code];
   } catch {
-    // plain text error — keep as-is
   }
   return detail || fallback;
 }
@@ -735,10 +724,6 @@ function groupAgenda(sessions: TeachingSession[]) {
   );
 }
 
-// Draws fixed-schedule slots as virtual agenda entries for a date. Only
-// future dates (and today) — past lessons are recorded manually if needed.
-// Hidden for a class that already has any real session that day (including
-// cancelled ones — recording a change replaces the virtual slot).
 function virtualSlotsForDate(
   date: Date,
   classes: TutorClass[],
@@ -841,8 +826,6 @@ function DayAgendaDialog({
                 <VirtualSlotCard
                   key={slot.classId}
                   slot={slot}
-                  // Confirm only allowed once the scheduled time has arrived
-                  // (same 5-minute clock-skew allowance as the backend).
                   canConfirm={
                     new Date(`${dateKey(slotDate)}T${slot.startTime}:00`) <=
                     new Date(Date.now() + 5 * 60_000)

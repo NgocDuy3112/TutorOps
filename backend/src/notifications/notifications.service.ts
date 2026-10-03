@@ -31,9 +31,6 @@ export class NotificationsService implements OnApplicationBootstrap {
     return process.env.VAPID_PUBLIC_KEY ?? null;
   }
 
-  // Replaces the old update banner: when the backend boots with a version
-  // that was never announced before, every push subscriber gets one notice.
-  // Flag is written before sending so a redeploy never spams subscribers.
   async announceUpdateIfNew() {
     const version = this.version.get();
     if (!version || version === "0.0.0") return;
@@ -63,8 +60,6 @@ export class NotificationsService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     void this.announceUpdateIfNew().catch(() => {
-      // Announcing is best-effort: a fresh DB without the migration or a
-      // transient DB hiccup must not block app startup.
     });
   }
   async listActiveSubscriptions(userId: string) {

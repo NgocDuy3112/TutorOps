@@ -18,7 +18,6 @@ import {
 import { formatVnd, formatMonthLabel } from "../lib/format";
 import { API } from "../lib/api";
 
-/** "YYYY-MM" → Date for month labels (same convention as `monthKey`). */
 function monthToDate(key: string) {
   const [year, month] = key.split("-").map(Number);
   return new Date(year, month - 1, 1);
@@ -36,9 +35,7 @@ type LegacyPayment = {
 type ClassOption = { id: string; name: string };
 
 type AssignClassDialogProps = {
-  /** Non-null opens the dialog (legacy "Chưa phân lớp" row was tapped). */
   legacy: { name: string } | null;
-  /** Viewed tuition month ("YYYY-MM") — legacy payments are filtered to it. */
   month: string;
   onOpenChange: (open: boolean) => void;
   onSaved: (className: string) => void;

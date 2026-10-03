@@ -62,8 +62,6 @@ export function OverviewPage() {
     try {
       const response = await fetch(`${API}/dashboard/overview`);
       if (!response.ok) {
-        // Surface the server's error message (e.g. SQL/code errors from the
-        // exception filter) so failures are diagnosable from the UI.
         const body = (await response.json().catch(() => null)) as {
           message?: string;
         } | null;
@@ -325,8 +323,6 @@ function OverviewSection({
 }
 
 function delta(current: number, previous: number): number | null {
-  // Hide deltas that carry no signal: both months empty, or nothing to
-  // compare against (previous = 0 would show a misleading ±100%).
   if (previous <= 0 || (current === 0 && previous === 0)) return null;
   if (current === 0) return -100;
   return Math.round(((current - previous) / previous) * 100);

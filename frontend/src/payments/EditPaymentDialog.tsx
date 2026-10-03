@@ -32,7 +32,6 @@ type PaymentRecord = {
 
 type EditPaymentDialogProps = {
   klass: { id: string; name: string } | null;
-  /** Viewed tuition month ("YYYY-MM") so the month dropdown centres on it. */
   month: string;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;

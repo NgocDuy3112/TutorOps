@@ -51,8 +51,6 @@ export class FilesService {
     });
   }
 
-  /** Raw object stream for same-origin serving. Only the uploader may read
-   *  their own file — everything else is indistinguishable from missing. */
   async downloadRaw(userId: string, fileId: string) {
     const file = await this.repository.findById(fileId);
     if (!file || file.createdBy !== userId)
@@ -61,9 +59,6 @@ export class FilesService {
     return { ...object, originalName: file.originalName };
   }
 
-  /** Deletes the uploader's file. Unreferenced files are removed for real
-   *  (row + S3 object); files still attached to assignments/submissions are
-   *  only hidden (soft delete) so past history keeps working. */
   async softDelete(userId: string, fileId: string) {
     const file = await this.repository.findById(fileId);
     if (!file || file.createdBy !== userId)

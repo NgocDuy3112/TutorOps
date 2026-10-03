@@ -78,7 +78,6 @@ export function StudentsPage() {
     void loadData();
   }, []);
 
-  // Class filter options derive from the students' own class memberships.
   const classCounts = new Map<string, { name: string; count: number }>();
   for (const student of students) {
     for (const item of student.classes ?? []) {

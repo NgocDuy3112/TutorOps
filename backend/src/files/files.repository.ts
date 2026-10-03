@@ -47,7 +47,6 @@ export class FilesRepository {
     return (await pool.query(query, [id])).rowCount === 1;
   }
 
-  /** Row is deletable only when no junction table still references it. */
   async countReferences(id: string) {
     const result = await pool.query(
       `SELECT

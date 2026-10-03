@@ -67,8 +67,6 @@ export class SessionsRepository {
     return (await pool.query(query, [teacherId])).rows;
   }
 
-  // Resolve which class governs pricing for a new session: explicit classId if
-  // given (must contain the student), else the student's only class, else none.
   async resolvePricing(studentId: string, classId?: string) {
     let resolvedClassId = classId ?? null;
     if (!resolvedClassId) {
@@ -84,7 +82,6 @@ export class SessionsRepository {
       resolvedClassId = owned.rows.length === 1 ? owned.rows[0].id : null;
     }
     if (!resolvedClassId) {
-      // No class context: price must be entered manually (per_session).
       return {
         classId: null,
         pricingMode: "per_session" as const,
@@ -105,7 +102,6 @@ export class SessionsRepository {
       [resolvedClassId, studentId],
     );
     if (result.rows.length === 0) {
-      // Class does not contain this student — no pricing context.
       return {
         classId: null,
         pricingMode: "per_session" as const,
@@ -195,8 +191,6 @@ export class SessionsRepository {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // --- Fixed-schedule slot confirmation (calendar draws future slots as
-  // virtual; confirming materializes one taught session per student). ---
   async classOwned(teacherId: string, classId: string) {
     const result = await pool.query(
       `SELECT id, pricing_mode AS "pricingMode",
@@ -237,12 +231,6 @@ export class SessionsRepository {
     endsAt: string,
     priceVnd: number,
   ) {
-    // Partial unique index (class_id, student_id, taught_at) WHERE
-    // class_id IS NOT NULL AND deleted_at IS NULL makes re-confirming the
-    // same slot a no-op. The ON CONFLICT predicate must imply the index
-    // predicate — writing only `deleted_at IS NULL` here fails inference
-    // ("no unique or exclusion constraint matching the ON CONFLICT
-    // specification"), so it must match the 0013 index predicate exactly.
     const result = await pool.query(
       `INSERT INTO teaching_sessions (student_id, class_id, taught_at, ends_at, price_vnd, status)
        VALUES ($1, $2, $3, $4, $5, 'taught')

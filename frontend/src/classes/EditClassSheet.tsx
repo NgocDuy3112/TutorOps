@@ -59,7 +59,6 @@ export function EditClassSheet({
   onDeleted,
 }: {
   classItem: TutorClass;
-  /** Scoped edit: show only one field group. Undefined = full sheet. */
   section?: EditClassSection;
   onClose: () => void;
   onSaved: () => void;

@@ -61,8 +61,6 @@ export function EditAssignmentSheet({
         description,
         dueAt: dueAt ? new Date(dueAt).toISOString() : null,
         studentIds: [],
-        // Class membership is managed from the class detail page; editing
-        // keeps the assignment's existing classes untouched.
         classIds: assignment.classIds ?? [],
       }),
     });

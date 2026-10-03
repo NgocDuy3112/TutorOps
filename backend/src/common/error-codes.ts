@@ -1,10 +1,4 @@
-/**
- * Machine-readable error codes — single source of truth.
- * Sent to clients as `message` and used for log lookups.
- * User-facing Vietnamese text lives in `frontend/src/lib/messages.ts`.
- */
 export const ErrorCodes = {
-  // Auth / access
   UNAUTHORIZED: "unauthorized",
   INVALID_CREDENTIALS: "invalid_credentials",
   INVALID_PASSWORD: "invalid_password",
@@ -15,7 +9,6 @@ export const ErrorCodes = {
   INVALID_TOKEN_TYPE: "invalid_token_type",
   INVALID_ACCESS_TOKEN: "invalid_access_token",
 
-  // Assignments / submissions
   INVALID_ASSIGNMENT: "invalid_assignment",
   ASSIGNMENT_NOT_FOUND: "assignment_not_found",
   ASSIGNMENT_TARGET_REQUIRED: "assignment_target_required",
@@ -28,25 +21,21 @@ export const ErrorCodes = {
   INVALID_FILE: "invalid_file",
   INVALID_SCORE_STEP: "invalid_score_step",
 
-  // Classes / students
   CLASS_NOT_FOUND: "class_not_found",
   CLASS_NAME_EXISTS: "class_name_exists",
   CLASS_OR_STUDENT_NOT_FOUND: "class_or_student_not_found",
   CLASS_STUDENT_NOT_FOUND: "class_student_not_found",
   STUDENT_NOT_FOUND: "student_not_found",
 
-  // Sessions
   INVALID_TEACHING_SESSION: "invalid_teaching_session",
   SESSION_NOT_FOUND: "session_not_found",
   FUTURE_SESSION_NOT_ALLOWED: "future_session_not_allowed",
   SLOT_NOT_FOUND: "slot_not_found",
 
-  // Payments / tuition
   PAYMENT_NOT_FOUND: "payment_not_found",
   PAYMENT_ALREADY_ASSIGNED: "payment_already_assigned",
   MONTH_MUST_BE_YYYY_MM: "month_must_be_yyyy_mm",
 
-  // Misc
   INVALID_PUSH_SUBSCRIPTION: "invalid_push_subscription",
   INVALID_RECEIPT_IMAGE: "invalid_receipt_image",
   INTERNAL_ERROR: "internal_error",

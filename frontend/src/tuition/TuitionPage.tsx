@@ -494,8 +494,6 @@ function TuitionRowCard({
   onDelete: () => void;
   onAssign: () => void;
 }) {
-  // Legacy payments recorded before class-based tuition have no class —
-  // shown read-only so the money stays visible but cannot be re-recorded.
   const legacy = row.id == null;
   const noActivity = !legacy && row.sessionCount === 0 && row.paid <= 0;
   const settled = !noActivity && row.balance <= 0;

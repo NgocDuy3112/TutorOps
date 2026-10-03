@@ -12,7 +12,6 @@ import { ErrorCodes } from "../common/error-codes";
 import { AssignmentsRepository } from "./assignments.repository";
 import { StorageService } from "../storage/storage.service";
 
-/** FR4.6: cho phép lệch clock 5 phút */
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 @Injectable()
@@ -40,7 +39,6 @@ export class AssignmentsService {
     if (!assignment) throw new NotFoundError(ErrorCodes.ASSIGNMENT_NOT_FOUND);
     return assignment;
   }
-  /** FR4.7: phải gán ít nhất 1 lớp hoặc 1 học sinh */
   private assertValidTargets(
     studentIds?: string[],
     classIds?: string[],
@@ -48,7 +46,6 @@ export class AssignmentsService {
     if (!(studentIds?.length ?? 0) && !(classIds?.length ?? 0))
       throw new BadRequestError(ErrorCodes.ASSIGNMENT_TARGET_REQUIRED);
   }
-  /** FR4.6: deadline không được ở quá khứ */
   private assertFutureDeadline(dueAt?: string | null) {
     if (dueAt && new Date(dueAt).getTime() < Date.now() - MAX_CLOCK_SKEW_MS)
       throw new BadRequestError(ErrorCodes.PAST_DEADLINE_NOT_ALLOWED);
@@ -79,7 +76,6 @@ export class AssignmentsService {
     submissionId: string,
     input: ReviewDropboxSubmissionDto,
   ) {
-    // FR4.4: điểm 0–10, bước 0.25
     if (Math.round(input.score * 4) !== input.score * 4)
       throw new BadRequestError(ErrorCodes.INVALID_SCORE_STEP);
     const submission = await this.repository.reviewDropboxSubmission(

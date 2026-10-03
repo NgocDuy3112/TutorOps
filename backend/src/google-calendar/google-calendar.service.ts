@@ -8,18 +8,10 @@ import {
 
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const APP_TIMEZONE = "Asia/Ho_Chi_Minh";
-// BYDAY values for RRULE — 0=SU … 6=SA (same as class_schedules.weekday).
 const BYDAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
 
 const GCAL_SYNC_ENABLED = false;
 
-/**
- * Push direction of the Google Calendar integration: every fixed-schedule
- * slot of an auto-scheduled class becomes ONE recurring event on the
- * teacher's primary calendar. Sync is a stateless reconcile — desired =
- * class_schedules rows, actual = GCal events found via privateExtended
- * Property — so no local event-id bookkeeping is needed.
- */
 @Injectable()
 export class GoogleCalendarService {
   constructor(
@@ -32,12 +24,10 @@ export class GoogleCalendarService {
   }
 
   async disconnect(userId: string) {
-    // v1: events already pushed stay on Google Calendar.
     await this.repository.deleteToken(userId);
     return { ok: true };
   }
 
-  /** Reconciles all auto_schedule classes of the teacher with their events. */
   async syncTeacher(userId: string): Promise<{ created: number; deleted: number }> {
     if (!GCAL_SYNC_ENABLED) return { created: 0, deleted: 0 };
     const token = await this.repository.findToken(userId);
@@ -51,7 +41,6 @@ export class GoogleCalendarService {
       [userId],
     );
 
-    // Desired slot keys per class.
     const desired: { key: string; classId: string; className: string; slot: { weekday: number; startTime: string; endTime: string } }[] = [];
     for (const klass of classes.rows) {
       const slots = await pool.query<{ weekday: number; startTime: string; endTime: string }>(
@@ -70,7 +59,6 @@ export class GoogleCalendarService {
       }
     }
 
-    // Actual: all TutorOps events on this user's primary calendar.
     const listed = (await (
       await this.gcal(
         accessToken,
@@ -94,7 +82,6 @@ export class GoogleCalendarService {
     let created = 0;
     let deleted = 0;
     const desiredKeys = new Set(desired.map((item) => `${item.classId}|${item.key}`));
-    // Delete events that no longer map to a desired slot.
     for (const [fullKey, event] of actual) {
       if (!desiredKeys.has(fullKey)) {
         await this.gcal(accessToken, `/calendars/primary/events/${event.id}`, {
@@ -104,7 +91,6 @@ export class GoogleCalendarService {
         actual.delete(fullKey);
       }
     }
-    // Create events for new slots.
     for (const item of desired) {
       const fullKey = `${item.classId}|${item.key}`;
       if (actual.has(fullKey)) continue;
@@ -132,7 +118,6 @@ export class GoogleCalendarService {
     return { created, deleted };
   }
 
-  /** Refreshes (and persists) the access token; null when revoked. */
   private async accessToken(userId: string, refreshToken: string) {
     try {
       const client = new OAuth2Client(
@@ -173,8 +158,6 @@ export class GoogleCalendarService {
     });
   }
 
-  /** Next date (VN calendar) whose weekday matches, as wall-clock ISO minus
-   *  timezone — Google stores it with timeZone so wall-clock is correct. */
   private nextOccurrenceIso(weekday: number, hhmm: string): string {
     const nowVn = new Date(Date.now() + 7 * 60 * 60 * 1000);
     for (let offset = 0; offset < 7; offset++) {
@@ -188,11 +171,8 @@ export class GoogleCalendarService {
       if (day.getUTCDay() !== weekday) continue;
       const [hours, minutes] = hhmm.split(":").map(Number);
       day.setUTCHours(hours, minutes, 0, 0);
-      // Return VN wall clock (strip the UTC suffix so Google applies the
-      // declared timeZone instead of re-reading an offset).
       return day.toISOString().replace("Z", "").slice(0, 19);
     }
-    // Unreachable: weekday always matches within 7 days.
     throw new Error("no occurrence");
   }
 }

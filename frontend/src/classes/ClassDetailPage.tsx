@@ -99,8 +99,6 @@ export function ClassDetailPage() {
     void load();
   }, [classId]);
 
-  // Toggle auto-schedule straight from the info card. PATCH replaces every
-  // field, so send the full payload built from the current item.
   async function toggleAutoSchedule(checked: boolean) {
     if (!item) return;
     setTogglingAuto(true);
@@ -120,7 +118,7 @@ export function ClassDetailPage() {
       });
       if (!response.ok) throw new Error();
     } catch {
-      setItem(item); // revert on failure
+      setItem(item);
       setError("Không thể đổi nhắc buổi dạy. Vui lòng thử lại.");
     } finally {
       setTogglingAuto(false);
@@ -653,9 +651,6 @@ const WEEKDAY_LABELS = [
   "T7",
 ];
 
-/** Compact week strip: 7 day dots (T2→CN) + per-day detail lines below.
- * Scales with many sessions per day — dots only carry a count badge, the
- * detail list wraps freely instead of cramming times under each dot. */
 function ScheduleWeekStrip({
   slots,
 }: {
@@ -667,7 +662,6 @@ function ScheduleWeekStrip({
     times.push(`${slot.startTime}–${slot.endTime}`);
     byDay.set(slot.weekday, times);
   }
-  // Monday-first order reads more naturally for a VN school week.
   const order = [1, 2, 3, 4, 5, 6, 0];
   const activeDays = order.filter((day) => byDay.has(day));
   return (

@@ -22,7 +22,6 @@ export class TuitionController {
 }
 
 function currentMonth(): string {
-  // VN local time (UTC+7), no DST — fixed offset is safe.
   const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 }

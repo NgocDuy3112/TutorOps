@@ -5,7 +5,6 @@ import type {
   DashboardOverviewDto,
 } from "./dashboard.dto";
 
-// App serves Vietnamese tutors (VND, vi-VN); month boundaries follow VN local time.
 const APP_TIMEZONE = "Asia/Ho_Chi_Minh";
 
 function vnMonthKey(offsetMonths = 0): string {
@@ -108,8 +107,6 @@ export class DashboardRepository {
     }
   }
 
-  // Glanceable summary for the Overview tab: KPIs (with last-month deltas),
-  // today's sessions, imminent assignment deadlines, and top debtors.
   async overview(teacherId: string): Promise<DashboardOverviewDto> {
     const thisMonth = vnMonthKey(0);
     const lastMonth = vnMonthKey(-1);
@@ -149,10 +146,6 @@ export class DashboardRepository {
             OR (p.class_id IS NULL AND s.teacher_id = $1 AND s.deleted_at IS NULL)
           )
       `;
-      // Same due logic as the tuition report, grouped per class: session
-      // prices plus one flat fee per per_month class that had >= 1 session in
-      // the month. Legacy payments without a class reduce the outstanding
-      // total so old money is never counted as debt.
       const debtQuery = `
         WITH due AS (
           SELECT
