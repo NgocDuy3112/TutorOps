@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { MobileShell } from "../layout/MobileShell";
 import { API } from "../lib/api";
@@ -31,6 +38,8 @@ type Submission = {
   files: FileItem[];
 };
 type Assignment = { id: string; title: string; students: Student[] };
+
+const NO_STUDENT = "__none__";
 
 function fileExtension(name: string) {
   const parts = name.split(".");
@@ -113,6 +122,10 @@ export function AssignmentSubmissionsPage() {
   async function submitReview(event: FormEvent) {
     event.preventDefault();
     if (!selected) return;
+    if (!studentId) {
+      setReviewError("Chọn học sinh trước khi lưu điểm.");
+      return;
+    }
     setSaving(true);
     setReviewError("");
     const response = await fetch(

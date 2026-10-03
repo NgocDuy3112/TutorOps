@@ -11,8 +11,15 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { monthKey, recentMonthOptions } from "../lib/format";
-import { Toast } from "../components/Toast";
+import { toast } from "sonner";
 import { API } from "../lib/api";
 import { isIos } from "../lib/platform";
 import { MonthlySlipCard, type SlipData } from "./MonthlySlipCard";
@@ -24,7 +31,7 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const slipRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +60,14 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
     void load();
   }, [load]);
 
+  function closePreview() {
+    const url = previewUrl;
+    setPreviewUrl(null);
+    window.setTimeout(() => {
+      if (url) URL.revokeObjectURL(url);
+    }, 500);
+  }
+
   async function saveComment() {
     setSaving(true);
     try {
@@ -66,7 +81,7 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
       );
       if (!response.ok) throw new Error("Không thể lưu nhận xét.");
       await load();
-      setToast("Đã lưu nhận xét");
+      toast.success("Đã lưu nhận xét");
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
@@ -102,34 +117,38 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
       try {
         const dataUrl = await toPng(slipRef.current, {
           pixelRatio: 2,
-          // Interactive controls (month filter, comment editor) live inside
-          // the card but must not appear in the exported image.
           filter: (node) =>
             !(node instanceof HTMLElement && node.dataset.noexport === "true"),
-          // Let the library inline any remaining resources with the session
-          // cookie instead of an anonymous fetch.
           fetchRequestInit: { credentials: "include" },
         });
-        // On iOS the <a download> click trick does nothing — open the image
-        // in a new tab so the user can long-press to save it. Desktop keeps
-        // the traditional download-click flow.
+        const fileName = `phieu-tong-ket-${slip.student.name}-${month}.png`;
+        const blob = await (await fetch(dataUrl)).blob();
         if (isIos()) {
-          const blob = await (await fetch(dataUrl)).blob();
-          const blobUrl = URL.createObjectURL(blob);
-          window.open(blobUrl, "_blank");
-          // Revoke after a short delay so the tab has time to load.
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+          const file = new File([blob], fileName, { type: "image/png" });
+          if (navigator.canShare?.({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file] });
+              toast.success("Đã chia sẻ ảnh phiếu tổng kết");
+            } catch (shareError) {
+              if (
+                shareError instanceof DOMException &&
+                shareError.name === "AbortError"
+              ) {
+                toast("Đã huỷ chia sẻ ảnh phiếu");
+              } else {
+                setPreviewUrl(URL.createObjectURL(blob));
+              }
+            }
+          } else {
+            setPreviewUrl(URL.createObjectURL(blob));
+          }
         } else {
           const link = document.createElement("a");
-          link.download = `phieu-tong-ket-${slip.student.name}-${month}.png`;
+          link.download = fileName;
           link.href = dataUrl;
           link.click();
+          toast.success("Đã tải ảnh phiếu tổng kết");
         }
-        setToast(
-          isIos()
-            ? "Ảnh đã mở trong tab mới — nhấn giữ để lưu"
-            : "Đã tải ảnh phiếu tổng kết",
-        );
       } finally {
         if (qr && originalSrc) qr.src = originalSrc;
       }
@@ -221,7 +240,28 @@ export function MonthlySlipSection({ studentId }: { studentId: string }) {
           </>
         ) : null}
       </div>
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      <Dialog
+        open={previewUrl !== null}
+        onOpenChange={(open) => {
+          if (!open) closePreview();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ảnh phiếu tổng kết</DialogTitle>
+            <DialogDescription>
+              Nhấn giữ ảnh để lưu vào Ảnh, hoặc chia sẻ ngay cho phụ huynh.
+            </DialogDescription>
+          </DialogHeader>
+          {previewUrl && (
+            <img
+              src={previewUrl}
+              alt="Phiếu tổng kết tháng"
+              className="mt-4 max-h-[70dvh] w-full rounded-xl border object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

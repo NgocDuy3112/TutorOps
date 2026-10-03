@@ -30,6 +30,7 @@ import { PersonalInfoPage } from "./settings/PersonalInfoPage";
 import { ChangePasswordPage } from "./settings/ChangePasswordPage";
 import { OnboardingDialog } from "./onboarding/OnboardingDialog";
 import { IosInstallBanner } from "./notifications/IosInstallBanner";
+import { Toaster } from "./components/ui/sonner";
 
 function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -242,6 +243,10 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <App />
+      <Toaster
+        position="bottom-center"
+        mobileOffset={{ bottom: "6rem", left: "0rem", right: "0rem", top: "unset" }}
+      />
     </BrowserRouter>
   </StrictMode>,
 );

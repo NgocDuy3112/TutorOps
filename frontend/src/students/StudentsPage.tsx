@@ -1,24 +1,32 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Check,
   Filter,
   Loader2,
   Plus,
   Search,
   UserRound,
   UserPlus,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/EmptyState";
 import { Fab } from "@/components/Fab";
 import { cn } from "@/lib/utils";
 import { MobileShell } from "../layout/MobileShell";
 import { PageHeader } from "../layout/PageHeader";
 import { UserAvatar } from "../layout/UserAvatar";
-import { Toast } from "../components/Toast";
+import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import { API } from "../lib/api";
 
@@ -40,9 +48,10 @@ export function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
-  const [toast, setToast] = useState<string | null>(
-    (location.state as { toast?: string } | null)?.toast ?? null,
-  );
+  useEffect(() => {
+    const message = (location.state as { toast?: string } | null)?.toast;
+    if (message) toast(message);
+  }, [location.state]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -130,81 +139,64 @@ export function StudentsPage() {
               className="min-h-11 rounded-2xl bg-white pl-9"
             />
           </div>
+          <DropdownMenu open={filterOpen} onOpenChange={setFilterOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Lọc theo lớp"
+                className={cn(
+                  "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
+                  classFilter !== "all" &&
+                    "border-primary bg-primary/10 text-primary",
+                  filterOpen && "border-primary text-primary",
+                )}
+              >
+                <Filter size={17} />
+                {classFilter !== "all" && (
+                  <span
+                    aria-hidden
+                    className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary"
+                  />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuRadioGroup
+                value={classFilter}
+                onValueChange={setClassFilter}
+              >
+                {classFilterOptions.map((option) => (
+                  <DropdownMenuRadioItem
+                    key={option.value}
+                    value={option.value}
+                  >
+                    <span className="min-w-0 flex-1 truncate">
+                      {option.label}
+                    </span>
+                    {option.count != null && (
+                      <span className="shrink-0 text-[11px] text-muted-foreground">
+                        {option.count}
+                      </span>
+                    )}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        {classFilter !== "all" && (
           <Button
             type="button"
-            variant="outline"
-            size="icon"
-            aria-label="Lọc theo lớp"
-            aria-expanded={filterOpen}
-            className={cn(
-              "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
-              classFilter !== "all" &&
-                "border-primary bg-primary/10 text-primary",
-              filterOpen && "border-primary text-primary",
-            )}
-            onClick={() => setFilterOpen((open) => !open)}
-          >
-            <Filter size={17} />
-            {classFilter !== "all" && (
-              <span
-                aria-hidden
-                className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary"
-              />
-            )}
-          </Button>
-        </div>
-        {filterOpen && students.length > 0 && (
-          <>
-            {/* Click-away layer: transparent, below the panel */}
-            <div
-              aria-hidden
-              className="fixed inset-0 z-20"
-              onClick={() => setFilterOpen(false)}
-            />
-            <div
-              role="listbox"
-              aria-label="Lọc theo lớp"
-              className="absolute right-4 top-full z-30 -mt-3 w-36 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
-            >
-              {classFilterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="option"
-                  aria-selected={classFilter === option.value}
-                  onClick={() => {
-                    setClassFilter(option.value);
-                    setFilterOpen(false);
-                  }}
-                  className={cn(
-                    "flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-[13px] font-semibold transition-colors",
-                    classFilter === option.value
-                      ? "bg-primary/10 text-primary"
-                      : "text-slate-700 hover:bg-slate-50",
-                  )}
-                >
-                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  {option.count != null && (
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {option.count}
-                    </span>
-                  )}
-                  {classFilter === option.value && <Check size={14} />}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        {classFilter !== "all" && (
-          <button
-            type="button"
+            variant="ghost"
             onClick={() => setClassFilter("all")}
             className="mb-4 flex min-h-9 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
             aria-label="Bỏ bộ lọc lớp"
           >
             Lớp: {activeFilterLabel}
-            <span aria-hidden>✕</span>
-          </button>
+            <X aria-hidden size={14} />
+          </Button>
         )}
         {error && (
           <Card className="mb-4 border-amber-200 bg-amber-50">
@@ -229,7 +221,6 @@ export function StudentsPage() {
           />
         )}
       </main>
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }
@@ -293,12 +284,12 @@ function StudentCard({ student }: { student: Student }) {
             {(student.classes ?? []).length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1">
                 {student.classes!.map((item) => (
-                  <span
+                  <Badge
                     key={item.id}
-                    className="rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-primary"
+                    className="bg-violet-50 px-2 py-1 text-xs font-medium text-primary"
                   >
                     {item.name}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             )}

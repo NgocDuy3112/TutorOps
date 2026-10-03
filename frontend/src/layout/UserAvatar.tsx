@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { API } from "../lib/api";
 
 type Profile = { email: string; fullName: string | null };
@@ -27,15 +28,17 @@ export function UserAvatar() {
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={() => navigate("/settings")}
-        className="grid size-11 place-items-center rounded-full bg-violet-100 text-sm font-bold text-primary shadow-sm transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        className="rounded-full bg-violet-100 text-sm font-bold text-primary shadow-sm hover:translate-y-0 hover:scale-105 hover:bg-violet-100 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         aria-label="Mở cài đặt"
         title={profile?.fullName || profile?.email || "Cá nhân"}
       >
         {initials(profile)}
-      </button>
+      </Button>
     </>
   );
 }

@@ -7,18 +7,9 @@ type MobileShellProps = {
 };
 
 export function MobileShell({ children }: MobileShellProps) {
-  // ONE copy of `children`. Previously this shell rendered children twice
-  // (mobile copy + DesktopShell copy) and toggled them with CSS. That
-  // duplicated every id on the page (e.g. EditClassSheet's
-  // `form#edit-class-info-form`), so a `<Button form=...>` outside the form
-  // submitted the FIRST matching form — the hidden copy's stale state — and
-  // silently dropped edits. Never render children more than once.
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 sm:flex">
       <DesktopSidebar />
-      {/* Nav must be a sibling of the motion-page container: the page-in
-          animation leaves a transform on it, which would turn it into the
-          containing block for position:fixed and make the nav scroll away. */}
       <div className="motion-page min-h-screen min-w-0 flex-1 pb-20 sm:pb-0">
         {children}
       </div>

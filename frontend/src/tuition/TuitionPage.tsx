@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Book,
   CalendarX2,
-  Check,
   ChevronLeft,
   ChevronRight,
   Filter,
@@ -11,16 +10,26 @@ import {
   Search,
   SearchX,
   Trash2,
+  X,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
@@ -31,7 +40,7 @@ import { UserAvatar } from "../layout/UserAvatar";
 import { PaymentDialog } from "../payments/PaymentDialog";
 import { EditPaymentDialog } from "../payments/EditPaymentDialog";
 import { AssignClassDialog } from "../payments/AssignClassDialog";
-import { Toast } from "../components/Toast";
+import { toast } from "sonner";
 import { API } from "../lib/api";
 
 type TuitionClass = {
@@ -71,7 +80,6 @@ export function TuitionPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [toast, setToast] = useState<string | null>(null);
 
   async function load(target: Date) {
     setLoading(true);
@@ -128,11 +136,13 @@ export function TuitionPage() {
       }
       setDeleting(null);
       await load(month);
-      setToast(
-        ids.length > 0
-          ? `Đã xoá ${ids.length} khoản đã nhận tháng ${targetMonth}`
-          : "Không có khoản nào trong tháng để xoá",
-      );
+      if (ids.length > 0) {
+        toast.success(
+          `Đã xoá ${ids.length} khoản đã nhận tháng ${targetMonth}`,
+        );
+      } else {
+        toast("Không có khoản nào trong tháng để xoá");
+      }
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : "Có lỗi xảy ra.",
@@ -259,83 +269,64 @@ export function TuitionPage() {
                       className="min-h-11 rounded-2xl bg-white pl-9"
                     />
                   </div>
+                  <DropdownMenu open={filterOpen} onOpenChange={setFilterOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="Lọc tình trạng học phí"
+                        className={cn(
+                          "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
+                          filter !== "all" &&
+                            "border-primary bg-primary/10 text-primary",
+                          filterOpen && "border-primary text-primary",
+                        )}
+                      >
+                        <Filter size={17} />
+                        {filter !== "all" && (
+                          <span
+                            aria-hidden
+                            className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary"
+                          />
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuRadioGroup
+                        value={filter}
+                        onValueChange={(value) => setFilter(value as Filter)}
+                      >
+                        {filterOptions.map((option) => (
+                          <DropdownMenuRadioItem
+                            key={option.value}
+                            value={option.value}
+                          >
+                            <span className="min-w-0 flex-1 truncate">
+                              {option.label}
+                            </span>
+                            {option.count != null && (
+                              <span className="shrink-0 text-[11px] text-muted-foreground">
+                                {option.count}
+                              </span>
+                            )}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                {filter !== "all" && (
                   <Button
                     type="button"
-                    variant="outline"
-                    size="icon"
-                    aria-label="Lọc tình trạng học phí"
-                    aria-expanded={filterOpen}
-                    className={cn(
-                      "relative min-h-11 min-w-11 shrink-0 rounded-2xl",
-                      filter !== "all" &&
-                        "border-primary bg-primary/10 text-primary",
-                      filterOpen && "border-primary text-primary",
-                    )}
-                    onClick={() => setFilterOpen((open) => !open)}
-                  >
-                    <Filter size={17} />
-                    {filter !== "all" && (
-                      <span
-                        aria-hidden
-                        className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary"
-                      />
-                    )}
-                  </Button>
-                </div>
-                {filterOpen && (
-                  <>
-                    {/* Click-away layer: transparent, below the panel */}
-                    <div
-                      aria-hidden
-                      className="fixed inset-0 z-20"
-                      onClick={() => setFilterOpen(false)}
-                    />
-                    <div
-                      role="listbox"
-                      aria-label="Lọc tình trạng học phí"
-                      className="absolute right-4 top-44 z-30 w-36 space-y-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-200/80"
-                    >
-                      {filterOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          role="option"
-                          aria-selected={filter === option.value}
-                          onClick={() => {
-                            setFilter(option.value as Filter);
-                            setFilterOpen(false);
-                          }}
-                          className={cn(
-                            "flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-[13px] font-semibold transition-colors",
-                            filter === option.value
-                              ? "bg-primary/10 text-primary"
-                              : "text-slate-700 hover:bg-slate-50",
-                          )}
-                        >
-                          <span className="min-w-0 flex-1 truncate">
-                            {option.label}
-                          </span>
-                          {option.count != null && (
-                            <span className="shrink-0 text-[11px] text-muted-foreground">
-                              {option.count}
-                            </span>
-                          )}
-                          {filter === option.value && <Check size={14} />}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-                {filter !== "all" && (
-                  <button
-                    type="button"
+                    variant="ghost"
                     onClick={() => setFilter("all")}
                     className="flex min-h-9 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
                     aria-label="Bỏ bộ lọc"
                   >
                     {activeFilterLabel}
-                    <span aria-hidden>✕</span>
-                  </button>
+                    <X aria-hidden size={14} />
+                  </Button>
                 )}
               </>
             )}
@@ -396,11 +387,10 @@ export function TuitionPage() {
         month={monthKey(month)}
         onOpenChange={(open) => !open && setAssigningLegacy(null)}
         onSaved={(className) => {
-          setToast(`Đã gán khoản thu vào lớp ${className}`);
+          toast.success(`Đã gán khoản thu vào lớp ${className}`);
           void load(month);
         }}
       />
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }
@@ -417,16 +407,16 @@ function DeleteMonthPaymentsDialog({
   onConfirm: () => void;
 }) {
   return (
-    <Dialog open={Boolean(klass)} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Xoá khoản đã nhận?</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={Boolean(klass)} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Xoá khoản đã nhận?</AlertDialogTitle>
+          <AlertDialogDescription>
             Xoá các khoản đã nhận của lớp {klass?.name} áp dụng cho tháng này. Lớp
             sẽ quay lại trạng thái Khoản chưa thu. Bạn có chắc muốn xoá?
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
           <Button
             type="button"
             variant="outline"
@@ -438,7 +428,8 @@ function DeleteMonthPaymentsDialog({
           </Button>
           <Button
             type="button"
-            className="min-h-11 bg-red-600 hover:bg-red-700"
+            variant="destructive"
+            className="min-h-11"
             disabled={busy}
             onClick={onConfirm}
           >
@@ -449,9 +440,9 @@ function DeleteMonthPaymentsDialog({
             )}
             Xoá khoản
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

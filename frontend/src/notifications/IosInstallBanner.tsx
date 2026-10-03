@@ -1,14 +1,10 @@
 import { useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { isIosBrowserNotStandalone } from "@/lib/platform";
 
 const DISMISS_KEY = "tutorops.ios_install_banner_dismissed";
 
-/**
- * Persistent banner shown on iOS Safari (regular tab, PWA not installed).
- * Web Push only works inside an installed PWA on iOS, so guide the user
- * through Add to Home Screen before they try enabling notifications.
- */
 export function IosInstallBanner() {
   const [visible, setVisible] = useState(false);
 
@@ -43,14 +39,16 @@ export function IosInstallBanner() {
             và bật thông báo trong Cài đặt.
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={dismiss}
           aria-label="Đóng hướng dẫn"
-          className="grid size-11 shrink-0 place-items-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+          className="shrink-0 rounded-xl text-slate-400 hover:translate-y-0 hover:bg-slate-100 hover:text-slate-600"
         >
           <X size={18} aria-hidden="true" />
-        </button>
+        </Button>
       </div>
     </div>
   );

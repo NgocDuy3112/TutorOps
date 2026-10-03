@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,16 +9,23 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/EmptyState";
 import { formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
@@ -48,6 +55,9 @@ type Assignment = {
 };
 
 type ProfileTab = "info" | "slip" | "assignments";
+
+const PROFILE_TAB_TRIGGER_CLASS =
+  "min-h-10 rounded-xl px-1 text-xs font-bold transition-colors hover:translate-y-0 hover:text-primary sm:px-3 sm:text-sm text-slate-700 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:hover:text-primary-foreground";
 
 export function StudentProfilePage({ studentId }: { studentId: string }) {
   const navigate = useNavigate();
@@ -139,6 +149,11 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
 
   return (
     <MobileShell>
+      <Tabs
+        className="contents"
+        value={tab}
+        onValueChange={(value) => setTab(value as ProfileTab)}
+      >
       <header className="sticky top-0 z-30 border-b bg-white">
         <div className="mx-auto max-w-3xl px-4 pb-3 pt-4">
           <Button asChild variant="link" className="h-auto p-0 text-primary">
@@ -151,38 +166,40 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           <p className="mt-0.5 text-sm text-muted-foreground">Hồ sơ học sinh</p>
         </div>
         <div className="mx-auto max-w-3xl px-4 pb-3">
-          <div
-            role="tablist"
+          <TabsList
             aria-label="Nội dung học sinh"
-            className="grid grid-cols-3 gap-1 rounded-2xl bg-primary/10 p-1"
+            className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl bg-primary/10 p-1"
           >
-          <TabButton active={tab === "info"} onClick={() => setTab("info")}>
-            Thông tin
-          </TabButton>
-          <TabButton active={tab === "slip"} onClick={() => setTab("slip")}>
-            Phiếu tháng
-          </TabButton>
-          <TabButton
-            active={tab === "assignments"}
-            onClick={() => setTab("assignments")}
-          >
-            Bài tập ({studentAssignments.length})
-          </TabButton>
-          </div>
+            <TabsTrigger
+              value="info"
+              className={PROFILE_TAB_TRIGGER_CLASS}
+            >
+              Thông tin
+            </TabsTrigger>
+            <TabsTrigger
+              value="slip"
+              className={PROFILE_TAB_TRIGGER_CLASS}
+            >
+              Phiếu tháng
+            </TabsTrigger>
+            <TabsTrigger
+              value="assignments"
+              className={PROFILE_TAB_TRIGGER_CLASS}
+            >
+              Bài tập ({studentAssignments.length})
+            </TabsTrigger>
+          </TabsList>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl space-y-4 px-4 py-5 lg:max-w-6xl">
         {error && (
-          <p
-            role="alert"
-            className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
-          >
-            {error}
-          </p>
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
-        {tab === "info" && (
+        <TabsContent value="info">
         <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <>
         <Card className="rounded-3xl border-slate-200 shadow-sm">
@@ -254,11 +271,13 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
         </Card>
         </>
         </div>
-        )}
+        </TabsContent>
 
-        {tab === "slip" && <MonthlySlipSection studentId={studentId} />}
+        <TabsContent value="slip">
+          <MonthlySlipSection studentId={studentId} />
+        </TabsContent>
 
-        {tab === "assignments" && (
+        <TabsContent value="assignments">
         <Card className="rounded-3xl border-slate-200 shadow-sm">
           <CardHeader className="flex-row items-center justify-between p-5 pb-0">
             <CardTitle className="text-lg">
@@ -316,7 +335,7 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
             )}
           </CardContent>
         </Card>
-        )}
+        </TabsContent>
       </main>
 
       {showEditForm && (
@@ -339,19 +358,19 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
           }}
         />
       )}
-      <Dialog
+      <AlertDialog
         open={showDeleteConfirm}
         onOpenChange={(open) => !open && !deleting && setShowDeleteConfirm(false)}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Xóa học sinh?</DialogTitle>
-            <DialogDescription>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa học sinh?</AlertDialogTitle>
+            <AlertDialogDescription>
               Hành động này sẽ ẩn học sinh {student?.name} khỏi danh sách. Dữ
               liệu liên quan vẫn được giữ. Bạn có chắc muốn xóa?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -369,9 +388,10 @@ export function StudentProfilePage({ studentId }: { studentId: string }) {
               {deleting && <Loader2 className="animate-spin" size={16} />}
               Xóa học sinh
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      </Tabs>
     </MobileShell>
   );
 }
@@ -382,31 +402,5 @@ function Row({ label, value }: { label: string; value: string }) {
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-medium">{value}</dd>
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={`min-h-10 rounded-xl px-1 text-xs font-bold transition-colors sm:px-3 sm:text-sm ${
-        active
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-slate-700 hover:text-primary"
-      }`}
-    >
-      {children}
-    </button>
   );
 }

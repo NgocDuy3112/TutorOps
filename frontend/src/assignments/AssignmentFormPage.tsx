@@ -272,12 +272,15 @@ export function AssignmentFormPage() {
                     {visibleClasses.map((item) => {
                       const selected = classIds.includes(item.id);
                       return (
-                        <button
+                        <Button
                           key={item.id}
                           type="button"
+                          variant="ghost"
                           onClick={() => toggleClass(item.id)}
                           aria-pressed={selected}
-                          className={`flex min-h-14 w-full items-center gap-3 rounded-xl px-3 text-left transition-colors ${selected ? "bg-primary text-primary-foreground" : "hover:bg-slate-50"}`}
+                          className={`flex min-h-14 w-full items-center gap-3 rounded-xl px-3 text-left transition-colors hover:translate-y-0 ${selected
+                            ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                            : "hover:bg-slate-50 hover:text-inherit"}`}
                         >
                           <span
                             className={`grid size-9 shrink-0 place-items-center rounded-lg text-sm font-bold ${selected ? "bg-white/15" : "bg-violet-50 text-primary"}`}
@@ -298,7 +301,7 @@ export function AssignmentFormPage() {
                               {item.studentCount} học sinh
                             </small>
                           </span>
-                        </button>
+                        </Button>
                       );
                     })}
                     {visibleClasses.length === 0 && (

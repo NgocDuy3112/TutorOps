@@ -367,14 +367,16 @@ export function StudentSubmissionPage() {
                           {formatBytes(item.file.size)}
                         </p>
                       </div>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => removeFile(index)}
                         aria-label="Bỏ file"
-                        className="grid size-8 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-red-100 hover:text-red-600"
+                        className="size-8 shrink-0 rounded-full bg-slate-100 text-slate-500 hover:translate-y-0 hover:bg-red-100 hover:text-red-600"
                       >
                         <X size={16} />
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>

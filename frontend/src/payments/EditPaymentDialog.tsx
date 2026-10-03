@@ -178,11 +178,12 @@ export function EditPaymentDialog({
         {!selected && !loading && !listError && payments.length > 0 && (
           <div className="space-y-2">
             {payments.map((record) => (
-              <button
+              <Button
                 key={record.id}
                 type="button"
+                variant="ghost"
                 onClick={() => pick(record)}
-                className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 text-left transition-colors hover:bg-slate-50"
+                className="flex w-full justify-between gap-3 rounded-2xl border border-slate-200 p-3 text-left transition-colors hover:translate-y-0 hover:bg-slate-50 hover:text-inherit"
               >
                 <div>
                   <p className="text-sm font-bold">
@@ -194,7 +195,7 @@ export function EditPaymentDialog({
                   </p>
                 </div>
                 <Pencil size={15} className="shrink-0 text-muted-foreground" />
-              </button>
+              </Button>
             ))}
           </div>
         )}

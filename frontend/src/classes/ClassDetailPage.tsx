@@ -14,15 +14,22 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/EmptyState";
@@ -30,7 +37,7 @@ import { formatDeadline, formatVnd } from "../lib/format";
 import { MobileShell } from "../layout/MobileShell";
 import { EditAssignmentSheet } from "../assignments/EditAssignmentSheet";
 import { EditClassSheet, type EditClassSection } from "./EditClassSheet";
-import { Toast } from "../components/Toast";
+import { toast } from "sonner";
 import type { Student, TutorClass } from "./ClassesPage";
 import { API } from "../lib/api";
 
@@ -43,6 +50,9 @@ type Assignment = {
   classIds?: string[];
   students: { id: string; name: string; status: string }[];
 };
+
+const CLASS_TAB_TRIGGER_CLASS =
+  "min-h-10 rounded-xl px-3 text-sm font-bold transition-colors hover:translate-y-0 hover:text-primary text-slate-700 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm data-[state=active]:hover:text-primary-foreground";
 
 export function ClassDetailPage() {
   const { classId = "" } = useParams();
@@ -59,7 +69,6 @@ export function ClassDetailPage() {
   const [editing, setEditing] = useState<Assignment | null>(null);
   const [deleting, setDeleting] = useState<Assignment | null>(null);
   const [togglingAuto, setTogglingAuto] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   const classAssignments = useMemo(
     () => assignments.filter((a) => (a.classIds ?? []).includes(classId)),
@@ -143,7 +152,7 @@ export function ClassDetailPage() {
     );
     if (response.ok) {
       void load();
-      setToast(`Đã bỏ ${removing.name} khỏi lớp`);
+      toast.success(`Đã bỏ ${removing.name} khỏi lớp`);
     }
     setRemoving(null);
   }
@@ -169,13 +178,20 @@ export function ClassDetailPage() {
       setError("Không thể xóa bài tập. Vui lòng thử lại.");
     } else {
       setAssignments((current) => current.filter((a) => a.id !== deleting.id));
-      setToast(`Đã xoá bài tập “${deleting.title}”`);
+      toast.success(`Đã xoá bài tập “${deleting.title}”`);
       setDeleting(null);
     }
   }
 
   return (
     <MobileShell>
+      <Tabs
+        className="contents"
+        value={tab}
+        onValueChange={(value) =>
+          setTab(value as "assignments" | "students" | "info")
+        }
+      >
       <header className="sticky top-0 z-30 border-b bg-white">
         <div className="mx-auto max-w-3xl px-4 py-4">
           <Button asChild variant="link" className="h-auto p-0 text-primary">
@@ -241,28 +257,30 @@ export function ClassDetailPage() {
           </Card>
         ) : (
           <>
-            <div
-              role="tablist"
+            <TabsList
               aria-label="Nội dung lớp"
-              className="grid grid-cols-3 gap-1 rounded-2xl bg-primary/10 p-1"
+              className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl bg-primary/10 p-1"
             >
-              <TabButton active={tab === "info"} onClick={() => setTab("info")}>
+              <TabsTrigger
+                value="info"
+                className={CLASS_TAB_TRIGGER_CLASS}
+              >
                 Thông tin
-              </TabButton>
-              <TabButton
-                active={tab === "assignments"}
-                onClick={() => setTab("assignments")}
+              </TabsTrigger>
+              <TabsTrigger
+                value="assignments"
+                className={CLASS_TAB_TRIGGER_CLASS}
               >
                 Bài tập ({classAssignments.length})
-              </TabButton>
-              <TabButton
-                active={tab === "students"}
-                onClick={() => setTab("students")}
+              </TabsTrigger>
+              <TabsTrigger
+                value="students"
+                className={CLASS_TAB_TRIGGER_CLASS}
               >
                 Học sinh ({item.students.length})
-              </TabButton>
-            </div>
-            {tab === "assignments" ? (
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="assignments">
             <section className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
               <div className="space-y-2">
                 {classAssignments.length ? (
@@ -275,7 +293,7 @@ export function ClassDetailPage() {
                       }
                       onEdit={() => setEditing(assignment)}
                       onDelete={() => setDeleting(assignment)}
-                      onCopied={() => setToast("Đã sao chép link nộp bài")}
+                      onCopied={() => toast.success("Đã sao chép link nộp bài")}
                     />
                   ))
                 ) : (
@@ -298,7 +316,8 @@ export function ClassDetailPage() {
                 )}
               </div>
             </section>
-            ) : tab === "students" ? (
+            </TabsContent>
+            <TabsContent value="students">
             <>
             <section className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
               <div className="space-y-2">
@@ -412,7 +431,8 @@ export function ClassDetailPage() {
               )}
             </section>
             </>
-            ) : (
+            </TabsContent>
+            <TabsContent value="info">
             <>
             <InfoCard title="Thông tin lớp" onEdit={() => setEditSection("full")}>
               <InfoRow
@@ -453,36 +473,36 @@ export function ClassDetailPage() {
             </InfoCard>
 
             </>
-            )}
+            </TabsContent>
           </>
         )}
       </main>
-      <Dialog open={Boolean(removing)} onOpenChange={(open) => !open && setRemoving(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Bỏ học sinh khỏi lớp?</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={Boolean(removing)} onOpenChange={(open) => !open && setRemoving(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bỏ học sinh khỏi lớp?</AlertDialogTitle>
+            <AlertDialogDescription>
               {removing?.name} sẽ không còn trong lớp này. Học sinh vẫn được giữ trong hệ thống.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
             <Button type="button" variant="outline" onClick={() => setRemoving(null)}>Hủy</Button>
             <Button type="button" variant="destructive" onClick={() => void removeStudent()}>Xác nhận</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
         open={Boolean(deleting)}
         onOpenChange={(open) => !open && setDeleting(null)}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Xóa bài tập?</DialogTitle>
-            <DialogDescription>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa bài tập?</AlertDialogTitle>
+            <AlertDialogDescription>
               Bài “{deleting?.title}” sẽ được ẩn khỏi danh sách.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
             <Button type="button" variant="outline" onClick={() => setDeleting(null)}>
               Hủy
             </Button>
@@ -493,9 +513,9 @@ export function ClassDetailPage() {
             >
               Xóa bài
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {editing && (
         <EditAssignmentSheet
           assignment={editing}
@@ -518,7 +538,7 @@ export function ClassDetailPage() {
           onDeleted={() => navigate("/classes")}
         />
       )}
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      </Tabs>
     </MobileShell>
   );
 }
@@ -568,13 +588,13 @@ function ClassAssignmentCard({
                 : "Không có deadline"}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-1">
-              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+              <Badge className="bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
                 Nộp {submitted}/{assignment.students.length}
-              </span>
+              </Badge>
               {multiClass && (
-                <span className="rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-primary">
+                <Badge className="bg-violet-50 px-2 py-1 text-xs font-medium text-primary">
                   {assignment.classNames!.length} lớp
-                </span>
+                </Badge>
               )}
             </div>
           </div>
@@ -752,30 +772,4 @@ function formatSchedule(slots: { weekday: number; startTime: string; endTime: st
         `${WEEKDAY_LABELS[slot.weekday] ?? "?"} ${slot.startTime}–${slot.endTime}`,
     )
     .join(" · ");
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={`min-h-10 rounded-xl px-3 text-sm font-bold transition-colors ${
-        active
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-slate-700 hover:text-primary"
-      }`}
-    >
-      {children}
-    </button>
-  );
 }

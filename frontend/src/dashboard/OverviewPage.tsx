@@ -11,7 +11,9 @@ import {
   UserRound,
   Wallet,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/EmptyState";
 import { formatVnd } from "../lib/format";
@@ -276,8 +278,8 @@ function SectionEmpty({
 function DeltaBadge({ delta }: { delta: number }) {
   const up = delta >= 0;
   return (
-    <span
-      className={`flex items-center gap-0.5 text-xs font-bold ${
+    <Badge
+      className={`flex items-center gap-0.5 bg-transparent p-0 text-xs font-bold ${
         up ? "text-emerald-600" : "text-red-600"
       }`}
     >
@@ -287,7 +289,7 @@ function DeltaBadge({ delta }: { delta: number }) {
         <ArrowDownRight size={13} aria-hidden />
       )}
       {Math.abs(delta)}%
-    </span>
+    </Badge>
   );
 }
 

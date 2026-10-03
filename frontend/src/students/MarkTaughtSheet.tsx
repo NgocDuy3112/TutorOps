@@ -10,6 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -253,23 +261,23 @@ export function MarkTaughtSheet({
         </form>
       </DialogContent>
     </Dialog>
-    <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Xóa buổi dạy?</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Xóa buổi dạy?</AlertDialogTitle>
+          <AlertDialogDescription>
             Buổi dạy này sẽ bị xóa khỏi danh sách. Hành động này không thể hoàn tác.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
           <Button type="button" variant="outline" onClick={() => setConfirmDelete(false)}>Hủy</Button>
           <Button type="button" variant="destructive" disabled={deleting} onClick={() => void remove()}>
             {deleting && <Loader2 className="animate-spin" size={16} />}
             Xóa
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

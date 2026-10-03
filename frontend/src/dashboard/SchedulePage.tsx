@@ -9,8 +9,11 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatMonthLabel, formatVnd } from "../lib/format";
-import { Toast } from "../components/Toast";
+import { toast } from "sonner";
 import { MobileShell } from "../layout/MobileShell";
 import { UserAvatar } from "../layout/UserAvatar";
 import { MarkTaughtSheet } from "../students/MarkTaughtSheet";
@@ -98,7 +101,6 @@ export function SchedulePage() {
     null,
   );
   const [confirmingSlot, setConfirmingSlot] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -185,7 +187,7 @@ export function SchedulePage() {
         setError(friendlyError(detail, "Không thể xác nhận buổi dạy. Vui lòng thử lại."));
         return;
       }
-      setToast("Đã xác nhận buổi dạy — học phí đã được tính");
+      toast.success("Đã xác nhận buổi dạy — học phí đã được tính");
       await loadDashboard();
     } catch {
       setError("Không thể kết nối máy chủ. Vui lòng thử lại.");
@@ -333,15 +335,16 @@ export function SchedulePage() {
                   const selected = key === dateKey(selectedDate);
                   const isToday = key === dateKey(new Date());
                   return (
-                    <button
+                    <Button
                       key={key}
                       type="button"
+                      variant="ghost"
                       onClick={() => openAgenda(day)}
-                      className={`relative min-h-9 rounded-xl border p-1 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:min-h-10 ${selected
-                          ? "border-primary bg-primary text-primary-foreground shadow-md shadow-violet-200"
+                      className={`relative min-h-9 rounded-xl border p-1 text-xs transition-colors hover:translate-y-0 sm:min-h-10 ${selected
+                          ? "border-primary bg-primary text-primary-foreground shadow-md shadow-violet-200 hover:bg-primary hover:text-primary-foreground"
                           : isToday
-                            ? "border-violet-300 bg-violet-50 text-violet-900"
-                            : "border-transparent hover:bg-slate-100"
+                            ? "border-violet-300 bg-violet-50 text-violet-900 hover:bg-violet-50 hover:text-violet-900"
+                            : "border-transparent hover:bg-slate-100 hover:text-inherit"
                         } ${sameMonth(day, month) ? "" : "text-muted-foreground opacity-40"}`}
                       aria-pressed={selected}
                       aria-current={isToday ? "date" : undefined}
@@ -349,8 +352,6 @@ export function SchedulePage() {
                       <span className="block font-semibold">
                         {day.getDate()}
                       </span>
-                      {/* Two semantic dots: emerald = recorded session,
-                          amber = scheduled (not yet confirmed). */}
                       {recordedCount > 0 && (
                         <span
                           aria-hidden
@@ -381,7 +382,7 @@ export function SchedulePage() {
                             .join(", ")}
                         </span>
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -482,9 +483,6 @@ export function SchedulePage() {
         )}
         </div>
 
-        {/* Desktop side panel: selected-day agenda inline. Mobile keeps the
-            DayAgendaDialog flow — this panel is lg-only and renders the same
-            data (selectedGroups + selectedVirtual) without duplicating ids. */}
         <aside className="hidden min-w-0 lg:block">
           <Card className="sticky top-20 rounded-3xl border-slate-200 shadow-sm shadow-slate-200/70">
             <CardHeader className="flex-row items-center justify-between border-b border-slate-100 p-4 pb-3">
@@ -543,9 +541,9 @@ export function SchedulePage() {
                             </p>
                           </div>
                           {groupTotal > 0 && (
-                            <p className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-sm font-bold">
+                            <Badge className="shrink-0 bg-slate-100 px-3 py-1 text-sm font-bold text-inherit">
                               {formatVnd(groupTotal)}
-                            </p>
+                            </Badge>
                           )}
                         </div>
                         <div className="space-y-2">
@@ -616,11 +614,12 @@ export function SchedulePage() {
               {classes.map((tutorClass) => {
                 const active = selectedClass?.id === tutorClass.id;
                 return (
-                  <button
+                  <Button
                     key={tutorClass.id}
                     type="button"
+                    variant="ghost"
                     onClick={() => setSelectedClass(tutorClass)}
-                    className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${active ? "border-primary bg-primary/5" : "hover:bg-accent"}`}
+                    className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors hover:translate-y-0 ${active ? "border-primary bg-primary/5 hover:bg-primary/5 hover:text-inherit" : "hover:bg-accent hover:text-inherit"}`}
                   >
                     <strong className="min-w-0 truncate text-sm">
                       {tutorClass.name}
@@ -628,7 +627,7 @@ export function SchedulePage() {
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {tutorClass.students.length} học sinh
                     </span>
-                  </button>
+                  </Button>
                 );
               })}
               {classes.length === 0 && (
@@ -648,12 +647,13 @@ export function SchedulePage() {
                   </span>
                 </div>
                 {selectedClass.students.map((student) => (
-                  <button
+                  <Button
                     key={student.id}
                     type="button"
+                    variant="ghost"
                     disabled={creatingSession}
                     onClick={() => void chooseStudent(student)}
-                    className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
+                    className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors hover:translate-y-0 hover:text-inherit disabled:opacity-60"
                   >
                     <strong className="min-w-0 truncate text-sm">
                       {student.name}
@@ -666,7 +666,7 @@ export function SchedulePage() {
                         ? formatVnd(selectedClass.defaultPriceVnd)
                         : "Chưa đặt giá"}
                     </span>
-                  </button>
+                  </Button>
                 ))}
                 {selectedClass.students.length === 0 && (
                   <p className="text-sm text-muted-foreground">
@@ -691,18 +691,15 @@ export function SchedulePage() {
           onSaved={(message) => {
             setSelectedStudent(null);
             setEditingSession(null);
-            setToast(message);
+            toast(message);
             void loadDashboard();
           }}
         />
       )}
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </MobileShell>
   );
 }
 
-// Backend errors arrive as `{statusCode, message: "<code>"}` JSON — turn
-// known codes into Vietnamese, fall back to the raw text otherwise.
 const FRIENDLY_ERRORS: Record<string, string> = {
   future_session_not_allowed:
     "Buổi này chưa đến giờ — quay lại xác nhận sau khi dạy xong nhé.",
@@ -874,9 +871,9 @@ function DayAgendaDialog({
                         </p>
                       </div>
                       {groupTotal > 0 && (
-                        <p className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-sm font-bold">
+                        <Badge className="shrink-0 bg-slate-100 px-3 py-1 text-sm font-bold text-inherit">
                           {formatVnd(groupTotal)}
-                        </p>
+                        </Badge>
                       )}
                     </div>
 
@@ -932,12 +929,12 @@ function VirtualSlotCard({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span
+          <Badge
             aria-hidden
-            className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
+            className="bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
           >
             Dự kiến
-          </span>
+          </Badge>
           <Button
             type="button"
             size="sm"
@@ -1026,17 +1023,17 @@ function SessionCard({
 
 function CalendarSkeleton() {
   return (
-    <div className="animate-pulse">
+    <div>
       <div className="grid grid-cols-7 gap-1 text-center">
         {Array.from({ length: 7 }, (_, index) => (
           <div key={`weekday-${index}`} className="py-2">
-            <div className="mx-auto h-3 w-6 rounded bg-slate-200" />
+            <Skeleton className="mx-auto h-3 w-6 bg-slate-200" />
           </div>
         ))}
         {Array.from({ length: 42 }, (_, index) => (
-          <div
+          <Skeleton
             key={`day-${index}`}
-            className="min-h-12 rounded-xl bg-slate-100 sm:min-h-14"
+            className="h-12 rounded-xl bg-slate-100 sm:h-14"
           />
         ))}
       </div>
