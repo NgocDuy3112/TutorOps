@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -164,9 +165,9 @@ export function EditPaymentDialog({
           </p>
         )}
         {!loading && listError && (
-          <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-            {listError}
-          </p>
+          <Alert variant="destructive">
+            <AlertDescription>{listError}</AlertDescription>
+          </Alert>
         )}
         {!loading && !listError && payments.length === 0 && (
           <p className="text-sm text-muted-foreground">
@@ -246,9 +247,9 @@ export function EditPaymentDialog({
               />
             </div>
             {error && (
-              <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                {error}
-              </p>
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
             {confirmDelete ? (
               <div className="rounded-2xl bg-red-50 p-3">

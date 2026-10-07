@@ -591,12 +591,9 @@ export function SchedulePage() {
             </DialogDescription>
           </DialogHeader>
           {error && (
-            <p
-              role="alert"
-              className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
-            >
-              {error}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           <div className="max-h-[65dvh] space-y-3 overflow-y-auto">
             <section className="space-y-2">

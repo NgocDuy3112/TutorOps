@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -136,9 +137,9 @@ export function AssignClassDialog({
           </p>
         )}
         {!loading && error && (
-          <p role="alert" className="text-sm text-red-700">
-            {error}
-          </p>
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
         {!loading && !error && payments.length === 0 && (
           <p className="py-2 text-sm text-muted-foreground">

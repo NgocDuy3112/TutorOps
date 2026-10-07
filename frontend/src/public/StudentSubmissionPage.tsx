@@ -9,6 +9,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -205,11 +206,8 @@ export function StudentSubmissionPage() {
           </p>
         )}
         {error && (
-          <Card className="mt-6 border-red-100 bg-red-50">
-            <CardContent
-              role="alert"
-              className="space-y-3 p-4 text-sm text-red-700"
-            >
+          <Alert className="mt-6" variant="destructive">
+            <AlertDescription className="space-y-3">
               <p>{error}</p>
               <Button
                 type="button"
@@ -221,8 +219,8 @@ export function StudentSubmissionPage() {
                 <RotateCcw size={15} />
                 Tải lại
               </Button>
-            </CardContent>
-          </Card>
+            </AlertDescription>
+          </Alert>
         )}
         {!loading && !error && (
           <section className="mt-6 space-y-3">

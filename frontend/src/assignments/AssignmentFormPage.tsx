@@ -18,6 +18,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -315,12 +316,9 @@ export function AssignmentFormPage() {
 
             <div className="safe-bottom sticky bottom-0 -mx-4 border-t bg-white/95 p-4 backdrop-blur sm:mx-0 sm:rounded-3xl sm:border">
               {error && (
-                <p
-                  role="alert"
-                  className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-700"
-                >
-                  {error}
-                </p>
+                <Alert className="mb-3" variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
               <Button
                 disabled={saving}

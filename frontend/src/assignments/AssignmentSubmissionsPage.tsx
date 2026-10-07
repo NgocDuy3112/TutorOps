@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Download, FileText, Loader2, Pencil, Star } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -162,21 +164,21 @@ export function AssignmentSubmissionsPage() {
       </header>
       <main className="mx-auto max-w-4xl overflow-hidden px-4 py-6">
         {loading ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="animate-spin" size={17} />Đang tải...</p>
-          : error ? <Card className="border-red-100 bg-red-50"><CardContent role="alert" className="p-4 text-sm text-red-700">{error}</CardContent></Card>
+          : error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>
           : items.length === 0 ? <Card className="border-dashed"><CardContent className="p-10 text-center text-sm text-muted-foreground">Không có dữ liệu.</CardContent></Card>
           : <div className="min-w-0 space-y-3">{items.map((item) => (
             <article key={item.id} className="w-full min-w-0 overflow-hidden rounded-3xl border bg-white p-3 shadow-sm shadow-slate-100 sm:p-4">
               <div className="flex min-w-0 items-start justify-between gap-3">
-                <div className="min-w-0"><p className="truncate text-sm font-semibold">{item.student?.name ?? "Chưa gán học sinh"}</p><time className="mt-1 block text-xs text-muted-foreground">Nộp {new Date(item.submittedAt).toLocaleString("vi-VN")}{item.isLate && <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">Nộp trễ</span>}</time></div>
+                <div className="min-w-0"><p className="truncate text-sm font-semibold">{item.student?.name ?? "Chưa gán học sinh"}</p><time className="mt-1 block text-xs text-muted-foreground">Nộp {new Date(item.submittedAt).toLocaleString("vi-VN")}{item.isLate && <Badge className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">Nộp trễ</Badge>}</time></div>
                 <Button type="button" size="sm" className="min-h-11 shrink-0 rounded-xl" onClick={() => openReview(item)}>
                   {item.reviewedAt ? <Pencil size={16} /> : <Star size={16} />}{item.reviewedAt ? "Sửa điểm" : "Chấm bài"}
                 </Button>
               </div>
               {item.reviewedAt && <div className="mt-3 rounded-2xl bg-violet-50 p-3 text-sm text-violet-950"><p className="font-bold">Điểm: {item.score}/10</p>{item.reviewNote && <p className="mt-1 text-violet-800">{item.reviewNote}</p>}</div>}
               <div className="mt-3 grid min-w-0 gap-2 overflow-hidden sm:grid-cols-2">{item.files.map((file) => (
-                <button key={file.id} type="button" className="flex min-h-14 w-full min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-slate-50 p-2.5 text-left transition-colors hover:bg-slate-100" onClick={() => void download(item.id, file.id)}>
+                <Button key={file.id} type="button" variant="ghost" className="flex h-auto min-h-14 w-full min-w-0 items-center gap-2 overflow-hidden rounded-2xl bg-slate-50 p-2.5 text-left transition-colors hover:translate-y-0 hover:bg-slate-100 hover:text-inherit" onClick={() => void download(item.id, file.id)}>
                   <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-white text-primary"><FileText size={17} /></span><span className="min-w-0 flex-1 overflow-hidden"><span className="block w-full truncate text-sm font-medium">{shortFileName(file.name)}</span><span className="block text-xs text-muted-foreground">{fileExtension(file.name).toUpperCase() || "FILE"}</span></span><Download size={18} className="shrink-0 text-muted-foreground" />
-                </button>))}</div>
+                </Button>))}</div>
 
             </article>))}</div>}
       </main>
@@ -184,10 +186,29 @@ export function AssignmentSubmissionsPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>{selected?.reviewedAt ? "Sửa điểm bài làm" : "Chấm bài"}</DialogTitle><DialogDescription>Gán bài cho học sinh, nhập điểm và nhận xét.</DialogDescription></DialogHeader>
           <form className="space-y-4" onSubmit={(event) => void submitReview(event)}>
-            <div className="space-y-1.5"><Label htmlFor="studentId">Học sinh</Label><select id="studentId" required value={studentId} onChange={(event) => setStudentId(event.target.value)} className="flex min-h-12 w-full rounded-2xl border border-input bg-background px-3.5 py-2.5 text-sm"><option value="">Chọn học sinh</option>{assignment?.students.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select></div>
+            <div className="space-y-1.5"><Label>Học sinh</Label>
+              <Select
+                value={studentId || NO_STUDENT}
+                onValueChange={(value) =>
+                  setStudentId(value === NO_STUDENT ? "" : value)
+                }
+              >
+                <SelectTrigger aria-label="Học sinh">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_STUDENT}>Chọn học sinh</SelectItem>
+                  {assignment?.students.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      {student.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1.5"><Label htmlFor="score">Điểm</Label><Input id="score" required type="number" min="0" max="10" step="0.25" inputMode="decimal" value={score} onChange={(event) => setScore(event.target.value)} placeholder="Ví dụ: 8.5" /></div>
             <div className="space-y-1.5"><Label htmlFor="reviewNote">Nhận xét</Label><Textarea id="reviewNote" rows={4} value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="Tùy chọn" /></div>
-            {reviewError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{reviewError}</p>}
+            {reviewError && <Alert variant="destructive"><AlertDescription>{reviewError}</AlertDescription></Alert>}
             <Button className="min-h-12 w-full rounded-xl" disabled={saving}>{saving && <Loader2 className="animate-spin" size={16} />}{saving ? "Đang lưu..." : "Lưu điểm"}</Button>
           </form>
         </DialogContent>

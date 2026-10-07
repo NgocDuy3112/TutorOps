@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -222,9 +223,9 @@ export function MarkTaughtSheet({
             />
           </div>
           {error && (
-            <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-              {error}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             {editing && (

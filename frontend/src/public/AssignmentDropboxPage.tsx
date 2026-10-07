@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Download, FileText, Loader2, Upload } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { API } from "../lib/api";
@@ -106,9 +107,9 @@ export function AssignmentDropboxPage({ token }: { token: string }) {
               Ghi rõ họ tên trên bài làm trước khi nộp.
             </p>
             {error && (
-              <p role="alert" className="text-sm text-red-700">
-                {error}
-              </p>
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
             {message && (
               <p role="status" className="text-sm text-emerald-700">

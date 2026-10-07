@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
@@ -110,12 +111,9 @@ export function EditAssignmentSheet({
           </div>
 
           {error && (
-            <p
-              role="alert"
-              className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-700"
-            >
-              {error}
-            </p>
+            <Alert className="mb-3" variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           <div className="flex gap-3 pt-2">
             <Button

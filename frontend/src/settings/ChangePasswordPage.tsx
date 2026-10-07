@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { ArrowLeft, KeyRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -110,9 +111,9 @@ export function ChangePasswordPage() {
               </div>
               <Button>Cập nhật mật khẩu</Button>
               {error && (
-                <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                  {error}
-                </p>
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
               {message && (
                 <p className="text-sm text-emerald-600">{message}</p>

@@ -92,11 +92,8 @@ export function OverviewPage() {
           </p>
         )}
         {!loading && error && (
-          <Card className="border-red-100 bg-red-50">
-            <CardContent
-              role="alert"
-              className="flex flex-col gap-3 p-4 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between"
-            >
+          <Alert variant="destructive">
+            <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <span>{error}</span>
               <Button
                 type="button"
@@ -106,8 +103,8 @@ export function OverviewPage() {
               >
                 Tải lại
               </Button>
-            </CardContent>
-          </Card>
+            </AlertDescription>
+          </Alert>
         )}
         {!loading && !error && data && (
           <>

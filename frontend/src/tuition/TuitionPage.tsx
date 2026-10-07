@@ -234,11 +234,8 @@ export function TuitionPage() {
           </p>
         )}
         {!loading && error && (
-          <Card className="mt-4 border-red-100 bg-red-50">
-            <CardContent
-              role="alert"
-              className="flex flex-col gap-3 p-4 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between"
-            >
+          <Alert className="mt-4" variant="destructive">
+            <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <span>{error}</span>
               <Button
                 type="button"
@@ -248,8 +245,8 @@ export function TuitionPage() {
               >
                 Tải lại
               </Button>
-            </CardContent>
-          </Card>
+            </AlertDescription>
+          </Alert>
         )}
         {!loading && !error && data && (
           <div className="mt-4 space-y-4">

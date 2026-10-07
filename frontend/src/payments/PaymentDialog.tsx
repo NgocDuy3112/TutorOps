@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -132,12 +133,9 @@ export function PaymentDialog({
             />
           </div>
           {error && (
-            <p
-              role="alert"
-              className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
-            >
-              {error}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           <Button disabled={saving} className="min-h-12 w-full rounded-2xl">
             {saving && <Loader2 className="animate-spin" size={16} />}

@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -268,12 +269,9 @@ export function EditClassSheet({
               </>
               )}
               {error && (
-                <p
-                  role="alert"
-                  className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
-                >
-                  {error}
-                </p>
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
               {!section &&
               (confirmDelete ? (
